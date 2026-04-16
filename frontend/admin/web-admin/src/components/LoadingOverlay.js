@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     },
     blurContainer: {
         alignItems: 'center',
-        padding: 40,
+        padding: 32,
         borderRadius: 24,
     },
     loaderContainer: {
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     innerContent: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 16,
         backgroundColor: 'rgba(10, 65, 116, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',

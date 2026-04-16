@@ -138,7 +138,7 @@ export default function App() {
         return userRole === "superadmin" ? (
           <SuperAdminDashboard onNavigate={handleNavigate} onLogout={handleLogout} activePage="overview" />
         ) : (
-          <AdminDashboard onNavigate={handleNavigate} onLogout={handleLogout} />
+          <AdminDashboard onNavigate={handleNavigate} onLogout={handleLogout} userRole={userRole} />
         );
       case "sensor-map":
         return <SensorMapPage onNavigate={handleNavigate} onLogout={handleLogout} userRole={userRole} />;

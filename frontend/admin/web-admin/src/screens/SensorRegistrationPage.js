@@ -433,7 +433,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             <View style={styles.sensorListScroll}>
                                 <View style={styles.sensorListContent}>
                                     {liveSensors.length === 0 ? (
-                                        <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                                        <View style={{ alignItems: "center", paddingVertical: 32 }}>
                                             <Feather name="cpu" size={28} color="#cbd5e1" />
                                             <Text style={{ fontSize: 13, fontFamily: "Poppins_400Regular", color: "#94a3b8", marginTop: 8, textAlign: "center" }}>No sensor data yet</Text>
                                         </View>
@@ -485,7 +485,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     {activeTab === "sensors" && (
                         <View>
                             {/* Consolidated Health Summary */}
-                            <View style={[pg.healthSummaryRow, { marginBottom: 20 }]}>
+                            <View style={[pg.healthSummaryRow, { marginBottom: 16 }]}>
                                 {[
                                     { icon: "check-circle", label: "Online", value: onlineSensors, color: "#16a34a", bg: "rgba(22, 163, 74, 0.1)" },
                                     { icon: "x-circle", label: "Offline", value: offlineSensors, color: "#64748b", bg: "rgba(100, 116, 139, 0.1)" },
@@ -496,7 +496,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         <View style={[pg.healthCardIcon, { backgroundColor: card.bg }]}>
                                             <Feather name={card.icon} size={20} color={card.color} />
                                         </View>
-                                        <Text style={[pg.healthCardValue, { color: card.color }]}>{card.value}</Text>
+                                        <Text style={pg.healthCardValue}>{card.value}</Text>
                                         <Text style={pg.healthCardLabel}>{card.label}</Text>
                                     </View>
                                 ))}
@@ -518,7 +518,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                                     <View style={{ position: "relative", zIndex: 1000 }}>
                                         <TouchableOpacity style={pg.filterBtn} onPress={() => setShowStatusDropdown(!showStatusDropdown)}>
-                                            <Feather name="filter" size={14} color="#64748b" style={{ marginRight: 6 }} />
+                                            <Feather name="filter" size={14} color="#64748b" style={{ marginRight: 4 }} />
                                             <Text style={pg.filterBtnText}>{statusFilter}</Text>
                                             <Feather name={showStatusDropdown ? "chevron-up" : "chevron-down"} size={14} color="#64748b" style={{ marginLeft: 4 }} />
                                         </TouchableOpacity>
@@ -535,7 +535,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     
                                     {isSuperAdmin && (
                                         <TouchableOpacity style={pg.registerBtn} onPress={() => { resetForm(); setShowRegistrationModal(true); }}>
-                                            <Feather name="plus" size={16} color="#fff" style={{ marginRight: 6 }} />
+                                            <Feather name="plus" size={16} color="#fff" style={{ marginRight: 4 }} />
                                             <Text style={pg.registerBtnText}>Register Sensor</Text>
                                         </TouchableOpacity>
                                     )}
@@ -546,7 +546,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             <Text style={pg.resultsCount}>{filteredSensors.length} sensor{filteredSensors.length !== 1 ? "s" : ""} found</Text>
 
                             {loading && !showRegistrationModal ? (
-                                <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 60 }} />
+                                <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 64 }} />
                             ) : filteredSensors.length === 0 ? (
                                 <View style={pg.emptyState}>
                                     <View style={pg.emptyIcon}>
@@ -721,7 +721,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             <TouchableOpacity style={pg.submitBtn} onPress={handleRegisterSensor} disabled={loading}>
                                 {loading ? <ActivityIndicator size="small" color="#fff" /> : (
                                     <>
-                                        <Feather name="check" size={16} color="#fff" style={{ marginRight: 6 }} />
+                                        <Feather name="check" size={16} color="#fff" style={{ marginRight: 4 }} />
                                         <Text style={pg.submitBtnText}>Register Sensor</Text>
                                     </>
                                 )}
@@ -755,7 +755,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     </LinearGradient>
 
                                     <View style={pg.modalBody}>
-                                        <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
+                                        <View style={{ flexDirection: "row", gap: 16, marginBottom: 16 }}>
                                             <View style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 12, padding: 16, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" }}>
                                                 <Feather name="battery-charging" size={18} color={getBatteryColor(sh.live?.battery_level || sh.battery_level)} />
                                                 <Text style={{ fontSize: 11, color: "#64748b", fontFamily: "Poppins_600SemiBold", marginTop: 4 }}>BATTERY</Text>
@@ -768,22 +768,22 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             </View>
                                         </View>
 
-                                        <View style={{ backgroundColor: isOff ? "#f1f5f9" : "#eff6ff", borderRadius: 16, padding: 20, alignItems: "center", borderWidth: 1, borderColor: isOff ? "#cbd5e1" : "#dbeafe", marginBottom: 20 }}>
+                                        <View style={{ backgroundColor: isOff ? "#f1f5f9" : "#eff6ff", borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: isOff ? "#cbd5e1" : "#dbeafe", marginBottom: 16 }}>
                                             <Text style={{ fontSize: 12, color: isOff ? "#64748b" : "#3b82f6", fontFamily: "Poppins_700Bold", letterSpacing: 1 }}>CURRENT FLOOD LEVEL</Text>
                                             <Text style={{ fontSize: 44, color: isOff ? "#94a3b8" : "#1e40af", fontFamily: "Poppins_800ExtraBold", marginVertical: 4 }}>
                                                 {isOff ? "—" : `${Number(sh.live?.flood_level || 0).toFixed(1)} cm`}
                                             </Text>
-                                            <View style={{ backgroundColor: st.bg, paddingHorizontal: 16, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: st.border }}>
+                                            <View style={{ backgroundColor: st.bg, paddingHorizontal: 16, paddingVertical: 4, borderRadius: 16, borderWidth: 1, borderColor: st.border }}>
                                                 <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: st.text }}>{reading_st.charAt(0).toUpperCase() + reading_st.slice(1).toLowerCase()}</Text>
                                             </View>
                                         </View>
 
                                         <View style={{ gap: 12 }}>
-                                            <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#f1f5f9", paddingBottom: 10 }}>
+                                            <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#f1f5f9", paddingBottom: 8 }}>
                                                 <Text style={{ fontSize: 13, color: "#64748b", fontFamily: "Poppins_400Regular" }}>Last Seen</Text>
                                                 <Text style={{ fontSize: 13, color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>{lastSeen}</Text>
                                             </View>
-                                            <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#f1f5f9", paddingBottom: 10 }}>
+                                            <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#f1f5f9", paddingBottom: 8 }}>
                                                 <Text style={{ fontSize: 13, color: "#64748b", fontFamily: "Poppins_400Regular" }}>Coordinates</Text>
                                                 <Text style={{ fontSize: 13, color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>{sh.lat?.toFixed(6)}, {sh.lng?.toFixed(6)}</Text>
                                             </View>
@@ -803,7 +803,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             <Text style={pg.submitBtnText}>Done</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={pg.submitBtn} onPress={fetchHealthData}>
-                                            <Feather name="refresh-cw" size={16} color="#fff" style={{ marginRight: 6 }} />
+                                            <Feather name="refresh-cw" size={16} color="#fff" style={{ marginRight: 4 }} />
                                             <Text style={pg.submitBtnText}>Refresh Data</Text>
                                         </TouchableOpacity>
                                     </View>
@@ -853,35 +853,46 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 const pg = StyleSheet.create({
     // Tabs
     tabBar: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#e2e8f0", backgroundColor: "#fff", paddingHorizontal: 24 },
-    tabItem: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 16, gap: 6, borderBottomWidth: 2, borderBottomColor: "transparent", marginRight: 4 },
+    tabItem: { flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 16, gap: 4, borderBottomWidth: 2, borderBottomColor: "transparent", marginRight: 4 },
     tabItemActive: { borderBottomColor: "#3b82f6" },
     tabText: { fontSize: 14, fontFamily: "Poppins_500Medium", color: "#64748b" },
     tabTextActive: { color: "#3b82f6" },
-    tabBadge: { backgroundColor: "#f59e0b", borderRadius: 10, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+    tabBadge: { backgroundColor: "#f59e0b", borderRadius: 16, minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
     tabBadgeText: { fontSize: 10, fontFamily: "Poppins_700Bold", color: "#fff" },
     // Toolbar
     toolbar: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap", zIndex: 1000 },
-    searchBox: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0", paddingHorizontal: 14, paddingVertical: 10, minWidth: 200 },
+    searchBox: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0", paddingHorizontal: 12, paddingVertical: 8, minWidth: 200 },
     searchInput: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: "#0f172a", outlineStyle: "none" },
-    filterBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0", paddingHorizontal: 14, paddingVertical: 10 },
+    filterBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0", paddingHorizontal: 12, paddingVertical: 8 },
     filterBtnText: { fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b" },
-    dropdown: { position: "absolute", top: 48, right: 0, backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0", zIndex: 9999, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, elevation: 10, minWidth: 160 },
-    dropdownItem: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
+    dropdown: { position: "absolute", top: 48, right: 0, backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0", zIndex: 9999, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, elevation: 10, minWidth: 160 },
+    dropdownItem: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
     dropdownItemText: { fontSize: 14, fontFamily: "Poppins_400Regular", color: "#0f172a" },
-    registerBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#3b82f6", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
+    registerBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#3b82f6", borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8 },
     registerBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold", color: "#fff" },
     resultsCount: { fontSize: 13, fontFamily: "Poppins_400Regular", color: "#94a3b8", marginBottom: 16 },
     // Sensor Card Grid
     cardGrid: { flexDirection: "column", gap: 16 },
-    sensorCard: { backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: "#e2e8f0", overflow: "hidden", shadowColor: "#94a3b8", shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+    sensorCard: { 
+        backgroundColor: "#fff", 
+        borderRadius: 16, 
+        borderWidth: 1, 
+        borderColor: "#e2e8f0", 
+        overflow: "hidden", 
+        shadowColor: "#000", 
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06, 
+        shadowRadius: 12, 
+        elevation: 4 
+    },
     cardAccent: { height: 3, width: "100%" },
     cardHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: 16, paddingBottom: 12 },
     sensorName: { fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a" },
     sensorMeta: { fontSize: 12, fontFamily: "Poppins_400Regular", color: "#94a3b8" },
     sensorId: { fontSize: 12, fontFamily: "Poppins_400Regular", color: "#94a3b8" },
     cardDivider: { height: 1, backgroundColor: "#f1f5f9" },
-    cardStats: { flexDirection: "row", padding: 14, gap: 0 },
-    statItem: { flex: 1, alignItems: "center", gap: 3 },
+    cardStats: { flexDirection: "row", padding: 12, gap: 0 },
+    statItem: { flex: 1, alignItems: "center", gap: 4 },
     statDivider: { width: 1, backgroundColor: "#f1f5f9" },
     statLabel: { fontSize: 11, fontFamily: "Poppins_400Regular", color: "#94a3b8" },
     statValue: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#0f172a" },
@@ -889,11 +900,11 @@ const pg = StyleSheet.create({
     cardFooter: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 16, paddingBottom: 12 },
     cardFooterText: { fontSize: 11, fontFamily: "Poppins_400Regular", color: "#94a3b8" },
     // Shared badge
-    badge: { borderRadius: 20, borderWidth: 1, paddingVertical: 3, paddingHorizontal: 10, alignSelf: "flex-start" },
+    badge: { borderRadius: 16, borderWidth: 1, paddingVertical: 4, paddingHorizontal: 8, alignSelf: "flex-start" },
     badgeText: { fontSize: 11, fontFamily: "Poppins_600SemiBold" },
     deleteBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center" },
     // Empty state
-    emptyState: { alignItems: "center", paddingVertical: 60 },
+    emptyState: { alignItems: "center", paddingVertical: 64 },
     emptyIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#f1f5f9", alignItems: "center", justifyContent: "center", marginBottom: 16 },
     emptyTitle: { fontSize: 16, fontFamily: "Poppins_600SemiBold", color: "#475569", marginBottom: 4 },
     emptySubtitle: { fontSize: 14, fontFamily: "Poppins_400Regular", color: "#94a3b8", textAlign: "center" },
@@ -903,53 +914,64 @@ const pg = StyleSheet.create({
         flex: 1, 
         minWidth: 180, 
         backgroundColor: "#fff", 
-        borderRadius: 20, 
-        padding: 20, 
+        borderRadius: 16, 
+        padding: 24, 
         flexDirection: "column", 
-        alignItems: "flex-start", 
-        borderWidth: 1.5, 
-        borderColor: "#ECFAE5",
+        alignItems: "center", 
+        borderWidth: 1, 
+        borderColor: "#e2e8f0",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4
     },
-    healthCardIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-    healthCardValue: { fontSize: 24, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 2 },
-    healthCardLabel: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#64748b" },
-    panelCard: { backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: "#e2e8f0", overflow: "hidden" },
-    panelHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 18, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
+    healthCardIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+    healthCardValue: { fontSize: 24, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 4, textAlign: "center" },
+    healthCardLabel: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#64748b", textAlign: "center" },
+    panelCard: { 
+        backgroundColor: "#fff", 
+        borderRadius: 16, 
+        borderWidth: 1, 
+        borderColor: "#e2e8f0", 
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4
+    },
+    panelHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
     panelTitle: { fontSize: 15, fontFamily: "Poppins_600SemiBold", color: "#0f172a" },
     refreshBtn: { flexDirection: "row", alignItems: "center", padding: 8 },
     refreshBtnText: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#64748b" },
-    tableHead: { flexDirection: "row", backgroundColor: "#f8fafc", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
+    tableHead: { flexDirection: "row", backgroundColor: "#f8fafc", paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
     tableHeadCell: { fontSize: 12, fontFamily: "Poppins_600SemiBold", color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 },
-    tableRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", gap: 0 },
+    tableRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", gap: 0 },
     tableRowStripe: { backgroundColor: "#f8fafc" },
     tableCell: { fontSize: 13, fontFamily: "Poppins_400Regular", color: "#475569" },
     tableCellBold: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#0f172a" },
     tableCellSub: { fontSize: 11, fontFamily: "Poppins_400Regular", color: "#94a3b8" },
     // Modal
-    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", padding: 20 },
-    modalBox: { backgroundColor: "#fff", borderRadius: 20, overflow: "hidden", width: "100%", maxWidth: 680, maxHeight: "90%", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 24, elevation: 10 },
+    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", padding: 16 },
+    modalBox: { backgroundColor: "#fff", borderRadius: 16, overflow: "hidden", width: "100%", maxWidth: 680, maxHeight: "90%", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 24, elevation: 10 },
     modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 24 },
     modalTitle: { fontSize: 18, fontFamily: "Poppins_700Bold", color: "#fff" },
     modalBody: { padding: 24 },
-    modalFooter: { flexDirection: "row", justifyContent: "flex-end", gap: 12, padding: 20, borderTopWidth: 1, borderTopColor: "#f1f5f9" },
+    modalFooter: { flexDirection: "row", justifyContent: "flex-end", gap: 12, padding: 16, borderTopWidth: 1, borderTopColor: "#f1f5f9" },
     // Form
     formGrid: { flexDirection: "row", gap: 16 },
     formGroup: { flex: 1, marginBottom: 16 },
-    formLabel: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#374151", marginBottom: 6 },
-    formInput: { borderWidth: 1.5, borderColor: "#e2e8f0", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, fontFamily: "Poppins_400Regular", color: "#0f172a", backgroundColor: "#f8fafc", outlineStyle: "none" },
+    formLabel: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#374151", marginBottom: 4 },
+    formInput: { borderWidth: 1.5, borderColor: "#e2e8f0", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12, fontSize: 14, fontFamily: "Poppins_400Regular", color: "#0f172a", backgroundColor: "#f8fafc", outlineStyle: "none" },
     segmentRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-    segment: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: "#e2e8f0", backgroundColor: "#f8fafc" },
+    segment: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1.5, borderColor: "#e2e8f0", backgroundColor: "#f8fafc" },
     segmentActive: { borderColor: "#3b82f6", backgroundColor: "#eff6ff" },
     segmentText: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#64748b" },
     segmentTextActive: { color: "#3b82f6" },
-    cancelBtn: { paddingVertical: 11, paddingHorizontal: 24, borderRadius: 10, borderWidth: 1.5, borderColor: "#e2e8f0" },
+    cancelBtn: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 16, borderWidth: 1.5, borderColor: "#e2e8f0" },
     cancelBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold", color: "#475569" },
-    submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#3b82f6", borderRadius: 10, paddingVertical: 11, paddingHorizontal: 24 },
+    submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#3b82f6", borderRadius: 16, paddingVertical: 12, paddingHorizontal: 24 },
     submitBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold", color: "#fff" },
 });
 

@@ -436,11 +436,11 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
                                         {/* Flood Level */}
                                         {sensors.find((s) => s.sensor_id === selectedSensor)?.flood_level !== undefined && (
-                                            <View style={{ backgroundColor: '#f1f5f9', padding: 10, borderRadius: 8 }}>
-                                                <Text style={{ color: '#64748b', fontSize: 12, fontWeight: '600' }}>
+                                            <View style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 8 }}>
+                                                <Text style={{ color: '#64748b', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
                                                     Flood Level
                                                 </Text>
-                                                <Text style={{ color: '#0f172a', fontSize: 18, fontWeight: 'bold', marginTop: 4 }}>
+                                                <Text style={{ color: '#0f172a', fontSize: 18, fontFamily: "Poppins_700Bold", marginTop: 4 }}>
                                                     {sensors.find((s) => s.sensor_id === selectedSensor)?.flood_level} cm
                                                 </Text>
                                                 <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>
@@ -451,8 +451,8 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
                                         {/* GPS Coordinates */}
                                         {sensors.find((s) => s.sensor_id === selectedSensor)?.latitude !== undefined && (
-                                            <View style={{ backgroundColor: '#eff6ff', padding: 10, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#3b82f6' }}>
-                                                <Text style={{ color: '#1e40af', fontSize: 12, fontWeight: '600' }}>
+                                            <View style={{ backgroundColor: '#eff6ff', padding: 8, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#3b82f6' }}>
+                                                <Text style={{ color: '#1e40af', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
                                                     📍 GPS Coordinates
                                                 </Text>
                                                 <Text style={{ color: '#0f172a', fontSize: 13, marginTop: 4, fontFamily: 'monospace' }}>
@@ -471,7 +471,7 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                         }}
                                                         style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#bfdbfe' }}
                                                     >
-                                                        <Text style={{ color: '#2563eb', fontSize: 12, fontWeight: '600' }}>
+                                                        <Text style={{ color: '#2563eb', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
                                                             🗺️ View on Google Maps →
                                                         </Text>
                                                     </TouchableOpacity>
@@ -488,12 +488,12 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
                                         {/* Status */}
                                         {sensors.find((s) => s.sensor_id === selectedSensor)?.is_offline && (
-                                            <Text style={[styles.sensorInfoTime, { color: '#dc2626', fontWeight: '600' }]}>
+                                            <Text style={[styles.sensorInfoTime, { color: '#dc2626', fontFamily: "Poppins_600SemiBold" }]}>
                                                 ⚠️ Sensor is OFFLINE
                                             </Text>
                                         )}
                                         {!sensors.find((s) => s.sensor_id === selectedSensor)?.is_offline && (
-                                            <Text style={[styles.sensorInfoTime, { color: '#16a34a', fontWeight: '600' }]}>
+                                            <Text style={[styles.sensorInfoTime, { color: '#16a34a', fontFamily: "Poppins_600SemiBold" }]}>
                                                 ✓ Sensor is ONLINE
                                             </Text>
                                         )}
@@ -508,11 +508,11 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             <View style={styles.sensorListScroll}>
                                 <View style={styles.sensorListContent}>
                                     {loading ? (
-                                        <View style={{ padding: 20, alignItems: 'center' }}>
+                                        <View style={{ padding: 16, alignItems: 'center' }}>
                                             <Text style={{ color: '#64748b' }}>Loading sensor data...</Text>
                                         </View>
                                     ) : sensors.length === 0 ? (
-                                        <View style={{ padding: 20, alignItems: 'center' }}>
+                                        <View style={{ padding: 16, alignItems: 'center' }}>
                                             <Text style={{ color: '#64748b' }}>No sensor data available</Text>
                                         </View>
                                     ) : (

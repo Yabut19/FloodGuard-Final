@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, TextInput, Modal, useWindowDimensions } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, TextInput, Modal, useWindowDimensions, ScrollView } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "../styles/globalStyles";
@@ -73,7 +73,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
 
             // Try to fetch user data for profile
             const userId = localStorage.getItem("userId");
-            const userType = isSuperAdmin ? 'admin' : 'user';
+            const userType = (isSuperAdmin || variant === 'lgu') ? 'admin' : 'user';
 
             if (userId) {
                 fetch(`${API_BASE_URL}/api/users/${userId}?type=${userType}`)
@@ -182,9 +182,12 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
         <View style={[styles.dashboardSidebar, {
             backgroundColor: 'transparent',
             overflow: 'hidden',
-            width: isCollapsed ? 80 : styles.dashboardSidebar.width,
+            width: isCollapsed ? (isMobileModal ? 60 : 80) : (isMobileModal ? '80%' : styles.dashboardSidebar.width || 300),
             paddingHorizontal: isCollapsed ? 10 : 20,
-            transition: 'width 0.3s ease' // Web transition
+            position: isMobileModal && !isCollapsed ? 'absolute' : 'relative',
+            height: '100%',
+            zIndex: 999,
+            transition: 'all 0.3s ease' // Web transition
         }]}>
             {/* Abstract Background Design - Dark Blue */}
             <LinearGradient
@@ -254,7 +257,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
             {/* Burger Icon Toggle */}
             <View style={{
                 alignItems: 'flex-end', // Align right as requested
-                marginBottom: 20,
+                marginBottom: 16,
                 paddingRight: isCollapsed ? 0 : 0, // No extra padding needed for right align usually, but kept clean
                 paddingLeft: 0,
                 width: '100%' // Ensure container takes full width to allow flex-end to work
@@ -305,7 +308,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
             )}
 
             {/* Navigation Section */}
-            <View style={styles.dashboardNavSection}>
+            <ScrollView style={styles.dashboardNavSection} showsVerticalScrollIndicator={false}>
                 {navItems.map((item) => {
                     const isActive = activePage === item.id;
                     const NavItemComponent = isActive ? View : TouchableOpacity;
@@ -320,7 +323,10 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                                 isActive ? { backgroundColor: 'rgba(123, 189, 232, 0.15)', borderRightWidth: 3, borderRightColor: '#7BBDE8' } : null,
                                 isCollapsed && { justifyContent: 'center', paddingHorizontal: 0 }
                             ]}
-                            onPress={isActive ? undefined : () => onNavigate(item.id)}
+                            onPress={isActive ? undefined : () => {
+                                onNavigate(item.id);
+                                if (isMobileModal) setIsCollapsed(true); // Auto close on mobile
+                            }}
                         >
                             <Feather
                                 name={item.icon}
@@ -332,7 +338,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                         </NavItemComponent>
                     );
                 })}
-            </View>
+            </ScrollView>
 
             {/* Footer Section - User Profile & Logout - Drop-up Menu */}
             <View style={[styles.dashboardSidebarFooter, { flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 0, position: 'relative', zIndex: 100 }]}>
@@ -348,7 +354,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                         backgroundColor: '#0A4174',
                         borderRadius: 12,
                         padding: 8,
-                        marginBottom: 10,
+                        marginBottom: 8,
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.3,
@@ -417,7 +423,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                             {/* Left Pane - Avatar Section */}
                             <View style={{
                                 width: isMobileModal ? '100%' : 380, // Increased from 300
-                                padding: 40, // Increased padding
+                                padding: 32, // Increased padding
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 borderRightWidth: isMobileModal ? 0 : 1,
@@ -482,7 +488,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                                 {/* Header with Close Button */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
                                     <Text style={{ fontSize: 28, fontFamily: 'Poppins_700Bold', color: '#0f172a' }}>Profile</Text>
-                                    <TouchableOpacity onPress={() => setIsProfileModalVisible(false)} style={{ padding: 6 }}>
+                                    <TouchableOpacity onPress={() => setIsProfileModalVisible(false)} style={{ padding: 4 }}>
                                         <Feather name="x" size={28} color="#64748b" />
                                     </TouchableOpacity>
                                 </View>
@@ -490,13 +496,13 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                                 {/* Input Grid */}
                                 <View style={{ flexDirection: isMobileModal ? 'column' : 'row', gap: 24, marginBottom: 24 }}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 10 }}>Full Name</Text>
+                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 8 }}>Full Name</Text>
                                         <TextInput
                                             style={{
                                                 borderWidth: 1.5,
                                                 borderColor: '#e2e8f0',
-                                                borderRadius: 14,
-                                                paddingHorizontal: 20,
+                                                borderRadius: 16,
+                                                paddingHorizontal: 16,
                                                 paddingVertical: 16,
                                                 fontSize: 16,
                                                 fontFamily: 'Poppins_400Regular',
@@ -507,13 +513,13 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                                         />
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 10 }}>Email</Text>
+                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 8 }}>Email</Text>
                                         <TextInput
                                             style={{
                                                 borderWidth: 1.5,
                                                 borderColor: '#e2e8f0',
-                                                borderRadius: 14,
-                                                paddingHorizontal: 20,
+                                                borderRadius: 16,
+                                                paddingHorizontal: 16,
                                                 paddingVertical: 16,
                                                 fontSize: 16,
                                                 fontFamily: 'Poppins_400Regular',
@@ -526,15 +532,15 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                                     </View>
                                 </View>
 
-                                <View style={{ flexDirection: isMobileModal ? 'column' : 'row', gap: 24, marginBottom: 40 }}>
+                                <View style={{ flexDirection: isMobileModal ? 'column' : 'row', gap: 24, marginBottom: 32 }}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 10 }}>Role</Text>
+                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 8 }}>Role</Text>
                                         <View style={{
                                             borderWidth: 1.5,
                                             borderColor: '#e2e8f0',
-                                            borderRadius: 14,
+                                            borderRadius: 16,
                                             backgroundColor: '#f8fafc',
-                                            paddingHorizontal: 20,
+                                            paddingHorizontal: 16,
                                             paddingVertical: 16,
                                         }}>
                                             <Text style={{
@@ -547,13 +553,13 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                                         </View>
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 10 }}>Phone Number</Text>
+                                        <Text style={{ fontSize: 15, fontFamily: 'Poppins_600SemiBold', color: '#0f172a', marginBottom: 8 }}>Phone Number</Text>
                                         <TextInput
                                             style={{
                                                 borderWidth: 1.5,
                                                 borderColor: '#e2e8f0',
-                                                borderRadius: 14,
-                                                paddingHorizontal: 20,
+                                                borderRadius: 16,
+                                                paddingHorizontal: 16,
                                                 paddingVertical: 16,
                                                 fontSize: 16,
                                                 fontFamily: 'Poppins_400Regular',
@@ -571,9 +577,9 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 'auto' }}>
                                     <TouchableOpacity
                                         style={{
-                                            paddingVertical: 14,
-                                            paddingHorizontal: 28,
-                                            borderRadius: 10,
+                                            paddingVertical: 12,
+                                            paddingHorizontal: 24,
+                                            borderRadius: 16,
                                             borderWidth: 1.5,
                                             borderColor: '#e2e8f0',
                                             backgroundColor: '#ffffff'
@@ -585,9 +591,9 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
 
                                     <TouchableOpacity
                                         style={{
-                                            paddingVertical: 14,
-                                            paddingHorizontal: 40,
-                                            borderRadius: 10,
+                                            paddingVertical: 12,
+                                            paddingHorizontal: 32,
+                                            borderRadius: 16,
                                             backgroundColor: '#3b82f6',
                                             opacity: isSaving ? 0.7 : 1,
                                             minWidth: 120,
@@ -618,7 +624,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
                         borderRadius: 12
                     }}
                 >
-                    <View style={[styles.dashboardUserAvatar, { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', backgroundColor: 'rgba(123, 189, 232, 0.1)' }]}>
+                    <View style={[styles.dashboardUserAvatar, { width: 40, height: 40, borderRadius: 16, overflow: 'hidden', backgroundColor: 'rgba(123, 189, 232, 0.1)' }]}>
                         {avatarUrl ? (
                             <Image
                                 source={{ uri: avatarUrl }}

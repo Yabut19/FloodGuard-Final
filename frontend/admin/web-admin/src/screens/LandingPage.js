@@ -93,7 +93,7 @@ const Particle = ({ delay, startX, startY, size, color }) => {
 
 const FloatingParticles = () => {
     const { width, height } = useWindowDimensions();
-    const particleCount = 150; // Increased from 50
+    const particleCount = 50; // Reduced from 150 for performance
     const colors = ['#BDD8E9', '#7BBDE8', '#49769F', '#0A4174'];
 
     const particles = React.useMemo(() => {
@@ -133,9 +133,9 @@ const ProgressBar = ({ label, location, progress, status }) => {
 
     return (
         <View style={localStyles.sensorRow}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                 <Text style={localStyles.sensorLabel}>{label} — {location}</Text>
-                <Text style={[localStyles.sensorLabel, { color: color, fontWeight: '700' }]}>{status}</Text>
+                <Text style={[localStyles.sensorLabel, { color: color, fontFamily: "Poppins_700Bold" }]}>{status}</Text>
             </View>
             <View style={localStyles.progressTrack}>
                 <View style={[localStyles.progressFill, { width: `${progress}%`, backgroundColor: color }]} />
@@ -242,7 +242,6 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
 
         try {
             console.log("Attempting login with:", email, "Required Role:", accessLevel);
-            const delayPromise = new Promise(resolve => setTimeout(resolve, 1500));
             const payload = { 
                 username: email.trim().toLowerCase(), 
                 password: password,
@@ -253,7 +252,7 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
-            const [_, response] = await Promise.all([delayPromise, loginPromise]);
+            const response = await loginPromise;
             const text = await response.text();
             let data = {};
             try { data = JSON.parse(text); } catch (e) { data = { error: text } }
@@ -551,7 +550,7 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
 
                         {/* Error Message */}
                         {error ? (
-                            <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: 10, borderRadius: 6, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                            <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: 8, borderRadius: 6, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
                                 <Text style={{ color: '#f87171', fontSize: 13, textAlign: 'center' }}>{error}</Text>
                             </View>
                         ) : null}
@@ -571,6 +570,9 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
                                 <Text style={[localStyles.roleToggleText, accessLevel === 'admin' && localStyles.roleToggleTextActive]}>Admin Login</Text>
                             </TouchableOpacity>
                         </View>
+                        <Text style={{ fontSize: 11, color: '#49769F', textAlign: 'center', marginBottom: 16, fontFamily: 'Poppins_400Regular' }}>
+                            Tip: Make sure you've selected the correct tab for your account type.
+                        </Text>
 
                         {/* Username Input */}
                         <Text style={localStyles.inputLabel}>USERNAME</Text>
@@ -660,10 +662,10 @@ const localStyles = StyleSheet.create({
     navCenter: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 36,
+        gap: 32,
     },
     navLinkContainer: {
-        paddingVertical: 6,
+        paddingVertical: 4,
     },
     navLinkActive: {
         borderBottomWidth: 2,
@@ -682,9 +684,9 @@ const localStyles = StyleSheet.create({
     liveBadgeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 6,
+        paddingVertical: 4,
         paddingHorizontal: 12,
-        borderRadius: 20,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.15)',
     },
@@ -693,7 +695,7 @@ const localStyles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
         backgroundColor: '#6EA2B3',
-        marginRight: 6,
+        marginRight: 4,
         shadowColor: '#6EA2B3',
         shadowOpacity: 0.8,
         shadowRadius: 6,
@@ -707,7 +709,7 @@ const localStyles = StyleSheet.create({
     loginBtn: {
         backgroundColor: 'rgba(255,255,255,0.1)',
         paddingVertical: 8,
-        paddingHorizontal: 22,
+        paddingHorizontal: 24,
         borderRadius: 8,
     },
     loginBtnText: {
@@ -717,7 +719,7 @@ const localStyles = StyleSheet.create({
     },
     scrollWrapper: {
         flexGrow: 1,
-        paddingVertical: 40,
+        paddingVertical: 32,
     },
     mainFlexbox: {
         flex: 1,
@@ -736,14 +738,14 @@ const localStyles = StyleSheet.create({
         flex: 1,
         width: '100%',
         alignItems: 'center',
-        paddingBottom: 40,
+        paddingBottom: 32,
     },
     subHeadline: {
         color: '#94a3b8',
         fontSize: 18,
         fontFamily: 'Poppins_400Regular',
         lineHeight: 28,
-        marginBottom: 40,
+        marginBottom: 32,
         maxWidth: 600,
         textAlign: 'center',
     },
@@ -765,8 +767,8 @@ const localStyles = StyleSheet.create({
     startBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 28,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
         borderRadius: 24,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
@@ -788,7 +790,7 @@ const localStyles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
         borderColor: 'rgba(123, 189, 232, 0.15)',
-        padding: 30,
+        padding: 32,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 20 },
         shadowOpacity: 0.5,
@@ -838,7 +840,7 @@ const localStyles = StyleSheet.create({
         borderColor: 'rgba(189, 216, 233, 0.3)',
         paddingVertical: 4,
         paddingHorizontal: 12,
-        borderRadius: 20,
+        borderRadius: 16,
     },
     safeBadgeText: {
         color: '#BDD8E9',
@@ -851,8 +853,8 @@ const localStyles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'flex-end',
         height: 60,
-        marginBottom: 30,
-        paddingBottom: 20,
+        marginBottom: 32,
+        paddingBottom: 16,
         borderBottomWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
     },
@@ -863,7 +865,7 @@ const localStyles = StyleSheet.create({
     statsSplit: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 30,
+        marginBottom: 32,
         paddingBottom: 24,
         borderBottomWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
@@ -909,7 +911,7 @@ const localStyles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 14,
+        paddingVertical: 12,
         borderRadius: 8,
     },
     cardCtaText: {
@@ -920,13 +922,13 @@ const localStyles = StyleSheet.create({
     bottomFooter: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 40,
-        paddingTop: 30,
+        marginTop: 32,
+        paddingTop: 32,
         borderTopWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
     },
     footerItem: {
-        marginRight: 40,
+        marginRight: 32,
     },
     footerNumber: {
         color: '#ffffff',
@@ -1005,11 +1007,11 @@ const localStyles = StyleSheet.create({
         backgroundColor: '#001D39',
         borderRadius: 8,
         padding: 4,
-        marginBottom: 20,
+        marginBottom: 16,
     },
     roleToggleBtn: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 8,
         alignItems: 'center',
         borderRadius: 6,
     },
@@ -1029,7 +1031,7 @@ const localStyles = StyleSheet.create({
         fontSize: 12,
         fontFamily: 'Poppins_700Bold',
         letterSpacing: 1,
-        marginBottom: 6,
+        marginBottom: 4,
     },
     inputBox: {
         flexDirection: 'row',
@@ -1053,7 +1055,7 @@ const localStyles = StyleSheet.create({
     submitBtn: {
         backgroundColor: '#6EA2B3',
         borderRadius: 8,
-        paddingVertical: 14,
+        paddingVertical: 12,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -1127,7 +1129,7 @@ const localStyles = StyleSheet.create({
         backgroundColor: 'rgba(123, 189, 232, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     cardTitle: {
         fontSize: 22,
@@ -1155,7 +1157,7 @@ const localStyles = StyleSheet.create({
         fontFamily: 'Poppins_700Bold',
         letterSpacing: 1,
         textTransform: 'uppercase',
-        marginBottom: 6,
+        marginBottom: 4,
     },
     contactMethodBox: {
         backgroundColor: 'rgba(0,0,0,0.2)',
@@ -1173,7 +1175,7 @@ const localStyles = StyleSheet.create({
     footerContainer: {
         marginTop: 100,
         paddingTop: 80,
-        paddingBottom: 60,
+        paddingBottom: 64,
         width: '100%',
         backgroundColor: '#001122', // Darker Navy for distinction
         borderTopWidth: 1,
@@ -1185,7 +1187,7 @@ const localStyles = StyleSheet.create({
     },
     footerContent: {
         justifyContent: 'space-between',
-        gap: 40,
+        gap: 32,
         maxWidth: 1200,
         alignSelf: 'center',
         width: '100%',

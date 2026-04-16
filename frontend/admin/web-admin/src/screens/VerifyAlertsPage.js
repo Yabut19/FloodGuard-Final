@@ -193,10 +193,10 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                         >
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 12, color: "#94a3b8", fontWeight: "600", letterSpacing: 1 }}>
+                                    <Text style={{ fontSize: 12, color: "#94a3b8", fontFamily: "Poppins_600SemiBold", letterSpacing: 1 }}>
                                         📡 LIVE SENSOR STATUS
                                     </Text>
-                                    <Text style={{ fontSize: 18, color: "#0f172a", fontWeight: "700", marginTop: 6 }}>
+                                    <Text style={{ fontSize: 18, color: "#0f172a", fontFamily: "Poppins_700Bold", marginTop: 4 }}>
                                         Sensor {sensorData.sensor_id}
                                     </Text>
                                 </View>
@@ -204,14 +204,14 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                     style={{
                                         backgroundColor: getSensorStatusColor(sensorData.status) + "25",
                                         paddingHorizontal: 12,
-                                        paddingVertical: 6,
-                                        borderRadius: 20,
+                                        paddingVertical: 4,
+                                        borderRadius: 16,
                                     }}
                                 >
                                     <Text
                                         style={{
                                             color: getSensorStatusColor(sensorData.status),
-                                            fontWeight: "700",
+                                            fontFamily: "Poppins_700Bold",
                                             fontSize: 11,
                                             letterSpacing: 0.5,
                                         }}
@@ -224,28 +224,28 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                             <View style={{ flexDirection: "row", gap: 16, marginBottom: 12 }}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>Flood Level</Text>
-                                    <Text style={{ color: "#0f172a", fontSize: 20, fontWeight: "700" }}>
+                                    <Text style={{ color: "#0f172a", fontSize: 20, fontFamily: "Poppins_700Bold" }}>
                                         {sensorData.flood_level}
                                         <Text style={{ fontSize: 14 }}>cm</Text>
                                     </Text>
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>Raw Distance</Text>
-                                    <Text style={{ color: "#0f172a", fontSize: 20, fontWeight: "700" }}>
+                                    <Text style={{ color: "#0f172a", fontSize: 20, fontFamily: "Poppins_700Bold" }}>
                                         {sensorData.raw_distance}
                                         <Text style={{ fontSize: 14 }}>cm</Text>
                                     </Text>
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>Updated</Text>
-                                    <Text style={{ color: "#0f172a", fontSize: 14, fontWeight: "600" }}>
+                                    <Text style={{ color: "#0f172a", fontSize: 14, fontFamily: "Poppins_600SemiBold" }}>
                                         {new Date(sensorData.created_at).toLocaleTimeString()}
                                     </Text>
                                 </View>
                             </View>
 
                             {sensorData.latitude && sensorData.longitude && (
-                                <View style={{ backgroundColor: "#DDF6D2", padding: 10, borderRadius: 6, marginTop: 12 }}>
+                                <View style={{ backgroundColor: "#DDF6D2", padding: 8, borderRadius: 6, marginTop: 12 }}>
                                     <Text style={{ color: "#1a3d0a", fontSize: 12 }}>
                                         📍 {sensorData.latitude.toFixed(4)}°, {sensorData.longitude.toFixed(4)}°
                                     </Text>
@@ -256,21 +256,21 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
 
                     {/* SECTION 2: Verification Table Header */}
                     <View style={{ marginBottom: 16 }}>
-                        <Text style={{ fontSize: 16, color: "#0f172a", fontWeight: "700", marginBottom: 12 }}>
+                        <Text style={{ fontSize: 16, color: "#0f172a", fontFamily: "Poppins_700Bold", marginBottom: 12 }}>
                             Pending Reports Queue
                         </Text>
                     </View>
 
                     {/* SECTION 3: Reports List or Empty State */}
                     {loading ? (
-                        <View style={[styles.dashboardPanel, { alignItems: "center", paddingVertical: 60 }]}>
+                        <View style={[styles.dashboardPanel, { alignItems: "center", paddingVertical: 64 }]}>
                             <ActivityIndicator size="large" color="#B0DB9C" />
                             <Text style={{ color: "#94a3b8", marginTop: 12, fontSize: 14 }}>Loading reports...</Text>
                         </View>
                     ) : pendingReports.length === 0 ? (
-                        <View style={[styles.dashboardPanel, { alignItems: "center", paddingVertical: 60 }]}>
+                        <View style={[styles.dashboardPanel, { alignItems: "center", paddingVertical: 64 }]}>
                             <Ionicons name="checkmark-circle" size={48} color="#16a34a" />
-                            <Text style={{ color: "#0f172a", marginTop: 12, fontSize: 16, fontWeight: "600" }}>
+                            <Text style={{ color: "#0f172a", marginTop: 12, fontSize: 16, fontFamily: "Poppins_600SemiBold" }}>
                                 All reports verified! ✓
                             </Text>
                             <Text style={{ color: "#94a3b8", marginTop: 4, fontSize: 13 }}>
@@ -302,24 +302,24 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                     <View style={{ flex: width > 1024 ? 2 : 1, marginRight: width > 1024 ? 16 : 0, marginBottom: width > 1024 ? 0 : 12 }}>
                                         {/* Row 1: Type & Location */}
                                         <View style={{ marginBottom: 12 }}>
-                                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                                                 <View>
-                                                    <Text style={{ fontSize: 11, color: "#f59e0b", fontWeight: "700", letterSpacing: 0.5 }}>
+                                                    <Text style={{ fontSize: 11, color: "#f59e0b", fontFamily: "Poppins_700Bold", letterSpacing: 0.5 }}>
                                                         {report.type?.toUpperCase()}
                                                     </Text>
-                                                    <Text style={{ fontSize: 16, color: "#0f172a", fontWeight: "700", marginTop: 4 }}>
+                                                    <Text style={{ fontSize: 16, color: "#0f172a", fontFamily: "Poppins_700Bold", marginTop: 4 }}>
                                                         {report.location}
                                                     </Text>
                                                 </View>
                                                 <View
                                                     style={{
                                                         backgroundColor: "#fef3c7",
-                                                        paddingHorizontal: 10,
+                                                        paddingHorizontal: 8,
                                                         paddingVertical: 4,
                                                         borderRadius: 999,
                                                     }}
                                                 >
-                                                    <Text style={{ color: "#92400e", fontWeight: "700", fontSize: 10, letterSpacing: 0.4 }}>
+                                                    <Text style={{ color: "#92400e", fontFamily: "Poppins_700Bold", fontSize: 10, letterSpacing: 0.4 }}>
                                                         PENDING
                                                     </Text>
                                                 </View>
@@ -336,9 +336,9 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
 
                                         {/* Row 3: Meta Info */}
                                         <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-                                            <View style={{ backgroundColor: "#f1f5f9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+                                            <View style={{ backgroundColor: "#f1f5f9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
                                                 <Text style={{ color: "#94a3b8", fontSize: 10 }}>Reporter</Text>
-                                                <Text style={{ color: "#0f172a", fontSize: 12, fontWeight: "600" }}>
+                                                <Text style={{ color: "#0f172a", fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
                                                     {report.reporter_name || "Anonymous"}
                                                 </Text>
                                             </View>
@@ -347,8 +347,8 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                 <View
                                                     style={{
                                                         backgroundColor: getFloodLevelColor(report.flood_level_reported) + "15",
-                                                        paddingHorizontal: 10,
-                                                        paddingVertical: 6,
+                                                        paddingHorizontal: 8,
+                                                        paddingVertical: 4,
                                                         borderRadius: 6,
                                                     }}
                                                 >
@@ -357,7 +357,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                         style={{
                                                             color: getFloodLevelColor(report.flood_level_reported),
                                                             fontSize: 12,
-                                                            fontWeight: "700",
+                                                            fontFamily: "Poppins_700Bold",
                                                             textTransform: "uppercase",
                                                         }}
                                                     >
@@ -366,9 +366,9 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                 </View>
                                             )}
 
-                                            <View style={{ backgroundColor: "#f1f5f9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
+                                            <View style={{ backgroundColor: "#f1f5f9", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
                                                 <Text style={{ color: "#94a3b8", fontSize: 10 }}>Submitted</Text>
-                                                <Text style={{ color: "#0f172a", fontSize: 12, fontWeight: "600" }}>
+                                                <Text style={{ color: "#0f172a", fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
                                                     {new Date(report.timestamp).toLocaleTimeString()}
                                                 </Text>
                                             </View>
@@ -408,9 +408,9 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                 setVerifyNotes("");
                                             }}
                                         >
-                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                                                 <Feather name="check" size={16} color="#ffffff" />
-                                                <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 12 }}>Verify</Text>
+                                                <Text style={{ color: "#ffffff", fontFamily: "Poppins_700Bold", fontSize: 12 }}>Verify</Text>
                                             </View>
                                         </TouchableOpacity>
 
@@ -438,9 +438,9 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                 );
                                             }}
                                         >
-                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                                                 <Feather name="x" size={16} color="#ef4444" />
-                                                <Text style={{ color: "#ef4444", fontWeight: "700", fontSize: 12 }}>Dismiss</Text>
+                                                <Text style={{ color: "#ef4444", fontFamily: "Poppins_700Bold", fontSize: 12 }}>Dismiss</Text>
                                             </View>
                                         </TouchableOpacity>
                                     </View>
@@ -468,13 +468,13 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                 style={{
                                     backgroundColor: "#B0DB9C",
                                     paddingHorizontal: 24,
-                                    paddingVertical: 20,
+                                    paddingVertical: 16,
                                     flexDirection: "row",
                                     justifyContent: "space-between",
                                     alignItems: "center",
                                 }}
                             >
-                                <Text style={{ fontSize: 20, color: "#1a3d0a", fontWeight: "700" }}>
+                                <Text style={{ fontSize: 20, color: "#1a3d0a", fontFamily: "Poppins_700Bold" }}>
                                     Verify Report
                                 </Text>
                                 <TouchableOpacity onPress={() => setShowVerifyModal(false)}>
@@ -486,20 +486,20 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                 <View style={{ padding: 24 }}>
                                     {/* SECTION A: User's Original Report */}
                                     <View style={{ marginBottom: 24 }}>
-                                        <Text style={{ fontSize: 12, color: "#94a3b8", fontWeight: "700", letterSpacing: 1, marginBottom: 12 }}>
+                                        <Text style={{ fontSize: 12, color: "#94a3b8", fontFamily: "Poppins_700Bold", letterSpacing: 1, marginBottom: 12 }}>
                                             📝 USER REPORT
                                         </Text>
                                         <View style={[styles.dashboardPanel, { marginTop: 0, borderLeftWidth: 6, borderLeftColor: "#f59e0b" }]}>
-                                            <Text style={{ fontSize: 14, color: "#0f172a", fontWeight: "700", marginBottom: 6 }}>
+                                            <Text style={{ fontSize: 14, color: "#0f172a", fontFamily: "Poppins_700Bold", marginBottom: 4 }}>
                                                 {selectedReport.type} at {selectedReport.location}
                                             </Text>
-                                            <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 18, marginBottom: 10 }}>
+                                            <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 18, marginBottom: 8 }}>
                                                 {selectedReport.description}
                                             </Text>
                                             <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
                                                 <View>
                                                     <Text style={{ color: "#94a3b8", fontSize: 11 }}>Reporter</Text>
-                                                    <Text style={{ color: "#0f172a", fontWeight: "600" }}>
+                                                    <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>
                                                         {selectedReport.reporter_name}
                                                     </Text>
                                                     {selectedReport.reporter_email && (
@@ -510,7 +510,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                 </View>
                                                 <View>
                                                     <Text style={{ color: "#94a3b8", fontSize: 11 }}>Submitted</Text>
-                                                    <Text style={{ color: "#0f172a", fontWeight: "600" }}>
+                                                    <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>
                                                         {new Date(selectedReport.timestamp).toLocaleTimeString()}
                                                     </Text>
                                                 </View>
@@ -519,7 +519,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             {/* Image Display */}
                                             {selectedReport.image_url && (
                                                 <View style={{ marginTop: 12 }}>
-                                                    <Text style={{ color: "#94a3b8", fontSize: 11, marginBottom: 6 }}>📷 ATTACHED IMAGE</Text>
+                                                    <Text style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4 }}>📷 ATTACHED IMAGE</Text>
                                                     <Image
                                                         source={{ uri: `${API_BASE}${selectedReport.image_url}` }}
                                                         style={{
@@ -540,7 +540,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                     {/* SECTION B: Sensor Comparison */}
                                     {sensorData && (
                                         <View style={{ marginBottom: 24 }}>
-                                            <Text style={{ fontSize: 12, color: "#94a3b8", fontWeight: "700", letterSpacing: 1, marginBottom: 12 }}>
+                                            <Text style={{ fontSize: 12, color: "#94a3b8", fontFamily: "Poppins_700Bold", letterSpacing: 1, marginBottom: 12 }}>
                                                 📡 SENSOR COMPARISON
                                             </Text>
                                             <View style={[styles.dashboardPanel, { marginTop: 0, borderLeftWidth: 6, borderLeftColor: getSensorStatusColor(sensorData.status) }]}>
@@ -551,7 +551,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                             style={{
                                                                 color: getSensorStatusColor(sensorData.status),
                                                                 fontSize: 16,
-                                                                fontWeight: "700",
+                                                                fontFamily: "Poppins_700Bold",
                                                                 textTransform: "uppercase",
                                                             }}
                                                         >
@@ -560,7 +560,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                     </View>
                                                     <View>
                                                         <Text style={{ color: "#94a3b8", fontSize: 11, textAlign: "right" }}>Flood Level</Text>
-                                                        <Text style={{ color: "#0f172a", fontSize: 20, fontWeight: "700", textAlign: "right" }}>
+                                                        <Text style={{ color: "#0f172a", fontSize: 20, fontFamily: "Poppins_700Bold", textAlign: "right" }}>
                                                             {sensorData.flood_level}cm
                                                         </Text>
                                                     </View>
@@ -573,13 +573,13 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                             style={{
                                                                 backgroundColor: similarity.color + "15",
                                                                 paddingHorizontal: 12,
-                                                                paddingVertical: 10,
+                                                                paddingVertical: 8,
                                                                 borderRadius: 8,
                                                                 borderWidth: 1,
                                                                 borderColor: similarity.color + "40",
                                                             }}
                                                         >
-                                                            <Text style={{ color: similarity.color, fontWeight: "700", fontSize: 12 }}>
+                                                            <Text style={{ color: similarity.color, fontFamily: "Poppins_700Bold", fontSize: 12 }}>
                                                                 {similarity.text}
                                                             </Text>
                                                             <Text style={{ color: "#64748b", fontSize: 11, marginTop: 4 }}>
@@ -594,13 +594,13 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
 
                                     {/* SECTION C: Official Verification */}
                                     <View style={{ marginBottom: 24 }}>
-                                        <Text style={{ fontSize: 12, color: "#94a3b8", fontWeight: "700", letterSpacing: 1, marginBottom: 12 }}>
+                                        <Text style={{ fontSize: 12, color: "#94a3b8", fontFamily: "Poppins_700Bold", letterSpacing: 1, marginBottom: 12 }}>
                                             ✓ OFFICIAL VERIFICATION
                                         </Text>
 
                                         {/* Flood Level Selection */}
                                         <View style={{ marginBottom: 16 }}>
-                                            <Text style={{ color: "#0f172a", fontWeight: "600", marginBottom: 10 }}>
+                                            <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
                                                 Declare Official Flood Level:
                                             </Text>
                                             <View style={{ flexDirection: "row", gap: 8 }}>
@@ -625,7 +625,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                         <Text
                                                             style={{
                                                                 color: verifyFloodLevel === level ? color : "#94a3b8",
-                                                                fontWeight: verifyFloodLevel === level ? "700" : "600",
+                                                                fontFamily: verifyFloodLevel === level ? "Poppins_700Bold" : "Poppins_600SemiBold",
                                                                 fontSize: 12,
                                                             }}
                                                         >
@@ -638,7 +638,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
 
                                         {/* Notes */}
                                         <View>
-                                            <Text style={{ color: "#0f172a", fontWeight: "600", marginBottom: 10 }}>
+                                            <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
                                                 Verification Notes (Optional):
                                             </Text>
                                             <TextInput
@@ -667,12 +667,12 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                         <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}>
                                             <Feather name="info" size={16} color="#1a3d0a" />
                                             <View style={{ flex: 1 }}>
-                                                <Text style={{ color: "#1a3d0a", fontWeight: "700", marginBottom: 4 }}>
+                                                <Text style={{ color: "#1a3d0a", fontFamily: "Poppins_700Bold", marginBottom: 4 }}>
                                                     Audit Information
                                                 </Text>
                                                 <Text style={{ color: "#365314", fontSize: 13 }}>
                                                     This verification will be logged and attributed to{" "}
-                                                    <Text style={{ fontWeight: "600" }}>
+                                                    <Text style={{ fontFamily: "Poppins_600SemiBold" }}>
                                                         {currentUser.email || currentUser.username || "Admin"}
                                                     </Text>
                                                 </Text>
@@ -686,7 +686,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             style={{
                                                 flex: 1,
                                                 backgroundColor: "#ef444420",
-                                                paddingVertical: 14,
+                                                paddingVertical: 12,
                                                 borderRadius: 8,
                                                 alignItems: "center",
                                                 borderWidth: 1,
@@ -709,7 +709,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             }}
                                             disabled={submittingReject}
                                         >
-                                            <Text style={{ color: "#ef4444", fontWeight: "700", fontSize: 14 }}>
+                                            <Text style={{ color: "#ef4444", fontFamily: "Poppins_700Bold", fontSize: 14 }}>
                                                 {submittingReject ? "Dismissing..." : "Dismiss"}
                                             </Text>
                                         </TouchableOpacity>
@@ -718,7 +718,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             style={{
                                                 flex: 1,
                                                 backgroundColor: "#16a34a",
-                                                paddingVertical: 14,
+                                                paddingVertical: 12,
                                                 borderRadius: 8,
                                                 alignItems: "center",
                                             }}
@@ -728,7 +728,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             }}
                                             disabled={submittingVerify}
                                         >
-                                            <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>
+                                            <Text style={{ color: "#ffffff", fontFamily: "Poppins_700Bold", fontSize: 14 }}>
                                                 {submittingVerify ? "Broadcasting..." : "Verify & Broadcast"}
                                             </Text>
                                         </TouchableOpacity>
@@ -745,35 +745,35 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                 <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", paddingHorizontal: 24 }}>
                     <View style={{ backgroundColor: "#ffffff", borderRadius: 16, overflow: "hidden" }}>
                         {/* Confirmation Header */}
-                        <View style={{ backgroundColor: "#16a34a", paddingHorizontal: 24, paddingVertical: 20 }}>
+                        <View style={{ backgroundColor: "#16a34a", paddingHorizontal: 24, paddingVertical: 16 }}>
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                                 <MaterialIcons name="check-circle" size={32} color="#ffffff" />
-                                <Text style={{ fontSize: 18, color: "#ffffff", fontWeight: "700", flex: 1 }}>
+                                <Text style={{ fontSize: 18, color: "#ffffff", fontFamily: "Poppins_700Bold", flex: 1 }}>
                                     Broadcast Alert?
                                 </Text>
                             </View>
                         </View>
 
                         {/* Confirmation Body */}
-                        <View style={{ paddingHorizontal: 24, paddingVertical: 20 }}>
+                        <View style={{ paddingHorizontal: 24, paddingVertical: 16 }}>
                             <Text style={{ color: "#0f172a", fontSize: 14, lineHeight: 20, marginBottom: 16 }}>
                                 You are about to broadcast this alert to{" "}
-                                <Text style={{ fontWeight: "700" }}>all subscribers</Text> in the{" "}
-                                <Text style={{ fontWeight: "700" }}>{selectedReport?.location}</Text> area.
+                                <Text style={{ fontFamily: "Poppins_700Bold" }}>all subscribers</Text> in the{" "}
+                                <Text style={{ fontFamily: "Poppins_700Bold" }}>{selectedReport?.location}</Text> area.
                             </Text>
                             <View
                                 style={{
                                     backgroundColor: "#EFF9E8",
                                     paddingHorizontal: 12,
-                                    paddingVertical: 10,
+                                    paddingVertical: 8,
                                     borderRadius: 8,
-                                    marginBottom: 20,
+                                    marginBottom: 16,
                                 }}
                             >
                                 <Text style={{ color: "#1a3d0a", fontSize: 12 }}>
-                                    <Text style={{ fontWeight: "700" }}>Alert Level:</Text> {verifyFloodLevel.toUpperCase()}
+                                    <Text style={{ fontFamily: "Poppins_700Bold" }}>Alert Level:</Text> {verifyFloodLevel.toUpperCase()}
                                 </Text>
-                                <Text style={{ color: "#365314", fontSize: 12, marginTop: 6 }}>
+                                <Text style={{ color: "#365314", fontSize: 12, marginTop: 4 }}>
                                     Subscribers will receive notifications immediately.
                                 </Text>
                             </View>
@@ -790,7 +790,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                     }}
                                     onPress={() => setShowConfirmBroadcast(false)}
                                 >
-                                    <Text style={{ color: "#0f172a", fontWeight: "600" }}>Cancel</Text>
+                                    <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>Cancel</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -807,7 +807,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                     }}
                                     disabled={submittingVerify}
                                 >
-                                    <Text style={{ color: "#ffffff", fontWeight: "700" }}>
+                                    <Text style={{ color: "#ffffff", fontFamily: "Poppins_700Bold" }}>
                                         {submittingVerify ? "Broadcasting..." : "Yes, Broadcast"}
                                     </Text>
                                 </TouchableOpacity>

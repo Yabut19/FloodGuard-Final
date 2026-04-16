@@ -42,9 +42,9 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
             const sensorsData = await sensorsRes.json();
 
             setAnalytics([
-                { label: "Collected Data", value: `${summary.total_readings ?? 0} records`, icon: "database", color: "#3b82f6", bg: "#eff6ff" },
-                { label: "Peak Flood Level", value: `${summary.peak_flood_level ?? 0} cm`, icon: "trending-up", color: "#ef4444", bg: "#fef2f2" },
-                { label: "Active Monitoring", value: summary.uptime ?? "N/A", icon: "cpu", color: "#06b6d4", bg: "#ecfeff" },
+                { label: "Collected Data", value: summary.total_readings ?? 0, icon: "database", color: "#3b82f6", bg: "#eff6ff" },
+                { label: "Peak Flood (cm)", value: summary.peak_flood_level ?? 0, icon: "trending-up", color: "#ef4444", bg: "#fef2f2" },
+                { label: "Online Sensors", value: summary.active_sensors ?? 0, icon: "cpu", color: "#06b6d4", bg: "#ecfeff" },
                 { label: "Events Logged", value: (summary.alerts_today ?? 0) + (summary.community_reports ?? 0), icon: "clipboard", color: "#10b981", bg: "#ecfdf5" },
             ]);
             setFloodHistory(history);
@@ -116,7 +116,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     {/* ── Main Content Grid ────────────────────────────────────────── */}
                     <View style={pg.mainGrid}>
                         {/* LEFT: Flood History Explorer */}
-                        <View style={{ flex: 2, gap: 20 }}>
+                        <View style={{ flex: 2, gap: 16 }}>
                             <View style={pg.sectionCard}>
                                 <View style={pg.sectionHeader}>
                                     <View>
@@ -165,12 +165,12 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     </View>
                                     
                                     {isLoading ? (
-                                        <View style={{ padding: 40, alignItems: "center" }}>
+                                        <View style={{ padding: 32, alignItems: "center" }}>
                                             <ActivityIndicator size="small" color="#3b82f6" />
                                             <Text style={{ marginTop: 12, color: "#94a3b8", fontSize: 13, fontFamily: "Poppins_400Regular" }}>Fetching history...</Text>
                                         </View>
                                     ) : floodHistory.length === 0 ? (
-                                        <View style={{ padding: 40, alignItems: "center" }}>
+                                        <View style={{ padding: 32, alignItems: "center" }}>
                                             <Feather name="database" size={24} color="#cbd5e1" />
                                             <Text style={{ marginTop: 12, color: "#94a3b8", fontSize: 13, fontFamily: "Poppins_400Regular" }}>No data found for this period</Text>
                                         </View>
@@ -211,7 +211,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         </View>
 
                         {/* RIGHT: Report Studio */}
-                        <View style={{ flex: 1, gap: 20 }}>
+                        <View style={{ flex: 1, gap: 16 }}>
                             <View style={pg.sectionCard}>
                                 <LinearGradient colors={["#001D39", "#0A4174"]} style={pg.studioHeader}>
                                     <Feather name="file-text" size={20} color="#fff" />
@@ -285,7 +285,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                 </View>
                                 <View style={{ padding: 12, gap: 8 }}>
                                     {isLoading ? (
-                                        <ActivityIndicator size="small" color="#94a3b8" style={{ marginVertical: 20 }} />
+                                        <ActivityIndicator size="small" color="#94a3b8" style={{ marginVertical: 16 }} />
                                     ) : dailyReports.map(rep => (
                                         <TouchableOpacity key={rep.id} style={pg.recentItem}>
                                             <View style={pg.recentIcon}>
@@ -316,55 +316,66 @@ const pg = StyleSheet.create({
         flex: 1, 
         minWidth: 180, 
         backgroundColor: "#fff", 
-        borderRadius: 20, 
-        padding: 20, 
+        borderRadius: 16, 
+        padding: 24, 
         flexDirection: "column", 
-        alignItems: "flex-start", 
-        borderWidth: 1.5, 
-        borderColor: "#ECFAE5",
+        alignItems: "center", 
+        borderWidth: 1, 
+        borderColor: "#e2e8f0",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4
     },
-    analyticsIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-    analyticsLabel: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#64748b" },
-    analyticsValue: { fontSize: 24, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 2 },
+    analyticsIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+    analyticsLabel: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#64748b", textAlign: "center" },
+    analyticsValue: { fontSize: 24, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 4, textAlign: "center" },
     
-    mainGrid: { flexDirection: "row", gap: 20 },
-    sectionCard: { backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0" /* overflow visible for dropdowns */ },
-    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", zIndex: 100 },
+    mainGrid: { flexDirection: "row", gap: 16 },
+    sectionCard: { 
+        backgroundColor: "#fff", 
+        borderRadius: 16, 
+        borderWidth: 1, 
+        borderColor: "#e2e8f0",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4,
+        /* overflow visible for dropdowns */ 
+    },
+    sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", zIndex: 100 },
     sectionTitle: { fontSize: 16, fontFamily: "Poppins_700Bold", color: "#0f172a" },
     sectionSubtitle: { fontSize: 13, fontFamily: "Poppins_400Regular", color: "#64748b", marginTop: 2 },
     
-    explorerFilter: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f8fafc", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0" },
+    explorerFilter: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f8fafc", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0" },
     explorerFilterText: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#0f172a" },
     
     tableWrapper: { padding: 8 },
     tableHeader: { flexDirection: "row", backgroundColor: "#f8fafc", padding: 12, borderRadius: 8, marginBottom: 4 },
     tableHeadText: { fontSize: 11, fontFamily: "Poppins_600SemiBold", color: "#94a3b8", letterSpacing: 0.5 },
-    tableRow: { flexDirection: "row", alignItems: "center", padding: 14, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
+    tableRow: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
     tableCellBold: { fontSize: 14, fontFamily: "Poppins_600SemiBold", color: "#0f172a" },
     tableCellSub: { fontSize: 12, fontFamily: "Poppins_400Regular", color: "#94a3b8" },
     tableCell: { fontSize: 13, fontFamily: "Poppins_400Regular", color: "#475569" },
     
-    statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, alignSelf: "flex-start" },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, alignSelf: "flex-start" },
     statusBadgeText: { fontSize: 11, fontFamily: "Poppins_700Bold" },
     
     viewAllBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderTopWidth: 1, borderTopColor: "#f1f5f9" },
     viewAllText: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#3b82f6" },
 
-    studioHeader: { flexDirection: "row", alignItems: "center", gap: 10, padding: 20 },
+    studioHeader: { flexDirection: "row", alignItems: "center", gap: 8, padding: 16 },
     studioHeaderTitle: { fontSize: 15, fontFamily: "Poppins_700Bold", color: "#fff" },
-    studioBody: { padding: 20 },
+    studioBody: { padding: 16 },
     studioLabel: { fontSize: 11, fontFamily: "Poppins_700Bold", color: "#94a3b8", letterSpacing: 1, marginBottom: 8 },
-    dateInputs: { flexDirection: "row", gap: 10 },
-    dateInputBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f8fafc", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0" },
+    dateInputs: { flexDirection: "row", gap: 8 },
+    dateInputBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f8fafc", padding: 8, borderRadius: 16, borderWidth: 1, borderColor: "#e2e8f0" },
     dateTextInput: { flex: 1, fontSize: 13, fontFamily: "Poppins_400Regular", color: "#0f172a", outlineStyle: "none" },
     
     typeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-    typeBtn: { flex: 1, minWidth: "45%", paddingVertical: 10, alignItems: "center", borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", backgroundColor: "#fff" },
+    typeBtn: { flex: 1, minWidth: "45%", paddingVertical: 8, alignItems: "center", borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", backgroundColor: "#fff" },
     typeBtnActive: { borderColor: "#3b82f6", backgroundColor: "#eff6ff" },
     typeBtnText: { fontSize: 12, fontFamily: "Poppins_500Medium", color: "#64748b" },
     typeBtnTextActive: { color: "#3b82f6" },
@@ -375,7 +386,7 @@ const pg = StyleSheet.create({
     formatPillText: { fontSize: 11, fontFamily: "Poppins_700Bold", color: "#64748b" },
     formatPillTextActive: { color: "#fff" },
     
-    generateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#3b82f6", paddingVertical: 14, borderRadius: 12, marginTop: 20 },
+    generateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#3b82f6", paddingVertical: 12, borderRadius: 12, marginTop: 16 },
     generateBtnText: { fontSize: 14, fontFamily: "Poppins_700Bold", color: "#fff" },
     
     dropdown: { 
@@ -383,7 +394,7 @@ const pg = StyleSheet.create({
         top: 40, 
         right: 0, 
         backgroundColor: "#fff", 
-        borderRadius: 10, 
+        borderRadius: 16, 
         borderWidth: 1, 
         borderColor: "#e2e8f0", 
         zIndex: 9999, 
@@ -396,7 +407,7 @@ const pg = StyleSheet.create({
     dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
     dropdownItemText: { fontSize: 13, fontFamily: "Poppins_400Regular", color: "#0f172a" },
     
-    recentItem: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10, borderRadius: 10, backgroundColor: "#f8fafc" },
+    recentItem: { flexDirection: "row", alignItems: "center", gap: 8, padding: 8, borderRadius: 16, backgroundColor: "#f8fafc" },
     recentIcon: { width: 28, height: 28, borderRadius: 6, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e2e8f0" },
     recentName: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#0f172a" },
     recentMeta: { fontSize: 11, fontFamily: "Poppins_400Regular", color: "#94a3b8" },

@@ -20,19 +20,18 @@ def get_stats():
     cursor.execute("SELECT COUNT(*) as count FROM users")
     users_count = cursor.fetchone()['count']
     
-    # Avg Water Level (mock calculation or real average of latest readings)
-    # Getting latest reading for each sensor
+    # Avg Water Level - Optimized query using a join to find the latest reading per sensor
     cursor.execute("""
-        SELECT AVG(level) as avg_level 
-        FROM water_levels 
-        WHERE (sensor_id, timestamp) IN (
-            SELECT sensor_id, MAX(timestamp) 
+        SELECT AVG(wl.level) as avg_level 
+        FROM water_levels wl
+        INNER JOIN (
+            SELECT sensor_id, MAX(timestamp) as max_ts
             FROM water_levels 
             GROUP BY sensor_id
-        )
+        ) latest ON wl.sensor_id = latest.sensor_id AND wl.timestamp = latest.max_ts
     """)
     result = cursor.fetchone()
-    avg_water_level = round(result['avg_level'], 2) if result and result['avg_level'] else 0.0
+    avg_water_level = round(float(result['avg_level']), 2) if result and result['avg_level'] is not None else 0.0
     
     cursor.close()
     

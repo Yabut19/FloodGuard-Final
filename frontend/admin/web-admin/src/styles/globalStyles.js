@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
         width: width > 1024 ? 360 : 300,
         backgroundColor: "#B0DB9C",
         paddingTop: 16,
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingBottom: 24,
         justifyContent: "space-between",
     },
@@ -43,22 +43,22 @@ export const styles = StyleSheet.create({
     dashboardNavItem: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 16,
         borderRadius: 8,
-        marginBottom: 6,
+        marginBottom: 4,
     },
     dashboardNavItemActive: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 16,
         borderRadius: 8,
-        marginBottom: 6,
+        marginBottom: 4,
         backgroundColor: "#CAE8BD",
     },
     dashboardNavIcon: {
-        marginRight: 14,
+        marginRight: 12,
     },
     dashboardNavItemText: {
         fontSize: 16,
@@ -82,7 +82,7 @@ export const styles = StyleSheet.create({
     dashboardUserAvatar: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 16,
         backgroundColor: "#CAE8BD",
         alignItems: "center",
         justifyContent: "center",
@@ -139,7 +139,7 @@ export const styles = StyleSheet.create({
     },
     dashboardTopTitle: {
         fontSize: 24,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 4,
     },
@@ -154,7 +154,7 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#DDF6D2",
-        paddingVertical: 6,
+        paddingVertical: 4,
         paddingHorizontal: 12,
         borderRadius: 999,
         marginBottom: 8,
@@ -164,11 +164,11 @@ export const styles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
         backgroundColor: "#16a34a",
-        marginRight: 6,
+        marginRight: 4,
     },
     dashboardStatusText: {
         fontSize: 12,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#166534",
     },
     dashboardTopDate: {
@@ -191,16 +191,22 @@ export const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#ffffff",
         borderRadius: 16,
-        padding: 16,
+        padding: 24,
         marginRight: width > 1024 ? 12 : 0,
         marginBottom: width > 1024 ? 0 : 12,
         borderWidth: 1,
-        borderColor: "#DDF6D2",
+        borderColor: "#e2e8f0",
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4,
     },
     dashboardStatIconWrapper: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 44,
+        height: 44,
+        borderRadius: 12,
         backgroundColor: "#DDF6D2",
         alignItems: "center",
         justifyContent: "center",
@@ -218,15 +224,16 @@ export const styles = StyleSheet.create({
     dashboardStatIcon: {
         fontSize: 18,
     },
-    dashboardStatContent: {},
+    dashboardStatContent: { alignItems: "center" },
     dashboardStatLabel: {
         fontSize: 13,
         color: "#64748b",
-        marginBottom: 4,
+        fontFamily: "Poppins_500Medium",
+        textAlign: "center",
     },
     dashboardStatValue: {
-        fontSize: 22,
-        fontWeight: "700",
+        fontSize: 24,
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 4,
     },
@@ -248,13 +255,18 @@ export const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,
-        borderColor: "#DDF6D2",
+        borderColor: "#e2e8f0",
         marginRight: width > 1024 ? 12 : 0,
         marginBottom: width > 1024 ? 0 : 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4,
     },
     dashboardPanelTitle: {
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 12,
     },
@@ -268,7 +280,7 @@ export const styles = StyleSheet.create({
     },
     dashboardAlertTitle: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 2,
     },
@@ -284,24 +296,24 @@ export const styles = StyleSheet.create({
     dashboardAlertBadgeCritical: {
         backgroundColor: "#fee2e2",
         paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         borderRadius: 999,
     },
     dashboardAlertBadgeWarning: {
         backgroundColor: "#fef3c7",
         paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         borderRadius: 999,
     },
     dashboardAlertBadgeAdvisory: {
         backgroundColor: "#e0f2fe",
         paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         borderRadius: 999,
     },
     dashboardAlertBadgeText: {
         fontSize: 11,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
     },
     dashboardSensorItem: {
@@ -314,7 +326,7 @@ export const styles = StyleSheet.create({
     },
     dashboardSensorTitle: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 2,
     },
@@ -323,18 +335,18 @@ export const styles = StyleSheet.create({
         color: "#64748b",
     },
     dashboardSensorMetaStrong: {
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
     },
     dashboardSensorStatusPill: {
         backgroundColor: "#DDF6D2",
         paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         borderRadius: 999,
     },
     dashboardSensorStatusText: {
         fontSize: 11,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#166534",
     },
     sensorMapContainer: {
@@ -406,7 +418,7 @@ export const styles = StyleSheet.create({
     },
     mapPlaceholderTitle: {
         fontSize: 20,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 8,
     },
@@ -429,7 +441,7 @@ export const styles = StyleSheet.create({
         position: "absolute",
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 16,
         alignItems: "center",
         justifyContent: "center",
         shadowColor: "#000",
@@ -489,7 +501,7 @@ export const styles = StyleSheet.create({
     },
     sensorInfoTitle: {
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 4,
     },
@@ -507,11 +519,11 @@ export const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        marginRight: 6,
+        marginRight: 4,
     },
     sensorInfoStatusText: {
         fontSize: 13,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
     },
     sensorInfoTime: {
@@ -526,7 +538,7 @@ export const styles = StyleSheet.create({
         padding: 8,
         zIndex: 100,
         backgroundColor: "rgba(241, 245, 249, 0.8)",
-        borderRadius: 20,
+        borderRadius: 16,
     },
     sensorListPanel: {
         flex: 1,
@@ -539,7 +551,7 @@ export const styles = StyleSheet.create({
     },
     sensorListTitle: {
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 16,
     },
@@ -571,7 +583,7 @@ export const styles = StyleSheet.create({
     },
     sensorListItemName: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 2,
     },
@@ -598,14 +610,14 @@ export const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         width: "100%",
-        paddingBottom: 20,
+        paddingBottom: 16,
     },
     nav: {
         backgroundColor: "rgba(255, 255, 255, 0.98)",
         borderBottomWidth: 1,
         borderBottomColor: "#e2e8f0",
         width: "100%",
-        paddingVertical: 20,
+        paddingVertical: 16,
         paddingHorizontal: 24,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
@@ -648,7 +660,7 @@ export const styles = StyleSheet.create({
     },
     brandTitle: {
         fontSize: 22,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         letterSpacing: -0.3,
     },
@@ -666,13 +678,13 @@ export const styles = StyleSheet.create({
     navLink: {
         fontSize: 15,
         color: "#475569",
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
     },
     navCta: {
         backgroundColor: "#B0DB9C",
         paddingVertical: 12,
         paddingHorizontal: 24,
-        borderRadius: 10,
+        borderRadius: 16,
         shadowColor: "#B0DB9C",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
@@ -682,7 +694,7 @@ export const styles = StyleSheet.create({
     navCtaText: {
         color: "#1a3d0a",
         fontSize: 15,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
     },
     hero: {
         width: "100%",
@@ -707,32 +719,32 @@ export const styles = StyleSheet.create({
     },
     heroBadge: {
         backgroundColor: "#DDF6D2",
-        paddingVertical: 10,
-        paddingHorizontal: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderRadius: 25,
         alignSelf: "flex-start",
-        marginBottom: 28,
+        marginBottom: 24,
         borderWidth: 1,
         borderColor: "#CAE8BD",
     },
     heroBadgeText: {
         color: "#2d5016",
         fontSize: 14,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         letterSpacing: 0.5,
     },
     heroTitle: {
         fontSize: width > 768 ? 56 : 40,
-        fontWeight: "800",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
-        marginBottom: 28,
+        marginBottom: 24,
         lineHeight: width > 768 ? 64 : 48,
         letterSpacing: -0.5,
     },
     heroSubtitle: {
         fontSize: 20,
         color: "#64748b",
-        marginBottom: 40,
+        marginBottom: 32,
         lineHeight: 32,
         maxWidth: 600,
     },
@@ -743,7 +755,7 @@ export const styles = StyleSheet.create({
     primaryBtn: {
         backgroundColor: "#B0DB9C",
         paddingVertical: 16,
-        paddingHorizontal: 36,
+        paddingHorizontal: 32,
         borderRadius: 12,
         marginRight: 16,
         marginBottom: 12,
@@ -756,7 +768,7 @@ export const styles = StyleSheet.create({
     primaryBtnText: {
         color: "#1a3d0a",
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         letterSpacing: 0.5,
     },
     ghostBtn: {
@@ -764,14 +776,14 @@ export const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: "#cbd5e1",
         paddingVertical: 16,
-        paddingHorizontal: 36,
+        paddingHorizontal: 32,
         borderRadius: 12,
         marginBottom: 12,
     },
     ghostBtnText: {
         color: "#475569",
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
     },
     heroPreview: {
         flex: 1,
@@ -780,8 +792,8 @@ export const styles = StyleSheet.create({
     },
     previewCard: {
         backgroundColor: "#ffffff",
-        borderRadius: 20,
-        padding: 28,
+        borderRadius: 16,
+        padding: 24,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.12,
@@ -794,23 +806,23 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 20,
+        marginBottom: 16,
     },
     previewHeaderText: {
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#64748b",
     },
     statusPill: {
         backgroundColor: "#DDF6D2",
-        paddingVertical: 6,
+        paddingVertical: 4,
         paddingHorizontal: 12,
         borderRadius: 12,
     },
     statusPillText: {
         color: "#1a3d0a",
         fontSize: 12,
-        fontWeight: "bold",
+        fontFamily: "Poppins_700Bold",
     },
     previewRow: {
         flexDirection: "row",
@@ -826,7 +838,7 @@ export const styles = StyleSheet.create({
     },
     previewRowValue: {
         fontSize: 20,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
     },
     section: {
@@ -846,10 +858,10 @@ export const styles = StyleSheet.create({
     },
     sectionTitleLarge: {
         fontSize: width > 768 ? 42 : 32,
-        fontWeight: "800",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         textAlign: "center",
-        marginBottom: 20,
+        marginBottom: 16,
         letterSpacing: -0.5,
     },
     sectionSubtitle: {
@@ -893,7 +905,7 @@ export const styles = StyleSheet.create({
     },
     imageCaptionBadge: {
         fontSize: 14,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#ffffff",
         marginBottom: 12,
         letterSpacing: 1,
@@ -901,59 +913,59 @@ export const styles = StyleSheet.create({
     },
     imageCaptionTitle: {
         fontSize: 28,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#ffffff",
         lineHeight: 34,
     },
     textPanel: {
         flex: 1,
-        padding: 40,
+        padding: 32,
         justifyContent: "center",
     },
     sectionBadge: {
         backgroundColor: "#fee2e2",
-        paddingVertical: 10,
-        paddingHorizontal: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderRadius: 25,
         alignSelf: "flex-start",
-        marginBottom: 20,
+        marginBottom: 16,
         borderWidth: 1,
         borderColor: "#fecaca",
     },
     sectionBadgeText: {
         color: "#991b1b",
         fontSize: 14,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         letterSpacing: 0.5,
     },
     sectionBadgeWhite: {
         backgroundColor: "rgba(255, 255, 255, 0.3)",
-        paddingVertical: 10,
-        paddingHorizontal: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderRadius: 25,
         alignSelf: "center",
-        marginBottom: 20,
+        marginBottom: 16,
         borderWidth: 1,
         borderColor: "rgba(255, 255, 255, 0.5)",
     },
     sectionBadgeTextWhite: {
         color: "#1a3d0a",
         fontSize: 14,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         letterSpacing: 0.5,
     },
     sectionTitle: {
         fontSize: width > 768 ? 36 : 28,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
-        marginBottom: 20,
+        marginBottom: 16,
         letterSpacing: -0.4,
     },
     textPanelDescription: {
         fontSize: 17,
         color: "#64748b",
         lineHeight: 28,
-        marginBottom: 28,
+        marginBottom: 24,
     },
     infoList: {
         marginTop: 8,
@@ -961,12 +973,12 @@ export const styles = StyleSheet.create({
     infoListItem: {
         flexDirection: "row",
         alignItems: "flex-start",
-        marginBottom: 20,
+        marginBottom: 16,
     },
     icon: {
         width: 40,
         height: 40,
-        borderRadius: 10,
+        borderRadius: 16,
         backgroundColor: "#DDF6D2",
         alignItems: "center",
         justifyContent: "center",
@@ -985,9 +997,9 @@ export const styles = StyleSheet.create({
     },
     infoListTitle: {
         fontSize: 17,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
-        marginBottom: 6,
+        marginBottom: 4,
     },
     infoListText: {
         fontSize: 14,
@@ -1008,8 +1020,8 @@ export const styles = StyleSheet.create({
     featureCard: {
         width: width > 768 ? "23%" : "100%",
         backgroundColor: "#ffffff",
-        borderRadius: 20,
-        padding: 28,
+        borderRadius: 16,
+        padding: 24,
         marginBottom: 24,
         borderWidth: 1,
         borderColor: "#f1f5f9",
@@ -1026,7 +1038,7 @@ export const styles = StyleSheet.create({
         backgroundColor: "#DDF6D2",
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 20,
+        marginBottom: 16,
         shadowColor: "#B0DB9C",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
@@ -1038,7 +1050,7 @@ export const styles = StyleSheet.create({
     },
     featureTitle: {
         fontSize: 22,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 12,
         letterSpacing: -0.3,
@@ -1056,10 +1068,10 @@ export const styles = StyleSheet.create({
     },
     preventionTitle: {
         fontSize: width > 768 ? 48 : 36,
-        fontWeight: "800",
+        fontFamily: "Poppins_700Bold",
         color: "#1a3d0a",
         textAlign: "center",
-        marginBottom: 20,
+        marginBottom: 16,
         letterSpacing: -0.5,
     },
     preventionSubtitle: {
@@ -1078,8 +1090,8 @@ export const styles = StyleSheet.create({
     preventionCard: {
         width: width > 1024 ? "31%" : "100%",
         backgroundColor: "#ffffff",
-        borderRadius: 20,
-        padding: 28,
+        borderRadius: 16,
+        padding: 24,
         marginBottom: 24,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 6 },
@@ -1090,11 +1102,11 @@ export const styles = StyleSheet.create({
     preventionIcon: {
         width: 56,
         height: 56,
-        borderRadius: 14,
+        borderRadius: 16,
         backgroundColor: "#DDF6D2",
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 20,
+        marginBottom: 16,
         shadowColor: "#B0DB9C",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
@@ -1106,9 +1118,9 @@ export const styles = StyleSheet.create({
     },
     preventionCardTitle: {
         fontSize: 22,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
-        marginBottom: 20,
+        marginBottom: 16,
         letterSpacing: -0.3,
     },
     preventionList: {
@@ -1117,7 +1129,7 @@ export const styles = StyleSheet.create({
     preventionListItem: {
         fontSize: 15,
         color: "#475569",
-        marginBottom: 14,
+        marginBottom: 12,
         lineHeight: 24,
     },
     statsSection: {
@@ -1138,7 +1150,7 @@ export const styles = StyleSheet.create({
     },
     statNumber: {
         fontSize: width > 768 ? 56 : 42,
-        fontWeight: "800",
+        fontFamily: "Poppins_700Bold",
         color: "#1a3d0a",
         marginBottom: 12,
         letterSpacing: -1,
@@ -1146,7 +1158,7 @@ export const styles = StyleSheet.create({
     statLabel: {
         fontSize: 16,
         color: "#2d5016",
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         letterSpacing: 0.5,
     },
     adminGrid: {
@@ -1173,7 +1185,7 @@ export const styles = StyleSheet.create({
     footerGrid: {
         flexDirection: width > 768 ? "row" : "column",
         justifyContent: "space-between",
-        marginBottom: 40,
+        marginBottom: 32,
     },
     footerColumn: {
         width: width > 768 ? "23%" : "100%",
@@ -1181,15 +1193,15 @@ export const styles = StyleSheet.create({
     },
     footerBrandTitle: {
         fontSize: 20,
-        fontWeight: "bold",
+        fontFamily: "Poppins_700Bold",
         color: "#ECFAE5",
         marginLeft: 12,
     },
     footerTitle: {
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#ffffff",
-        marginBottom: 20,
+        marginBottom: 16,
         letterSpacing: 0.3,
     },
     footerText: {
@@ -1201,7 +1213,7 @@ export const styles = StyleSheet.create({
     footerLink: {
         fontSize: 14,
         color: "#94a3b8",
-        marginBottom: 14,
+        marginBottom: 12,
         lineHeight: 24,
     },
     footerBottom: {
@@ -1249,7 +1261,7 @@ export const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: 24,
-        fontWeight: "bold",
+        fontFamily: "Poppins_700Bold",
         color: "#1e293b",
     },
     modalClose: {
@@ -1270,7 +1282,7 @@ export const styles = StyleSheet.create({
     },
     accessLevelLabel: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#475569",
         marginBottom: 12,
     },
@@ -1294,26 +1306,26 @@ export const styles = StyleSheet.create({
     },
     accessLevelButtonText: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#64748b",
     },
     accessLevelButtonTextActive: {
         color: "#1a3d0a",
     },
     inputGroup: {
-        marginBottom: 20,
+        marginBottom: 16,
     },
     inputLabel: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#475569",
         marginBottom: 8,
     },
     modalInput: {
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
-        paddingVertical: 14,
+        borderRadius: 16,
+        paddingVertical: 12,
         paddingHorizontal: 16,
         fontSize: 16,
         color: "#1e293b",
@@ -1324,8 +1336,8 @@ export const styles = StyleSheet.create({
         alignItems: "center",
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
-        paddingHorizontal: 14,
+        borderRadius: 16,
+        paddingHorizontal: 12,
         backgroundColor: "#ffffff",
     },
     inputIcon: {
@@ -1334,7 +1346,7 @@ export const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        paddingVertical: 14,
+        paddingVertical: 12,
         fontSize: 16,
         color: "#1e293b",
         outlineStyle: "none",
@@ -1357,7 +1369,7 @@ export const styles = StyleSheet.create({
     forgotPasswordText: {
         fontSize: 14,
         color: "#B0DB9C",
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
     },
     errorBox: {
         backgroundColor: "#fee2e2",
@@ -1389,7 +1401,7 @@ export const styles = StyleSheet.create({
     modalButtonText: {
         color: "#1a3d0a",
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         letterSpacing: 0.5,
     },
     demoBox: {
@@ -1400,14 +1412,14 @@ export const styles = StyleSheet.create({
     },
     demoTitle: {
         fontSize: 12,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#475569",
         marginBottom: 8,
     },
     demoText: {
         fontSize: 13,
         color: "#475569",
-        marginBottom: 6,
+        marginBottom: 4,
         lineHeight: 20,
     },
     // Alert Management Page Styles
@@ -1467,7 +1479,7 @@ export const styles = StyleSheet.create({
     },
     alertPanelTitle: {
         fontSize: 20,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         letterSpacing: -0.3,
     },
@@ -1476,7 +1488,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         paddingHorizontal: 16,
-        borderRadius: 10,
+        borderRadius: 16,
         backgroundColor: '#BDD8E9',
         borderWidth: 1.5,
         borderColor: '#7BBDE8',
@@ -1489,7 +1501,7 @@ export const styles = StyleSheet.create({
     },
     flipToggleButtonText: {
         fontSize: 13,
-        fontWeight: '700',
+        fontFamily: "Poppins_700Bold",
         color: '#0A4174',
     },
     flipToggleButtonTextHover: {
@@ -1500,7 +1512,7 @@ export const styles = StyleSheet.create({
     },
     alertInputLabel: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#475569",
         marginBottom: 12,
     },
@@ -1512,7 +1524,7 @@ export const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 12,
         paddingHorizontal: 16,
-        borderRadius: 10,
+        borderRadius: 16,
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
         backgroundColor: "#ffffff",
@@ -1524,7 +1536,7 @@ export const styles = StyleSheet.create({
     },
     alertTypeButtonText: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#64748b",
     },
     barangayCheckboxList: {
@@ -1550,12 +1562,12 @@ export const styles = StyleSheet.create({
     barangayCheckboxLabel: {
         fontSize: 15,
         color: "#1e293b",
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
     },
     alertMessageInput: {
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
+        borderRadius: 16,
         padding: 16,
         fontSize: 15,
         color: "#1e293b",
@@ -1573,9 +1585,9 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 24,
-        borderRadius: 10,
+        borderRadius: 16,
         gap: 8,
         marginTop: 8,
     },
@@ -1585,7 +1597,7 @@ export const styles = StyleSheet.create({
     },
     broadcastButtonText: {
         fontSize: 15,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#1a3d0a",
     },
     verificationsScroll: {
@@ -1598,18 +1610,18 @@ export const styles = StyleSheet.create({
     noVerifications: {
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 60,
+        paddingVertical: 64,
     },
     noVerificationsText: {
         fontSize: 15,
         color: "#94a3b8",
         marginTop: 16,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
     },
     verificationCard: {
         backgroundColor: "#f8fafc",
         borderRadius: 12,
-        padding: 20,
+        padding: 16,
         borderWidth: 1,
         borderColor: "#e2e8f0",
     },
@@ -1622,22 +1634,22 @@ export const styles = StyleSheet.create({
     verificationSourceBadge: {
         backgroundColor: "#ECFAE5",
         paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         borderRadius: 6,
     },
     verificationSourceText: {
         fontSize: 12,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#1a3d0a",
     },
     verificationTimestamp: {
         fontSize: 12,
         color: "#94a3b8",
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
     },
     verificationBarangay: {
         fontSize: 16,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 8,
     },
@@ -1666,13 +1678,13 @@ export const styles = StyleSheet.create({
     },
     reportPreviewText: {
         fontSize: 13,
-        fontWeight: '600',
+        fontFamily: "Poppins_600SemiBold",
         color: '#1e293b',
     },
     reportPreviewLocation: {
         fontSize: 11,
         color: '#64748b',
-        fontWeight: '500',
+        fontFamily: "Poppins_500Medium",
     },
     verificationMessage: {
         fontSize: 15,
@@ -1694,14 +1706,14 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 10,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 8,
-        gap: 6,
+        gap: 4,
     },
     verifyButtonText: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#1a3d0a",
     },
     rejectButton: {
@@ -1709,14 +1721,14 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 10,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 8,
-        gap: 6,
+        gap: 4,
     },
     rejectButtonText: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
     },
     // System Health Page Styles
     healthSummaryRow: {
@@ -1728,7 +1740,7 @@ export const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#ffffff",
         borderRadius: 16,
-        padding: 20,
+        padding: 16,
         borderWidth: 1,
         borderColor: "#DDF6D2",
         position: "relative",
@@ -1760,14 +1772,14 @@ export const styles = StyleSheet.create({
     },
     healthSummaryValue: {
         fontSize: 24,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 4,
         letterSpacing: -0.5,
     },
     healthSummaryLabel: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#64748b",
     },
     healthTableSection: {
@@ -1775,7 +1787,7 @@ export const styles = StyleSheet.create({
     },
     healthTableTitle: {
         fontSize: 18,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 16,
         letterSpacing: -0.3,
@@ -1795,7 +1807,7 @@ export const styles = StyleSheet.create({
     healthTableHeader: {
         flexDirection: "row",
         backgroundColor: "#f8fafc",
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: "#e2e8f0",
@@ -1803,7 +1815,7 @@ export const styles = StyleSheet.create({
     },
     healthTableHeaderCell: {
         fontSize: 12,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#475569",
         textTransform: "uppercase",
         letterSpacing: 0.5,
@@ -1825,7 +1837,7 @@ export const styles = StyleSheet.create({
     },
     healthTableRow: {
         flexDirection: "row",
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: "#f1f5f9",
@@ -1840,24 +1852,24 @@ export const styles = StyleSheet.create({
     },
     healthTableCellText: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#1e293b",
     },
     healthTableCellTextMuted: {
         fontSize: 13,
         color: "#64748b",
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
     },
     healthStatusBadge: {
         paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         borderRadius: 6,
         borderWidth: 1,
         alignSelf: "flex-start",
     },
     healthStatusBadgeText: {
         fontSize: 11,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         textTransform: "uppercase",
         letterSpacing: 0.3,
     },
@@ -1900,33 +1912,33 @@ export const styles = StyleSheet.create({
     reportCardHeader: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 20,
+        marginBottom: 16,
         gap: 12,
     },
     reportCardTitle: {
         fontSize: 18,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         letterSpacing: -0.3,
     },
     reportFieldGroup: {
-        marginBottom: 20,
+        marginBottom: 16,
     },
     reportFieldLabel: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#475569",
         marginBottom: 8,
     },
     reportTypeOptions: {
         flexDirection: "row",
         flexWrap: "wrap",
-        gap: 10,
+        gap: 8,
     },
     reportTypeOption: {
-        paddingVertical: 10,
+        paddingVertical: 8,
         paddingHorizontal: 16,
-        borderRadius: 10,
+        borderRadius: 16,
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
         backgroundColor: "#ffffff",
@@ -1937,12 +1949,12 @@ export const styles = StyleSheet.create({
     },
     reportTypeOptionText: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#64748b",
     },
     reportTypeOptionTextActive: {
         color: "#1a3d0a",
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
     },
     reportDateRow: {
         flexDirection: width > 768 ? "row" : "column",
@@ -1953,8 +1965,8 @@ export const styles = StyleSheet.create({
         alignItems: "center",
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
-        paddingHorizontal: 14,
+        borderRadius: 16,
+        paddingHorizontal: 12,
         backgroundColor: "#ffffff",
     },
     reportDateInput: {
@@ -1972,7 +1984,7 @@ export const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 12,
         paddingHorizontal: 16,
-        borderRadius: 10,
+        borderRadius: 16,
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
         backgroundColor: "#ffffff",
@@ -1985,7 +1997,7 @@ export const styles = StyleSheet.create({
     },
     exportFormatButtonText: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#64748b",
     },
     exportFormatButtonTextActive: {
@@ -1995,9 +2007,9 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 24,
-        borderRadius: 10,
+        borderRadius: 16,
         backgroundColor: "#B0DB9C",
         gap: 8,
         marginTop: 8,
@@ -2008,7 +2020,7 @@ export const styles = StyleSheet.create({
     },
     generateReportButtonText: {
         fontSize: 15,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#1a3d0a",
     },
     generateReportButtonTextDisabled: {
@@ -2021,18 +2033,18 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 16,
-        borderRadius: 10,
+        borderRadius: 16,
     },
     dataOverviewLabel: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#475569",
     },
     dataOverviewValue: {
         fontSize: 18,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
     },
     recentReportsCard: {
         backgroundColor: "#ffffff",
@@ -2067,7 +2079,7 @@ export const styles = StyleSheet.create({
     },
     recentReportName: {
         fontSize: 15,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 4,
     },
@@ -2082,17 +2094,17 @@ export const styles = StyleSheet.create({
     downloadReportButton: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 10,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 8,
         backgroundColor: "#ECFAE5",
         borderWidth: 1,
         borderColor: "#B0DB9C",
-        gap: 6,
+        gap: 4,
     },
     downloadReportButtonText: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#1a3d0a",
     },
     // User Management Page Styles
@@ -2105,7 +2117,7 @@ export const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#ffffff",
         borderRadius: 16,
-        padding: 20,
+        padding: 16,
         borderWidth: 1,
         borderColor: "#DDF6D2",
         flexDirection: "column",
@@ -2127,14 +2139,14 @@ export const styles = StyleSheet.create({
     },
     userStatsValue: {
         fontSize: 28,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 4,
         letterSpacing: -0.5,
     },
     userStatsLabel: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#64748b",
     },
     filterBar: {
@@ -2154,7 +2166,7 @@ export const styles = StyleSheet.create({
         backgroundColor: "#ffffff",
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
+        borderRadius: 16,
         paddingHorizontal: 12,
     },
     searchInput: {
@@ -2174,14 +2186,14 @@ export const styles = StyleSheet.create({
         backgroundColor: "#ffffff",
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
-        paddingVertical: 10,
+        borderRadius: 16,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         gap: 8,
     },
     filterSelectText: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#475569",
     },
     ccFilterDropdown: {
@@ -2193,7 +2205,7 @@ export const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        padding: 6,
+        padding: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
@@ -2202,22 +2214,22 @@ export const styles = StyleSheet.create({
         zIndex: 5000,
     },
     ccFilterItem: {
-        paddingVertical: 10,
+        paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 8,
     },
     ccFilterItemText: {
         fontSize: 14,
         color: '#475569',
-        fontWeight: '500',
+        fontFamily: "Poppins_500Medium",
     },
     addUserButton: {
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#2563eb",
         paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 10,
+        paddingHorizontal: 16,
+        borderRadius: 16,
         gap: 8,
         justifyContent: "center",
         shadowColor: "#2563eb",
@@ -2228,7 +2240,7 @@ export const styles = StyleSheet.create({
     },
     addUserButtonText: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#ffffff",
     },
     userTableContainer: {
@@ -2246,15 +2258,15 @@ export const styles = StyleSheet.create({
     userTableHeader: {
         flexDirection: "row",
         backgroundColor: "#f8fafc",
-        paddingVertical: 14,
-        paddingHorizontal: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: "#e2e8f0",
         alignItems: "center",
     },
     userTableHeaderCell: {
         fontSize: 12,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#475569",
         textTransform: "uppercase",
         letterSpacing: 0.5,
@@ -2268,7 +2280,7 @@ export const styles = StyleSheet.create({
     userTableRow: {
         flexDirection: "row",
         paddingVertical: 16,
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: "#f1f5f9",
         alignItems: "center",
@@ -2282,19 +2294,19 @@ export const styles = StyleSheet.create({
     userAvatar: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 16,
         backgroundColor: "#eff6ff",
         alignItems: "center",
         justifyContent: "center",
     },
     userAvatarText: {
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#2563eb",
     },
     userName: {
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#0f172a",
         marginBottom: 2,
     },
@@ -2304,13 +2316,13 @@ export const styles = StyleSheet.create({
     },
     userRoleBadge: {
         paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         borderRadius: 6,
         alignSelf: "flex-start",
     },
     userRoleBadgeText: {
         fontSize: 11,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         // color: "#ffffff",
     },
     userStatusBadge: {
@@ -2320,7 +2332,7 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 8,
         borderRadius: 6,
         alignSelf: "flex-start",
-        gap: 6,
+        gap: 4,
     },
     userStatusDot: {
         width: 6,
@@ -2329,7 +2341,7 @@ export const styles = StyleSheet.create({
     },
     userStatusText: {
         fontSize: 12,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
     },
     userCellText: {
         fontSize: 14,
@@ -2371,10 +2383,10 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#e2e8f0",
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4,
     },
     configCardHeader: {
         flexDirection: "row",
@@ -2384,11 +2396,11 @@ export const styles = StyleSheet.create({
     },
     configCardTitle: {
         fontSize: 18,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
     },
     thresholdRow: {
-        marginBottom: 20,
+        marginBottom: 16,
     },
     thresholdLabelRow: {
         flexDirection: "row",
@@ -2398,7 +2410,7 @@ export const styles = StyleSheet.create({
     },
     thresholdLabel: {
         fontSize: 15,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#1e293b",
     },
     thresholdBadge: {
@@ -2409,12 +2421,12 @@ export const styles = StyleSheet.create({
     },
     thresholdBadgeText: {
         fontSize: 12,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
         color: "#3b82f6",
     },
     thresholdInputDisplay: {
         fontSize: 24,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 4,
     },
@@ -2442,7 +2454,7 @@ export const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         justifyContent: "space-between",
-        padding: 20,
+        padding: 16,
     },
     visualLabelItem: {
         flexDirection: "row",
@@ -2451,7 +2463,7 @@ export const styles = StyleSheet.create({
     },
     visualLabelText: {
         color: "#ffffff",
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         fontSize: 14,
         textShadowColor: 'rgba(0, 0, 0, 0.3)',
         textShadowOffset: { width: 0, height: 1 },
@@ -2468,7 +2480,7 @@ export const styles = StyleSheet.create({
     },
     warningNoteTitle: {
         fontSize: 14,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#92400e",
         marginBottom: 4,
     },
@@ -2481,25 +2493,28 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#f8fafc",
-        paddingVertical: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: "#e2e8f0",
+        backgroundColor: "#B0DB9C",
+        paddingVertical: 12,
+        borderRadius: 16,
         marginTop: 12,
         gap: 8,
+        shadowColor: "#B0DB9C",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     saveConfigButtonText: {
         fontSize: 15,
-        fontWeight: "600",
-        color: "#64748b",
+        fontFamily: "Poppins_600SemiBold",
+        color: "#1a3d0a",
     },
     settingInputGroup: {
         flex: 1,
     },
     settingInputLabel: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#475569",
         marginBottom: 8,
     },
@@ -2507,7 +2522,7 @@ export const styles = StyleSheet.create({
         backgroundColor: "#ffffff",
         borderWidth: 1.5,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
+        borderRadius: 16,
         paddingVertical: 12,
         paddingHorizontal: 16,
         fontSize: 15,
@@ -2526,8 +2541,8 @@ export const styles = StyleSheet.create({
     },
     loadingBox: {
         backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
+        padding: 16,
+        borderRadius: 16,
         alignItems: 'center',
         shadowColor: "#000",
         shadowOffset: {
@@ -2539,10 +2554,10 @@ export const styles = StyleSheet.create({
         elevation: 5,
     },
     loadingText: {
-        marginTop: 10,
+        marginTop: 8,
         color: '#4a7c59',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontFamily: "Poppins_700Bold",
     },
     // Modal Styles
     modalOverlay: {
@@ -2573,7 +2588,7 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: 20,
+        padding: 16,
         borderBottomWidth: 1,
         borderBottomColor: "#f1f5f9",
     },
@@ -2599,14 +2614,14 @@ export const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: "Poppins_600SemiBold",
         color: "#475569",
-        marginBottom: 6,
+        marginBottom: 4,
     },
     modalInput: {
         borderWidth: 1,
         borderColor: "#cbd5e1",
         borderRadius: 8,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 8,
         fontSize: 14,
         fontFamily: "Poppins_400Regular",
         color: "#0f172a",
@@ -2622,7 +2637,7 @@ export const styles = StyleSheet.create({
         borderRadius: 8,
     },
     modalButtonGradient: {
-        paddingVertical: 14,
+        paddingVertical: 12,
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 8,
@@ -2656,7 +2671,7 @@ export const styles = StyleSheet.create({
     liveSensorCard: {
         backgroundColor: "#ffffff",
         borderRadius: 16,
-        padding: 30,
+        padding: 32,
         flex: 1,
         minWidth: 340,
         marginRight: 24,
@@ -2671,7 +2686,7 @@ export const styles = StyleSheet.create({
     },
     sensorCardHeader: {
         alignItems: "center",
-        marginBottom: 20,
+        marginBottom: 16,
     },
     sensorCardName: {
         fontSize: 14,
@@ -2707,7 +2722,7 @@ export const styles = StyleSheet.create({
     sensorPillMarkers: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: "space-between",
-        paddingVertical: 10,
+        paddingVertical: 8,
         zIndex: 10,
     },
     sensorPillMarkerLine: {
@@ -2741,7 +2756,7 @@ export const styles = StyleSheet.create({
         color: "#64748b",
     },
     sensorCardBadge: {
-        paddingVertical: 6,
+        paddingVertical: 4,
         paddingHorizontal: 16,
         borderRadius: 16,
         marginTop: 8,
@@ -2756,7 +2771,7 @@ export const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
         width: "100%",
-        paddingTop: 20,
+        paddingTop: 16,
         borderTopWidth: 1,
         borderTopColor: "rgba(0,0,0,0.05)",
     },
@@ -2775,7 +2790,7 @@ export const styles = StyleSheet.create({
         color: "#94a3b8",
     },
     liveSensorEmpty: {
-        padding: 40,
+        padding: 32,
         alignItems: "center",
         justifyContent: "center",
         width: "100%",
@@ -2807,8 +2822,8 @@ export const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 8,
-        paddingHorizontal: 20,
-        borderRadius: 10,
+        paddingHorizontal: 16,
+        borderRadius: 16,
         gap: 8,
     },
     ccTabActive: {
@@ -2821,7 +2836,7 @@ export const styles = StyleSheet.create({
     },
     ccTabText: {
         fontSize: 14,
-        fontWeight: '600',
+        fontFamily: "Poppins_600SemiBold",
         color: '#64748b',
     },
     ccTabTextActive: {
@@ -2837,13 +2852,13 @@ export const styles = StyleSheet.create({
     ccAuditBadgeText: {
         color: '#fff',
         fontSize: 10,
-        fontWeight: '800',
+        fontFamily: "Poppins_700Bold",
     },
 
     // Mission Control (Operations Tab)
     ccOpsGrid: {
         flexDirection: 'row',
-        gap: 20,
+        gap: 16,
         flex: 1,
         overflow: 'hidden',
     },
@@ -2857,7 +2872,7 @@ export const styles = StyleSheet.create({
     },
     ccPanel: {
         backgroundColor: '#ffffff',
-        borderRadius: 20,
+        borderRadius: 16,
         padding: 24,
         borderWidth: 1,
         borderColor: '#f1f5f9',
@@ -2866,17 +2881,17 @@ export const styles = StyleSheet.create({
         shadowOpacity: 0.04,
         shadowRadius: 10,
         elevation: 2,
-        marginBottom: 20,
+        marginBottom: 16,
     },
     ccPanelHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     ccPanelTitle: {
         fontSize: 18,
-        fontWeight: '700',
+        fontFamily: "Poppins_700Bold",
         color: '#0f172a',
     },
     ccPanelSubtitle: {
@@ -2901,13 +2916,13 @@ export const styles = StyleSheet.create({
         marginBottom: 12,
     },
     ccAlertLevelBadge: {
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 20,
+        borderRadius: 16,
     },
     ccAlertLevelText: {
         fontSize: 11,
-        fontWeight: '800',
+        fontFamily: "Poppins_700Bold",
     },
     ccAlertProgressContainer: {
         height: 4,
@@ -2935,13 +2950,13 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         paddingHorizontal: 12,
-        borderRadius: 10,
-        gap: 6,
+        borderRadius: 16,
+        gap: 4,
         minHeight: 36,
     },
     ccActionButtonText: {
         fontSize: 12,
-        fontWeight: '700',
+        fontFamily: "Poppins_700Bold",
     },
 
     // Broadcast Studio
@@ -2968,13 +2983,13 @@ export const styles = StyleSheet.create({
     ccBrgyChip: {
         paddingVertical: 8,
         paddingHorizontal: 12,
-        borderRadius: 10,
+        borderRadius: 16,
         backgroundColor: '#f8fafc',
         borderWidth: 1,
         borderColor: '#e2e8f0',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 4,
     },
     ccBrgyChipActive: {
         backgroundColor: '#eff6ff',
@@ -2983,10 +2998,10 @@ export const styles = StyleSheet.create({
     ccBrgyChipText: {
         fontSize: 13,
         color: '#64748b',
-        fontWeight: '500',
+        fontFamily: "Poppins_500Medium",
     },
     ccBrgyChipTextActive: {
         color: '#1d4ed8',
-        fontWeight: '600',
+        fontFamily: "Poppins_600SemiBold",
     },
 });

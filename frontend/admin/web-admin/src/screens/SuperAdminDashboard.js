@@ -126,9 +126,8 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                                         <Feather name={card.icon} size={20} color={card.iconColor} />
                                     </View>
                                     <View style={styles.dashboardStatContent}>
-                                        <Text style={styles.dashboardStatLabel}>{card.label}</Text>
                                         <Text style={styles.dashboardStatValue}>{card.value}</Text>
-                                        <Text style={styles.dashboardStatDeltaPositive}>{card.sub}</Text>
+                                        <Text style={styles.dashboardStatLabel}>{card.label}</Text>
                                     </View>
                                 </View>
                             ))}
@@ -222,10 +221,10 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
 };
 
 const sd = StyleSheet.create({
-    emptyPanel: { alignItems: "center", paddingVertical: 32, gap: 6 },
+    emptyPanel: { alignItems: "center", paddingVertical: 32, gap: 4 },
     emptyPanelText: { fontSize: 14, fontFamily: "Poppins_600SemiBold", color: "#64748b" },
     emptyPanelSub: { fontSize: 12, fontFamily: "Poppins_400Regular", color: "#94a3b8" },
-    pillGray: { backgroundColor: "#e5e7eb", borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10 },
+    pillGray: { backgroundColor: "#e5e7eb", borderRadius: 16, paddingVertical: 4, paddingHorizontal: 8 },
     pillGrayText: { fontSize: 11, fontFamily: "Poppins_600SemiBold", color: "#6b7280" },
 });
 

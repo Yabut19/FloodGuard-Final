@@ -483,15 +483,15 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             <Text style={styles.ccPanelTitle}>Mission Control</Text>
                             <Text style={styles.ccPanelSubtitle}>Active emergency escalations</Text>
                         </View>
-                        <View style={{ backgroundColor: '#fee2e2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
-                            <Text style={{ fontSize: 11, fontWeight: '800', color: '#b91c1c' }}>{activeAlerts.length} LIVE</Text>
+                        <View style={{ backgroundColor: '#fee2e2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 16 }}>
+                            <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: '#b91c1c' }}>{activeAlerts.length} LIVE</Text>
                         </View>
                     </View>
 
                     {loadingActiveAlerts ? (
                         <ActivityIndicator size="small" color="#0f172a" />
                     ) : activeAlerts.length === 0 ? (
-                        <View style={{ alignItems: 'center', paddingVertical: 60 }}>
+                        <View style={{ alignItems: 'center', paddingVertical: 64 }}>
                             <Feather name="shield" size={48} color="#16a34a" />
                             <Text style={{ color: '#64748b', marginTop: 16, fontSize: 14 }}>All clear. No active threats detected.</Text>
                         </View>
@@ -514,7 +514,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             <Text style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(a.timestamp).toLocaleTimeString()}</Text>
                                         </View>
 
-                                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#0f172a' }}>{a.title}</Text>
+                                        <Text style={{ fontSize: 16, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>{a.title}</Text>
                                         <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Area: {a.barangay}</Text>
 
                                         <View style={styles.ccAlertProgressContainer}>
@@ -570,7 +570,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     {loadingVerifications ? (
                         <ActivityIndicator size="small" color="#3b82f6" />
                     ) : verifications.length === 0 ? (
-                        <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                        <View style={{ alignItems: 'center', paddingVertical: 32 }}>
                             <Feather name="check-square" size={32} color="#cbd5e1" />
                             <Text style={{ color: '#94a3b8', marginTop: 12, fontSize: 13 }}>No reports to verify</Text>
                         </View>
@@ -587,10 +587,10 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     }}
                                 >
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <Text style={{ fontSize: 12, color: '#3b82f6', fontWeight: '700' }}>{item.type.toUpperCase()}</Text>
+                                        <Text style={{ fontSize: 12, color: '#3b82f6', fontFamily: "Poppins_700Bold" }}>{item.type.toUpperCase()}</Text>
                                         <Text style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(item.timestamp).toLocaleTimeString()}</Text>
                                     </View>
-                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }}>{item.location}</Text>
+                                    <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>{item.location}</Text>
                                     <Text style={{ fontSize: 13, color: '#64748b', marginTop: 4, fontStyle: 'italic' }}>"{item.description}"</Text>
 
                                     {item.image_url && (
@@ -604,7 +604,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
                                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                                         <Feather name="eye" size={14} color="#3b82f6" style={{ marginRight: 4 }} />
-                                        <Text style={{ fontSize: 12, color: '#3b82f6', fontWeight: '600' }}>Tap to review details</Text>
+                                        <Text style={{ fontSize: 12, color: '#3b82f6', fontFamily: "Poppins_600SemiBold" }}>Tap to review details</Text>
                                     </View>
                                 </TouchableOpacity>
                             ))}
@@ -619,9 +619,9 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
         <View style={styles.ccBroadcastGrid}>
             <View style={styles.ccFormSection}>
                 <View style={[styles.ccPanel, { flex: 1, marginBottom: 0, overflow: 'hidden' }]}>
-                    <Text style={[styles.ccPanelTitle, { marginBottom: 20 }]}>Broadcast Alert Studio</Text>
+                    <Text style={[styles.ccPanelTitle, { marginBottom: 16 }]}>Broadcast Alert Studio</Text>
                     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
-                    <View style={{ marginBottom: 20 }}>
+                    <View style={{ marginBottom: 16 }}>
                         <Text style={styles.alertInputLabel}>Priority Level</Text>
                         <View style={styles.ccBrgyGrid}>
                             {['advisory', 'watch', 'warning'].map(level => (
@@ -634,7 +634,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     onPress={() => setAlertType(level)}
                                 >
                                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: level === 'advisory' ? '#3b82f6' : level === 'watch' ? '#f59e0b' : '#ef4444' }} />
-                                    <Text style={[styles.ccBrgyChipText, alertType === level && { color: level === 'advisory' ? '#1d4ed8' : level === 'watch' ? '#b45309' : '#b91c1c', fontWeight: '700' }]}>
+                                    <Text style={[styles.ccBrgyChipText, alertType === level && { color: level === 'advisory' ? '#1d4ed8' : level === 'watch' ? '#b45309' : '#b91c1c', fontFamily: "Poppins_700Bold" }]}>
                                         {level.toUpperCase()}
                                     </Text>
                                 </TouchableOpacity>
@@ -642,7 +642,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         </View>
                     </View>
 
-                    <View style={{ marginBottom: 20 }}>
+                    <View style={{ marginBottom: 16 }}>
                         <Text style={styles.alertInputLabel}>Alert Headline</Text>
                         <TextInput
                             style={[styles.modalInput, { backgroundColor: '#f8fafc' }]}
@@ -652,7 +652,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         />
                     </View>
 
-                    <View style={{ marginBottom: 20 }}>
+                    <View style={{ marginBottom: 16 }}>
                         <Text style={styles.alertInputLabel}>Dispatch Message</Text>
                         <TextInput
                             style={[styles.alertMessageInput, { backgroundColor: '#f8fafc', height: 120 }]}
@@ -663,7 +663,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         />
                     </View>
 
-                    <View style={{ marginBottom: 20 }}>
+                    <View style={{ marginBottom: 16 }}>
                         <Text style={styles.alertInputLabel}>Recommended Action</Text>
                         <TextInput
                             style={[styles.alertMessageInput, { backgroundColor: '#f8fafc', height: 90 }]}
@@ -691,7 +691,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.primaryBtn, { backgroundColor: '#0f172a', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }]}
+                        style={[styles.primaryBtn, { backgroundColor: '#0f172a', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }]}
                         onPress={handleBroadcast}
                         disabled={loading}
                     >
@@ -711,28 +711,28 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     <Text style={styles.ccPanelTitle}>Operational History</Text>
                     <Text style={styles.ccPanelSubtitle}>Review past broadcasts</Text>
 
-                    <ScrollView style={{ marginTop: 20, flex: 1 }} contentContainerStyle={{ paddingBottom: 12 }} showsVerticalScrollIndicator={false}>
+                    <ScrollView style={{ marginTop: 16, flex: 1 }} contentContainerStyle={{ paddingBottom: 12 }} showsVerticalScrollIndicator={false}>
                         {alertHistory.map(item => (
                             <View key={item.id} style={{ paddingBottom: 16, marginBottom: 16, paddingRight: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                                     <View style={{ flex: 1 }}>
                                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                                            <Text style={{ fontSize: 11, fontWeight: '800', color: item.level === 'warning' ? '#ef4444' : '#64748b' }}>
+                                            <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: item.level === 'warning' ? '#ef4444' : '#64748b' }}>
                                                 {item.level.toUpperCase()}
                                             </Text>
                                             <Text style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(item.timestamp).toLocaleDateString()}</Text>
                                         </View>
-                                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#1e293b' }}>{item.title}</Text>
+                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>{item.title}</Text>
                                         <Text style={{ fontSize: 12, color: '#64748b', marginTop: 2 }} numberOfLines={2}>{item.description}</Text>
                                     </View>
                                 </View>
                                 
                                 <TouchableOpacity
-                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#fee2e2', borderRadius: 6, alignSelf: 'flex-start', marginTop: 8 }}
+                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: '#fee2e2', borderRadius: 6, alignSelf: 'flex-start', marginTop: 8 }}
                                     onPress={() => handleDeleteAlert(item.id, item.title)}
                                 >
                                     <Feather name="trash-2" size={14} color="#dc2626" />
-                                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#dc2626' }}>Delete</Text>
+                                    <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: '#dc2626' }}>Delete</Text>
                                 </TouchableOpacity>
                             </View>
                         ))}
@@ -755,12 +755,12 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1, marginTop: 20 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flex: 1, marginTop: 16 }} showsVerticalScrollIndicator={false}>
                 <View style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: '#f1f5f9', backgroundColor: '#f8fafc', paddingHorizontal: 12 }}>
-                    <Text style={{ flex: 1, fontWeight: '700', color: '#64748b', fontSize: 12 }}>EVENT</Text>
-                    <Text style={{ flex: 1, fontWeight: '700', color: '#64748b', fontSize: 12 }}>TRANSITION</Text>
-                    <Text style={{ flex: 1, fontWeight: '700', color: '#64748b', fontSize: 12 }}>ACTOR</Text>
-                    <Text style={{ flex: 1, fontWeight: '700', color: '#64748b', fontSize: 12 }}>TIMESTAMP</Text>
+                    <Text style={{ flex: 1, fontFamily: "Poppins_700Bold", color: '#64748b', fontSize: 12 }}>EVENT</Text>
+                    <Text style={{ flex: 1, fontFamily: "Poppins_700Bold", color: '#64748b', fontSize: 12 }}>TRANSITION</Text>
+                    <Text style={{ flex: 1, fontFamily: "Poppins_700Bold", color: '#64748b', fontSize: 12 }}>ACTOR</Text>
+                    <Text style={{ flex: 1, fontFamily: "Poppins_700Bold", color: '#64748b', fontSize: 12 }}>TIMESTAMP</Text>
                 </View>
                 {/* Audit details would go here, fetching from /api/subscriptions/escalation-log/... */}
                 <View style={{ alignItems: 'center', paddingVertical: 100 }}>
@@ -810,10 +810,10 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     <View style={{ backgroundColor: '#ffffff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '90%', overflow: 'hidden' }}>
                         <ScrollView showsVerticalScrollIndicator={false}>
                             {selectedReportForModal && (
-                                <View style={{ paddingHorizontal: 24, paddingVertical: 20 }}>
+                                <View style={{ paddingHorizontal: 24, paddingVertical: 16 }}>
                                     {/* Header */}
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                        <Text style={{ fontSize: 20, fontWeight: '700', color: '#1e293b' }}>Report Details</Text>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                        <Text style={{ fontSize: 20, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>Report Details</Text>
                                         <TouchableOpacity onPress={() => setShowReportDetailsModal(false)}>
                                             <Feather name="x" size={24} color="#64748b" />
                                         </TouchableOpacity>
@@ -821,8 +821,8 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
                                     {/* Original Report Section */}
                                     <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#3b82f6' }}>
-                                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#3b82f6', marginBottom: 8, letterSpacing: 1 }}>CITIZEN REPORT</Text>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b', marginBottom: 4 }}>
+                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: '#3b82f6', marginBottom: 8, letterSpacing: 1 }}>CITIZEN REPORT</Text>
+                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#1e293b', marginBottom: 4 }}>
                                             {selectedReportForModal.type} - {selectedReportForModal.location}
                                         </Text>
                                         <Text style={{ fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 12 }}>
@@ -831,19 +831,19 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
                                             <View>
                                                 <Text style={{ fontSize: 11, color: '#94a3b8' }}>Reporter</Text>
-                                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#1e293b' }}>
+                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>
                                                     {selectedReportForModal.reporter_name || 'Anonymous'}
                                                 </Text>
                                             </View>
                                             <View>
                                                 <Text style={{ fontSize: 11, color: '#94a3b8' }}>Reported Level</Text>
-                                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#0f172a' }}>
+                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#0f172a' }}>
                                                     {selectedReportForModal.flood_level_reported || 'Not specified'}
                                                 </Text>
                                             </View>
                                             <View>
                                                 <Text style={{ fontSize: 11, color: '#94a3b8' }}>Time</Text>
-                                                <Text style={{ fontSize: 12, fontWeight: '600', color: '#1e293b' }}>
+                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>
                                                     {new Date(selectedReportForModal.timestamp).toLocaleTimeString()}
                                                 </Text>
                                             </View>
@@ -866,24 +866,24 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         </View>
                                     ) : sensorDataForReport ? (
                                         <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#f59e0b' }}>
-                                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#f59e0b', marginBottom: 8, letterSpacing: 1 }}>SENSOR DATA</Text>
+                                            <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: '#f59e0b', marginBottom: 8, letterSpacing: 1 }}>SENSOR DATA</Text>
                                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
                                                 <View>
                                                     <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Sensor ID</Text>
-                                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }}>
+                                                    <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>
                                                         {sensorDataForReport.sensor_id || 'N/A'}
                                                     </Text>
                                                 </View>
                                                 <View>
                                                     <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Flood Level</Text>
-                                                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#1e293b' }}>
+                                                    <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>
                                                         {sensorDataForReport.flood_level}cm
                                                     </Text>
                                                 </View>
                                                 <View>
                                                     <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Status</Text>
                                                     <View style={{ backgroundColor: sensorDataForReport.status === 'ALARM' ? '#fee2e2' : sensorDataForReport.status === 'WARNING' ? '#fef3c7' : '#dcfce7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                                                        <Text style={{ fontSize: 12, fontWeight: '700', color: sensorDataForReport.status === 'ALARM' ? '#991b1b' : sensorDataForReport.status === 'WARNING' ? '#92400e' : '#166534' }}>
+                                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: sensorDataForReport.status === 'ALARM' ? '#991b1b' : sensorDataForReport.status === 'WARNING' ? '#92400e' : '#166534' }}>
                                                             {sensorDataForReport.status}
                                                         </Text>
                                                     </View>
@@ -895,7 +895,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                 const consistency = getSensorConsistency(selectedReportForModal.flood_level_reported, sensorDataForReport.flood_level);
                                                 return (
                                                     <View style={{ backgroundColor: consistency.color + '15', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: consistency.color + '40' }}>
-                                                        <Text style={{ fontSize: 12, fontWeight: '700', color: consistency.color, marginBottom: 4 }}>
+                                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: consistency.color, marginBottom: 4 }}>
                                                             {consistency.icon} {consistency.status}
                                                         </Text>
                                                         <Text style={{ fontSize: 12, color: '#64748b' }}>
@@ -910,29 +910,29 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     ) : (
                                         <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 16, alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
                                             <Feather name="alert-circle" size={32} color="#ef4444" />
-                                            <Text style={{ marginTop: 8, color: '#ef4444', fontWeight: '600' }}>No sensor data available</Text>
+                                            <Text style={{ marginTop: 8, color: '#ef4444', fontFamily: "Poppins_600SemiBold" }}>No sensor data available</Text>
                                         </View>
                                     )}
 
                                     {/* Action Buttons */}
-                                    <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+                                    <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
                                         <TouchableOpacity
-                                            style={{ flex: 1, paddingVertical: 14, backgroundColor: '#fee2e2', borderRadius: 8, alignItems: 'center' }}
+                                            style={{ flex: 1, paddingVertical: 12, backgroundColor: '#fee2e2', borderRadius: 8, alignItems: 'center' }}
                                             onPress={() => handleReject(selectedReportForModal.id, selectedReportForModal)}
                                         >
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                 <Feather name="x-circle" size={16} color="#991b1b" />
-                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#991b1b' }}>Dismiss Report</Text>
+                                                <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#991b1b' }}>Dismiss Report</Text>
                                             </View>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
-                                            style={{ flex: 1, paddingVertical: 14, backgroundColor: '#dcfce7', borderRadius: 8, alignItems: 'center' }}
+                                            style={{ flex: 1, paddingVertical: 12, backgroundColor: '#dcfce7', borderRadius: 8, alignItems: 'center' }}
                                             onPress={() => handleVerify(selectedReportForModal.id, selectedReportForModal)}
                                         >
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                 <Feather name="check-circle" size={16} color="#166534" />
-                                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#166534' }}>Verify & Broadcast</Text>
+                                                <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#166534' }}>Verify & Broadcast</Text>
                                             </View>
                                         </TouchableOpacity>
                                     </View>
@@ -952,10 +952,10 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
             >
                 <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
                     <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 24, maxWidth: 400, width: '90%', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 }}>
-                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#1e293b', marginBottom: 12 }}>Delete Alert</Text>
+                        <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: '#1e293b', marginBottom: 12 }}>Delete Alert</Text>
                         <Text style={{ fontSize: 14, color: '#64748b', marginBottom: 24 }}>
                             Are you sure you want to delete this alert?{'\n\n'}
-                            <Text style={{ fontWeight: '600', color: '#1e293b' }}>{alertToDelete?.title}</Text>
+                            <Text style={{ fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>{alertToDelete?.title}</Text>
                         </Text>
                         
                         <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -963,14 +963,14 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                 style={{ flex: 1, paddingVertical: 12, backgroundColor: '#f1f5f9', borderRadius: 8, alignItems: 'center' }}
                                 onPress={() => setShowDeleteConfirm(false)}
                             >
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#64748b' }}>Cancel</Text>
+                                <Text style={{ fontSize: 14, fontFamily: "Poppins_600SemiBold", color: '#64748b' }}>Cancel</Text>
                             </TouchableOpacity>
                             
                             <TouchableOpacity
                                 style={{ flex: 1, paddingVertical: 12, backgroundColor: '#dc2626', borderRadius: 8, alignItems: 'center' }}
                                 onPress={() => confirmDeleteAlert()}
                             >
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>Delete</Text>
+                                <Text style={{ fontSize: 14, fontFamily: "Poppins_600SemiBold", color: '#ffffff' }}>Delete</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

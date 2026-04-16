@@ -369,7 +369,8 @@ def get_daily_summary():
         "critical_events": stats['critical_readings'],
         "avg_flood_level": round(float(stats['avg_level'] or 0), 1),
         "peak_flood_level": round(float(stats['peak_level'] or 0), 1),
-        "uptime": f"{active_sensors} / {total_sensors} Online",
+        "active_sensors": active_sensors,
+        "total_sensors": total_sensors,
         "total_readings": stats['total_readings'],
         "community_reports": reports['report_count']
     }), 200

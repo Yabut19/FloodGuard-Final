@@ -306,7 +306,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                                     setShowRoleDropdown(false);
                                                 }}
                                             >
-                                                <Text style={[pg.dropdownItemText, roleFilter === role && { fontWeight: '700', color: '#2563eb' }]}>{role}</Text>
+                                                <Text style={[pg.dropdownItemText, roleFilter === role && { fontFamily: "Poppins_700Bold", color: '#2563eb' }]}>{role}</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -337,7 +337,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                                     setShowStatusDropdown(false);
                                                 }}
                                             >
-                                                <Text style={[pg.dropdownItemText, statusFilter === status && { fontWeight: '700', color: '#2563eb' }]}>{status}</Text>
+                                                <Text style={[pg.dropdownItemText, statusFilter === status && { fontFamily: "Poppins_700Bold", color: '#2563eb' }]}>{status}</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
@@ -373,7 +373,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                             {user.avatar_url ? (
                                                 <Image
                                                     source={{ uri: `${API_BASE_URL}${user.avatar_url}` }}
-                                                    style={{ width: "100%", height: "100%", borderRadius: 20 }}
+                                                    style={{ width: "100%", height: "100%", borderRadius: 16 }}
                                                 />
                                             ) : (
                                                 <Text style={styles.userAvatarText}>
@@ -434,14 +434,14 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                 {/* Add LGU Modal (Redesigned) */}
                 {showAddLGUModal && (
                     <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-                        <View style={{ width: 500, backgroundColor: "#fff", borderRadius: 20, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 10, elevation: 10 }}>
+                        <View style={{ width: 500, backgroundColor: "#fff", borderRadius: 16, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 10, elevation: 10 }}>
                             {/* Gradient Header */}
                             <LinearGradient
                                 colors={["#4c669f", "#3b5998", "#192f6a"]} // Using a blue-ish gradient similar to design, or maybe purple-blue
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={{
-                                    padding: 20,
+                                    padding: 16,
                                     flexDirection: "row",
                                     justifyContent: "space-between",
                                     alignItems: "center",
@@ -454,7 +454,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                         <Feather name="user-plus" size={20} color="#fff" />
                                     </View>
                                     <View>
-                                        <Text style={{ fontSize: 18, fontWeight: "bold", color: "#fff" }}>Add New User</Text>
+                                        <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#fff" }}>Add New User</Text>
                                         <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>Create a new account</Text>
                                     </View>
                                 </View>
@@ -466,9 +466,9 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                             {/* Modal Body */}
                             <View style={{ padding: 24 }}>
                                 {/* Full Name */}
-                                <Text style={{ fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8 }}>Full Name</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Full Name</Text>
                                 <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, height: 44 }}>
-                                    <Feather name="user" size={18} color="#94a3b8" style={{ marginRight: 10 }} />
+                                    <Feather name="user" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
                                     <TextInput
                                         style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
                                         placeholder="Enter full name"
@@ -479,9 +479,9 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 </View>
 
                                 {/* Email Address */}
-                                <Text style={{ fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8 }}>Email Address</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Email Address</Text>
                                 <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, height: 44 }}>
-                                    <Feather name="mail" size={18} color="#94a3b8" style={{ marginRight: 10 }} />
+                                    <Feather name="mail" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
                                     <TextInput
                                         style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
                                         placeholder="Enter email address"
@@ -492,37 +492,37 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 </View>
 
                                 {/* Role Selection */}
-                                <Text style={{ fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8 }}>Account Role</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Account Role</Text>
                                 <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
                                     <TouchableOpacity
-                                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 10, borderWidth: 1, borderColor: lguForm.role === 'user' ? "#2563eb" : "#e2e8f0", borderRadius: 8, backgroundColor: lguForm.role === 'user' ? "#eff6ff" : "#fff" }}
+                                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 8, borderWidth: 1, borderColor: lguForm.role === 'user' ? "#2563eb" : "#e2e8f0", borderRadius: 8, backgroundColor: lguForm.role === 'user' ? "#eff6ff" : "#fff" }}
                                         onPress={() => setLguForm({ ...lguForm, role: 'user' })}
                                     >
-                                        <Text style={{ fontSize: 13, color: lguForm.role === 'user' ? "#1e293b" : "#64748b", fontWeight: lguForm.role === 'user' ? "600" : "400" }}>User</Text>
+                                        <Text style={{ fontSize: 13, color: lguForm.role === 'user' ? "#1e293b" : "#64748b", fontFamily: lguForm.role === 'user' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>User</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 10, borderWidth: 1, borderColor: lguForm.role === 'lgu_admin' ? "#7c3aed" : "#e2e8f0", borderRadius: 8, backgroundColor: lguForm.role === 'lgu_admin' ? "#f3e8ff" : "#fff" }}
+                                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 8, borderWidth: 1, borderColor: lguForm.role === 'lgu_admin' ? "#7c3aed" : "#e2e8f0", borderRadius: 8, backgroundColor: lguForm.role === 'lgu_admin' ? "#f3e8ff" : "#fff" }}
                                         onPress={() => setLguForm({ ...lguForm, role: 'lgu_admin' })}
                                     >
-                                        <Text style={{ fontSize: 13, color: lguForm.role === 'lgu_admin' ? "#1e293b" : "#64748b", fontWeight: lguForm.role === 'lgu_admin' ? "600" : "400" }}>LGU</Text>
+                                        <Text style={{ fontSize: 13, color: lguForm.role === 'lgu_admin' ? "#1e293b" : "#64748b", fontFamily: lguForm.role === 'lgu_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>LGU</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 10, borderWidth: 1, borderColor: lguForm.role === 'super_admin' ? "#dc2626" : "#e2e8f0", borderRadius: 8, backgroundColor: lguForm.role === 'super_admin' ? "#fee2e2" : "#fff" }}
+                                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 8, borderWidth: 1, borderColor: lguForm.role === 'super_admin' ? "#dc2626" : "#e2e8f0", borderRadius: 8, backgroundColor: lguForm.role === 'super_admin' ? "#fee2e2" : "#fff" }}
                                         onPress={() => setLguForm({ ...lguForm, role: 'super_admin' })}
                                     >
-                                        <Text style={{ fontSize: 13, color: lguForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontWeight: lguForm.role === 'super_admin' ? "600" : "400" }}>Admin</Text>
+                                        <Text style={{ fontSize: 13, color: lguForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontFamily: lguForm.role === 'super_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Admin</Text>
                                     </TouchableOpacity>
                                 </View>
 
                                 {/* Location (Sitio) - Only for LGUs/Users */}
                                 {lguForm.role !== 'super_admin' && (
                                     <View style={{ marginBottom: 16 }}>
-                                        <Text style={{ fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8 }}>Location (Sitio)</Text>
+                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Location (Sitio)</Text>
                                         <TouchableOpacity
                                             style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44, backgroundColor: "#fff" }}
                                             onPress={() => setShowSitioDropdown(!showSitioDropdown)}
                                         >
-                                            <Feather name="map-pin" size={18} color="#94a3b8" style={{ marginRight: 10 }} />
+                                            <Feather name="map-pin" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
                                             <Text style={{ flex: 1, fontSize: 14, color: lguForm.barangay ? "#0f172a" : "#94a3b8" }}>
                                                 {lguForm.barangay || "Select Sitio"}
                                             </Text>
@@ -535,7 +535,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                                     {SITIOS_MABOLO.map((sitio, index) => (
                                                         <TouchableOpacity
                                                             key={index}
-                                                            style={{ paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: index === SITIOS_MABOLO.length - 1 ? 0 : 1, borderBottomColor: "#f1f5f9" }}
+                                                            style={{ paddingVertical: 8, paddingHorizontal: 12, borderBottomWidth: index === SITIOS_MABOLO.length - 1 ? 0 : 1, borderBottomColor: "#f1f5f9" }}
                                                             onPress={() => {
                                                                 setLguForm({ ...lguForm, barangay: sitio });
                                                                 setShowSitioDropdown(false);
@@ -551,11 +551,11 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 )}
 
                                 {/* Password */}
-                                <Text style={{ fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8 }}>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
                                     {lguForm.role === 'lgu_admin' ? "Password (Optional - will be auto-generated if empty)" : "Account Password"}
                                 </Text>
                                 <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 24, height: 44 }}>
-                                    <Feather name="lock" size={18} color="#94a3b8" style={{ marginRight: 10 }} />
+                                    <Feather name="lock" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
                                     <TextInput
                                         style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
                                         placeholder={lguForm.role === 'lgu_admin' ? "Auto-generated if empty" : "Enter password"}
@@ -576,15 +576,15 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                         colors={["#6366f1", "#a855f7"]}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
-                                        style={{ borderRadius: 10, paddingVertical: 14, alignItems: "center" }}
+                                        style={{ borderRadius: 16, paddingVertical: 12, alignItems: "center" }}
                                     >
                                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                                             {isSubmitting ? (
-                                                <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Processing...</Text>
+                                                <Text style={{ fontSize: 15, fontFamily: "Poppins_700Bold", color: "#fff" }}>Processing...</Text>
                                             ) : (
                                                 <>
                                                     <Feather name="plus" size={18} color="#fff" style={{ marginRight: 8 }} />
-                                                    <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Create Account</Text>
+                                                    <Text style={{ fontSize: 15, fontFamily: "Poppins_700Bold", color: "#fff" }}>Create Account</Text>
                                                 </>
                                             )}
                                         </View>
@@ -598,10 +598,10 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                 {/* Edit User Modal */}
                 {showEditUserModal && (
                     <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-                        <View style={{ width: 450, backgroundColor: "#fff", borderRadius: 20, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 10, elevation: 10 }}>
+                        <View style={{ width: 450, backgroundColor: "#fff", borderRadius: 16, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 10, elevation: 10 }}>
                             {/* Header */}
-                            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                <Text style={{ fontSize: 18, fontWeight: "bold", color: "#1e293b" }}>Edit User</Text>
+                            <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                                <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#1e293b" }}>Edit User</Text>
                                 <TouchableOpacity onPress={() => setShowEditUserModal(false)}>
                                     <Feather name="x" size={24} color="#64748b" />
                                 </TouchableOpacity>
@@ -615,41 +615,41 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                         {editingUser?.avatar_url ? (
                                             <Image source={{ uri: `${API_BASE_URL}${editingUser.avatar_url}` }} style={{ width: "100%", height: "100%" }} />
                                         ) : (
-                                            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#64748b" }}>{editingUser?.name?.substring(0, 2)}</Text>
+                                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#64748b" }}>{editingUser?.name?.substring(0, 2)}</Text>
                                         )}
                                     </View>
                                     <View>
-                                        <Text style={{ fontSize: 16, fontWeight: "600", color: "#334155" }}>{editingUser?.name}</Text>
+                                        <Text style={{ fontSize: 16, fontFamily: "Poppins_600SemiBold", color: "#334155" }}>{editingUser?.name}</Text>
                                         <Text style={{ fontSize: 13, color: "#94a3b8" }}>{editingUser?.email}</Text>
                                     </View>
                                 </View>
 
                                 {/* Status Toggle */}
-                                <Text style={{ fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8 }}>Account Status</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Account Status</Text>
                                 <View style={{ flexDirection: "row", marginBottom: 24, backgroundColor: "#f1f5f9", borderRadius: 8, padding: 4 }}>
                                     <TouchableOpacity
                                         style={{ flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 6, backgroundColor: editForm.status === 'active' ? "#fff" : "transparent", shadowColor: editForm.status === 'active' ? "#000" : "transparent", shadowOpacity: 0.1, shadowRadius: 2 }}
                                         onPress={() => setEditForm({ ...editForm, status: 'active' })}
                                     >
-                                        <Text style={{ fontSize: 14, fontWeight: "500", color: editForm.status === 'active' ? "#16a34a" : "#64748b" }}>Active</Text>
+                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_500Medium", color: editForm.status === 'active' ? "#16a34a" : "#64748b" }}>Active</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={{ flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 6, backgroundColor: editForm.status === 'inactive' ? "#fff" : "transparent", shadowColor: editForm.status === 'inactive' ? "#000" : "transparent", shadowOpacity: 0.1, shadowRadius: 2 }}
                                         onPress={() => setEditForm({ ...editForm, status: 'inactive' })}
                                     >
-                                        <Text style={{ fontSize: 14, fontWeight: "500", color: editForm.status === 'inactive' ? "#dc2626" : "#64748b" }}>Inactive</Text>
+                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_500Medium", color: editForm.status === 'inactive' ? "#dc2626" : "#64748b" }}>Inactive</Text>
                                     </TouchableOpacity>
                                 </View>
 
                                 {/* Role Selection */}
-                                <Text style={{ fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8 }}>User Role</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>User Role</Text>
                                 <View style={{ gap: 8 }}>
                                     <TouchableOpacity
                                         style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'user' ? "#2563eb" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'user' ? "#eff6ff" : "#fff" }}
                                         onPress={() => setEditForm({ ...editForm, role: 'user' })}
                                     >
                                         <Feather name="user" size={18} color={editForm.role === 'user' ? "#2563eb" : "#94a3b8"} style={{ marginRight: 12 }} />
-                                        <Text style={{ fontSize: 14, color: editForm.role === 'user' ? "#1e293b" : "#64748b", fontWeight: editForm.role === 'user' ? "600" : "400" }}>Regular User</Text>
+                                        <Text style={{ fontSize: 14, color: editForm.role === 'user' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'user' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Regular User</Text>
                                         {editForm.role === 'user' && <Feather name="check" size={18} color="#2563eb" style={{ marginLeft: "auto" }} />}
                                     </TouchableOpacity>
 
@@ -658,7 +658,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                         onPress={() => setEditForm({ ...editForm, role: 'lgu_admin' })}
                                     >
                                         <Feather name="shield" size={18} color={editForm.role === 'lgu_admin' ? "#7c3aed" : "#94a3b8"} style={{ marginRight: 12 }} />
-                                        <Text style={{ fontSize: 14, color: editForm.role === 'lgu_admin' ? "#1e293b" : "#64748b", fontWeight: editForm.role === 'lgu_admin' ? "600" : "400" }}>LGU Moderator</Text>
+                                        <Text style={{ fontSize: 14, color: editForm.role === 'lgu_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'lgu_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>LGU Moderator</Text>
                                         {editForm.role === 'lgu_admin' && <Feather name="check" size={18} color="#7c3aed" style={{ marginLeft: "auto" }} />}
                                     </TouchableOpacity>
 
@@ -667,18 +667,18 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                         onPress={() => setEditForm({ ...editForm, role: 'super_admin' })}
                                     >
                                         <Feather name="lock" size={18} color={editForm.role === 'super_admin' ? "#dc2626" : "#94a3b8"} style={{ marginRight: 12 }} />
-                                        <Text style={{ fontSize: 14, color: editForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontWeight: editForm.role === 'super_admin' ? "600" : "400" }}>Super Admin</Text>
+                                        <Text style={{ fontSize: 14, color: editForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'super_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Super Admin</Text>
                                         {editForm.role === 'super_admin' && <Feather name="check" size={18} color="#dc2626" style={{ marginLeft: "auto" }} />}
                                     </TouchableOpacity>
                                 </View>
 
                                 {/* Save Button */}
                                 <TouchableOpacity
-                                    style={{ marginTop: 32, backgroundColor: "#2563eb", paddingVertical: 14, borderRadius: 10, alignItems: "center" }}
+                                    style={{ marginTop: 32, backgroundColor: "#2563eb", paddingVertical: 12, borderRadius: 16, alignItems: "center" }}
                                     onPress={handleUpdateUser}
                                     disabled={isSubmitting}
                                 >
-                                    <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
+                                    <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Poppins_700Bold" }}>
                                         {isSubmitting ? "Saving Changes..." : "Save Changes"}
                                     </Text>
                                 </TouchableOpacity>
@@ -693,25 +693,25 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                         <View style={{ width: 800, flexDirection: 'row', backgroundColor: "#fff", borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 20, elevation: 15, overflow: 'hidden' }}>
 
                             {/* Left Column - Success Message */}
-                            <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 40, justifyContent: 'center', position: 'relative' }}>
+                            <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 32, justifyContent: 'center', position: 'relative' }}>
                                 <View style={{ position: 'absolute', opacity: 0.05, right: -20, bottom: -20 }}>
                                     <Feather name="shield" size={150} color="#000" />
                                 </View>
 
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
                                     <Image source={require('../../assets/logo.png')} style={{ width: 40, height: 40, marginRight: 12 }} />
-                                    <Text style={{ fontSize: 24, fontWeight: '700', color: '#0f172a' }}>FloodGuard</Text>
+                                    <Text style={{ fontSize: 24, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>FloodGuard</Text>
                                 </View>
 
-                                <Text style={{ fontSize: 32, fontWeight: '800', color: '#0f172a', marginBottom: 16 }}>Success!</Text>
+                                <Text style={{ fontSize: 32, fontFamily: "Poppins_700Bold", color: '#0f172a', marginBottom: 16 }}>Success!</Text>
                                 <Text style={{ fontSize: 16, color: '#64748b', lineHeight: 24 }}>
                                     The new account has been successfully created. They can now log in to the system and help keep the community safe.
                                 </Text>
                             </View>
 
                             {/* Right Column - Verification Status */}
-                            <View style={{ flex: 1, backgroundColor: '#001D39', padding: 40, alignItems: 'center', justifyContent: 'center' }}>
-                                <Text style={{ fontSize: 28, fontWeight: '700', color: '#ffffff', marginBottom: 32 }}>Verify Email</Text>
+                            <View style={{ flex: 1, backgroundColor: '#001D39', padding: 32, alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={{ fontSize: 28, fontFamily: "Poppins_700Bold", color: '#ffffff', marginBottom: 32 }}>Verify Email</Text>
 
                                 {/* Envelope Icon */}
                                 <View style={{ width: 100, height: 70, backgroundColor: '#ffffff', borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 32 }}>
@@ -721,20 +721,20 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 <Text style={{ fontSize: 16, color: '#e2e8f0', textAlign: 'center', marginBottom: 8 }}>
                                     Email verification has been sent to
                                 </Text>
-                                <Text style={{ fontSize: 16, fontWeight: '700', color: '#ffffff', textAlign: 'center', marginBottom: 24 }}>
+                                <Text style={{ fontSize: 16, fontFamily: "Poppins_700Bold", color: '#ffffff', textAlign: 'center', marginBottom: 24 }}>
                                     {createdUserEmail}
                                 </Text>
 
-                                <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', marginBottom: 40 }}>
+                                <Text style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center', marginBottom: 32 }}>
                                     Verification link and default password have been sent to the email.
                                 </Text>
 
                                 {/* Action Buttons */}
                                 <TouchableOpacity
-                                    style={{ width: '100%', backgroundColor: '#BDD8E9', paddingVertical: 14, borderRadius: 8, alignItems: 'center' }}
+                                    style={{ width: '100%', backgroundColor: '#BDD8E9', paddingVertical: 12, borderRadius: 8, alignItems: 'center' }}
                                     onPress={() => setShowSuccessModal(false)}
                                 >
-                                    <Text style={{ color: '#0A4174', fontSize: 15, fontWeight: '700' }}>Done</Text>
+                                    <Text style={{ color: '#0A4174', fontSize: 15, fontFamily: "Poppins_700Bold" }}>Done</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -757,11 +757,16 @@ const pg = {
     statsCard: {
         flex: 1,
         backgroundColor: "#ffffff",
-        borderRadius: 20,
-        padding: 20,
+        borderRadius: 16,
+        padding: 24,
         borderWidth: 1,
-        borderColor: "#ECFAE5",
+        borderColor: "#e2e8f0",
         alignItems: "center", // Vertical layout
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4,
     },
     statsIcon: {
         width: 44,
@@ -773,14 +778,14 @@ const pg = {
     },
     statsValue: {
         fontSize: 24,
-        fontWeight: "700",
+        fontFamily: "Poppins_700Bold",
         color: "#0f172a",
         marginBottom: 4,
         fontFamily: "Poppins_700Bold",
     },
     statsLabel: {
         fontSize: 13,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#64748b",
         fontFamily: "Poppins_500Medium",
     },
@@ -793,7 +798,12 @@ const pg = {
         padding: 16,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: "#f1f5f9",
+        borderColor: "#e2e8f0",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4,
     },
     searchBox: {
         flex: 1,
@@ -802,7 +812,7 @@ const pg = {
         backgroundColor: "#f8fafc",
         borderWidth: 1,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
+        borderRadius: 16,
         paddingHorizontal: 12,
         height: 44,
         maxWidth: 400,
@@ -819,7 +829,7 @@ const pg = {
         backgroundColor: "#ffffff",
         borderWidth: 1,
         borderColor: "#e2e8f0",
-        borderRadius: 10,
+        borderRadius: 16,
         paddingHorizontal: 16,
         height: 44,
         minWidth: 140,
@@ -827,7 +837,7 @@ const pg = {
     },
     filterSelectText: {
         fontSize: 14,
-        fontWeight: "500",
+        fontFamily: "Poppins_500Medium",
         color: "#475569",
     },
     dropdown: {
@@ -836,7 +846,7 @@ const pg = {
         right: 0,
         width: 180,
         backgroundColor: "#ffffff",
-        borderRadius: 10,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: "#e2e8f0",
         shadowColor: "#000",
@@ -858,7 +868,7 @@ const pg = {
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#2563eb",
-        borderRadius: 10,
+        borderRadius: 16,
         paddingHorizontal: 16,
         height: 44,
         gap: 8,
@@ -866,6 +876,6 @@ const pg = {
     addUserBtnText: {
         color: "#ffffff",
         fontSize: 14,
-        fontWeight: "600",
+        fontFamily: "Poppins_600SemiBold",
     }
 };

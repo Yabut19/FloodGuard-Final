@@ -354,9 +354,9 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
                         </View>
 
                         {loading ? (
-                            <ActivityIndicator size="large" color="#2563eb" style={{ margin: 40 }} />
+                            <ActivityIndicator size="large" color="#2563eb" style={{ margin: 32 }} />
                         ) : filteredCenters.length === 0 ? (
-                            <Text style={{ textAlign: "center", padding: 40, color: "#64748b" }}>No evacuation centers found.</Text>
+                            <Text style={{ textAlign: "center", padding: 32, color: "#64748b" }}>No evacuation centers found.</Text>
                         ) : (
                             filteredCenters.map((center) => {
                                 const statusStyle = getStatusStyle(center.status);
@@ -398,15 +398,15 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
 
             {(showAddModal || showEditModal) && (
                 <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-                    <View style={{ width: 800, backgroundColor: "#fff", borderRadius: 20, overflow: 'hidden' }}>
+                    <View style={{ width: 800, backgroundColor: "#fff", borderRadius: 16, overflow: 'hidden' }}>
                         <LinearGradient
                             colors={["#1d4ed8", "#3b82f6"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
-                            style={{ padding: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+                            style={{ padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
                         >
                             <View>
-                                <Text style={{ fontSize: 18, fontWeight: "bold", color: "#fff" }}>
+                                <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#fff" }}>
                                     {showAddModal ? "Add New Evacuation Center" : "Edit Evacuation Center"}
                                 </Text>
                                 <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>
@@ -426,16 +426,16 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
                                     </Text>
                                     <View
                                         nativeID="pin-map-container"
-                                        style={{ height: 500, backgroundColor: "#f1f5f9", borderRadius: 12, marginBottom: 20, overflow: 'hidden' }}
+                                        style={{ height: 500, backgroundColor: "#f1f5f9", borderRadius: 12, marginBottom: 16, overflow: 'hidden' }}
                                     />
 
                                     {form.lat ? (
                                         <View style={{ backgroundColor: "#eff6ff", padding: 16, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#dbeafe' }}>
-                                            <View style={{ backgroundColor: '#2563eb', padding: 10, borderRadius: 10, marginRight: 12 }}>
+                                            <View style={{ backgroundColor: '#2563eb', padding: 8, borderRadius: 16, marginRight: 12 }}>
                                                 <Feather name="map-pin" size={20} color="#fff" />
                                             </View>
                                             <View style={{ flex: 1 }}>
-                                                <Text style={{ color: "#1e40af", fontSize: 13, fontWeight: '700', marginBottom: 2 }}>
+                                                <Text style={{ color: "#1e40af", fontSize: 13, fontFamily: "Poppins_700Bold", marginBottom: 2 }}>
                                                     {isReverseGeocoding ? "Fetching address..." : "Selected Location:"}
                                                 </Text>
                                                 <Text style={{ color: "#3b82f6", fontSize: 14, lineHeight: 20 }}>
@@ -457,7 +457,7 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
                                 <ScrollView style={{ maxHeight: "70vh" }}>
                                     <TouchableOpacity
                                         onPress={() => setCurrentStep(1)}
-                                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, padding: 8, backgroundColor: "#f8fafc", borderRadius: 8, alignSelf: 'flex-start' }}
+                                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, padding: 8, backgroundColor: "#f8fafc", borderRadius: 8, alignSelf: 'flex-start' }}
                                     >
                                         <Feather name="arrow-left" size={14} color="#64748b" />
                                         <Text style={{ fontSize: 13, color: "#64748b", marginLeft: 4 }}>Back to Map</Text>
@@ -542,11 +542,11 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
 };
 
 const modalStyles = {
-    label: { fontSize: 13, fontWeight: "600", color: "#334155", marginBottom: 8, marginTop: 12 },
+    label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8, marginTop: 12 },
     input: { borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, padding: 12, fontSize: 14, color: "#0f172a", backgroundColor: "#fff" },
-    submitBtn: { marginTop: 24, paddingVertical: 14, borderRadius: 10, alignItems: "center", marginBottom: 40 },
-    submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-    statusBtn: { flex: 1, padding: 10, borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", alignItems: "center" },
+    submitBtn: { marginTop: 24, paddingVertical: 12, borderRadius: 16, alignItems: "center", marginBottom: 32 },
+    submitBtnText: { color: "#fff", fontSize: 16, fontFamily: "Poppins_700Bold" },
+    statusBtn: { flex: 1, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", alignItems: "center" },
     statusBtnActive: { backgroundColor: "#2563eb", borderColor: "#2563eb" }
 };
 
