@@ -19,6 +19,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
     const [verifyFloodLevel, setVerifyFloodLevel] = useState("medium");
     const [verifyNotes, setVerifyNotes] = useState("");
     const [recommendations, setRecommendations] = useState("");
+    const [recError, setRecError] = useState(false);
     const [incidentStatus, setIncidentStatus] = useState("Active");
     const [submittingVerify, setSubmittingVerify] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
@@ -52,18 +53,11 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
 
     const handleVerify = async () => {
         if (!selectedReport) return;
-
         if (!recommendations || !recommendations.trim()) {
-            Alert.alert(
-                "No Recommendation",
-                "You have not entered an official recommendation. Do you want to proceed without one?",
-                [
-                    { text: "Go Back", style: "cancel" },
-                    { text: "Proceed Anyway", onPress: () => submitVerify() }
-                ]
-            );
+            setRecError(true);
             return;
         }
+        setRecError(false);
         submitVerify();
     };
 
@@ -319,6 +313,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                         setVerifyFloodLevel("medium");
                                         setVerifyNotes("");
                                         setRecommendations("");
+                                        setRecError(false);
                                         setIncidentStatus("Active");
                                     }}
                                 >
@@ -713,19 +708,24 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             </View>
                                         </View>
 
-                                        {/* Recommendations */}
+                                        {/* Recommendations — required */}
                                         <View style={{ marginBottom: 16 }}>
-                                            <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
-                                                Official Recommendations:
+                                            <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold", marginBottom: 4 }}>
+                                                Official Recommendations <Text style={{ color: "#ef4444" }}>*</Text>
                                             </Text>
+                                            {recError && (
+                                                <Text style={{ color: "#ef4444", fontSize: 12, marginBottom: 6 }}>
+                                                    ⚠ Recommendation is required before verifying.
+                                                </Text>
+                                            )}
                                             <TextInput
                                                 style={{
                                                     backgroundColor: "#f1f5f9",
                                                     color: "#0f172a",
                                                     borderRadius: 8,
                                                     padding: 12,
-                                                    borderWidth: 1,
-                                                    borderColor: "#DDF6D2",
+                                                    borderWidth: recError ? 2 : 1,
+                                                    borderColor: recError ? "#ef4444" : "#DDF6D2",
                                                     minHeight: 80,
                                                     textAlignVertical: "top",
                                                     fontFamily: "Poppins_400Regular",
@@ -733,7 +733,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                 placeholder="e.g., Evacuate to higher ground, avoid flooded streets..."
                                                 placeholderTextColor="#94a3b8"
                                                 value={recommendations}
-                                                onChangeText={setRecommendations}
+                                                onChangeText={(v) => { setRecommendations(v); if (v.trim()) setRecError(false); }}
                                                 multiline
                                             />
                                         </View>

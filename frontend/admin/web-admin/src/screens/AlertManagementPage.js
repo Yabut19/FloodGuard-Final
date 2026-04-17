@@ -376,9 +376,10 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
     const handleVerify = async (id, report) => {
         if (!recommendedAction || !recommendedAction.trim()) {
-            const proceed = window.confirm("No official recommendation has been entered. Proceed without one?");
-            if (!proceed) return;
+            setRecError(true);
+            return;
         }
+        setRecError(false);
         try {
             // Update report status to verified
             const response = await fetch(`${API_BASE_URL}/api/reports/${id}/verify`, {
@@ -454,6 +455,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [showReportDetailsModal, setShowReportDetailsModal] = useState(false);
     const [sensorDataForReport, setSensorDataForReport] = useState(null);
     const [loadingSensorData, setLoadingSensorData] = useState(false);
+    const [recError, setRecError] = useState(false);
 
     const renderTabs = () => (
         <View style={styles.ccTabContainer}>
@@ -602,6 +604,8 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         setShowReportDetailsModal(true);
                                         setVerifyFloodLevel(item.flood_level_reported || "medium");
                                         setIncidentStatus("Active");
+                                        setRecommendedAction("");
+                                        setRecError(false);
                                         fetchSensorDataForBarangay(item.location);
                                     }}
                                 >
@@ -989,17 +993,24 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             </View>
                                         </View>
 
-                                        {/* Recommendations */}
+                                        {/* Recommendations — required */}
                                         <View>
-                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 8 }}>Official Recommendations:</Text>
+                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 4 }}>
+                                                Official Recommendations <Text style={{ color: '#ef4444' }}>*</Text>
+                                            </Text>
+                                            {recError && (
+                                                <Text style={{ color: '#ef4444', fontSize: 12, marginBottom: 6 }}>
+                                                    ⚠ Recommendation is required before verifying.
+                                                </Text>
+                                            )}
                                             <TextInput
                                                 style={{
                                                     backgroundColor: "#ffffff",
                                                     color: "#1e293b",
                                                     borderRadius: 8,
                                                     padding: 12,
-                                                    borderWidth: 1,
-                                                    borderColor: "#e2e8f0",
+                                                    borderWidth: recError ? 2 : 1,
+                                                    borderColor: recError ? "#ef4444" : "#e2e8f0",
                                                     minHeight: 80,
                                                     textAlignVertical: "top",
                                                     fontFamily: "Poppins_400Regular",
@@ -1008,7 +1019,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                 placeholder="e.g., Evacuate to higher ground, avoid flooded streets..."
                                                 placeholderTextColor="#94a3b8"
                                                 value={recommendedAction}
-                                                onChangeText={setRecommendedAction}
+                                                onChangeText={(v) => { setRecommendedAction(v); if (v.trim()) setRecError(false); }}
                                                 multiline
                                             />
                                         </View>
