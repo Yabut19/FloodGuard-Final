@@ -222,17 +222,19 @@ def get_pending_reports():
 @reports_bp.route('/<int:report_id>/verify', methods=['POST'])
 def verify_report(report_id):
     """Verify and broadcast a user report - triggers alert to all subscribers"""
-    data = request.get_json() or {}
-    logger.info("VERIFY report_id=%s raw data=%s", report_id, data)
+    raw_body = request.get_data(as_text=True)
+    print(f"[VERIFY] report_id={report_id} raw_body={raw_body!r}", flush=True)
 
-    verified_by = data.get('verified_by')  # LGU admin username/email
-    flood_level = data.get('flood_level')  # Official flood level classification
+    data = request.get_json(silent=True) or {}
+    print(f"[VERIFY] parsed data={data}", flush=True)
 
-    recommendations = data.get('recommendations') or data.get('recommended_action') or ''
-    report_status = data.get('report_status') or 'Active'
+    verified_by = data.get('verified_by') or 'Admin'
+    flood_level = data.get('flood_level')
 
-    logger.info("VERIFY parsed: verified_by=%r flood_level=%r recommendations=%r report_status=%r",
-                verified_by, flood_level, recommendations, report_status)
+    recommendations = (data.get('recommendations') or data.get('recommended_action') or '').strip()
+    report_status = (data.get('report_status') or 'Active').strip()
+
+    print(f"[VERIFY] recommendations={recommendations!r}  report_status={report_status!r}", flush=True)
 
     if not verified_by:
         return jsonify({"error": "verified_by (LGU official) is required"}), 400
@@ -256,18 +258,21 @@ def verify_report(report_id):
     from datetime import datetime
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     
+    print(f"[VERIFY] UPDATE params: status=verified verified_by={verified_by!r} flood_level={flood_level!r} recommendations={recommendations!r} report_status={report_status!r} report_id={report_id}", flush=True)
+
     cursor.execute("""
-        UPDATE reports 
-        SET status = 'verified', 
-            verified_by = %s, 
+        UPDATE reports
+        SET status = 'verified',
+            verified_by = %s,
             verified_at = %s,
             flood_level_reported = %s,
             recommendations = %s,
             report_status = %s
         WHERE id = %s
     """, (verified_by, now, flood_level, recommendations, report_status, report_id))
-    
+
     db.commit()
+    print(f"[VERIFY] UPDATE committed, rowcount={cursor.rowcount}", flush=True)
     cursor.close()
     
     # ── Auto-escalate to create official alert ──────────────────────────────────
