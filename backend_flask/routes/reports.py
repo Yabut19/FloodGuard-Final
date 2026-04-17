@@ -150,6 +150,56 @@ def update_report_status(report_id):
 # ─ VERIFICATION ENDPOINTS: LGU/Admin verification with audit trail ──────────────
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
+@reports_bp.route('/pending/with-sensor-data', methods=['GET'])
+def get_pending_reports_with_sensor_data():
+    """Get all pending reports joined with user registered location and latest sensor data"""
+    logger.info("Accessing /pending/with-sensor-data endpoint")
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        # Fetch pending reports joined with user profile for registered location
+        cursor.execute("""
+            SELECT 
+                r.*, 
+                u.barangay as registered_location
+            FROM reports r
+            LEFT JOIN users u ON r.reporter_email = u.email
+            WHERE r.status = 'pending'
+            ORDER BY r.timestamp DESC
+        """)
+        reports = cursor.fetchall()
+        
+        # Format datetimes for JSON serialization
+        for r in reports:
+            if r['timestamp']:
+                r['timestamp'] = r['timestamp'].isoformat() if isinstance(r['timestamp'], datetime) else str(r['timestamp'])
+            if r['verified_at']:
+                r['verified_at'] = r['verified_at'].isoformat() if isinstance(r['verified_at'], datetime) else str(r['verified_at'])
+
+        # Fetch latest sensor data for comparison context
+        cursor.execute("""
+            SELECT sensor_id, flood_level, status, created_at, latitude, longitude, raw_distance
+            FROM iot_readings 
+            ORDER BY created_at DESC LIMIT 1
+        """)
+        latest_sensor = cursor.fetchone()
+        
+        if latest_sensor and latest_sensor['created_at']:
+            latest_sensor['created_at'] = latest_sensor['created_at'].isoformat() if isinstance(latest_sensor['created_at'], datetime) else str(latest_sensor['created_at'])
+            
+        cursor.close()
+        
+        return jsonify({
+            "pending_reports": reports,
+            "latest_sensor_data": latest_sensor
+        }), 200
+    except Exception as e:
+        logger.error("Error in get_pending_reports_with_sensor_data: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @reports_bp.route('/pending', methods=['GET'])
 def get_pending_reports():
     """Get all pending reports awaiting verification by LGU/Admin"""
@@ -175,6 +225,9 @@ def verify_report(report_id):
     data = request.get_json() or {}
     verified_by = data.get('verified_by')  # LGU admin username/email
     flood_level = data.get('flood_level')  # Official flood level classification
+    
+    recommendations = data.get('recommendations')
+    report_status = data.get('report_status') or 'Active'
     
     if not verified_by:
         return jsonify({"error": "verified_by (LGU official) is required"}), 400
@@ -203,9 +256,11 @@ def verify_report(report_id):
         SET status = 'verified', 
             verified_by = %s, 
             verified_at = %s,
-            flood_level_reported = %s
+            flood_level_reported = %s,
+            recommendations = %s,
+            report_status = %s
         WHERE id = %s
-    """, (verified_by, now, flood_level, report_id))
+    """, (verified_by, now, flood_level, recommendations, report_status, report_id))
     
     db.commit()
     cursor.close()
@@ -218,13 +273,15 @@ def verify_report(report_id):
                      'warning' if flood_level in ['medium', 'waist-high'] else 'critical'
         
         cursor.execute("""
-            INSERT INTO alerts (title, description, level, barangay, status, timestamp)
-            VALUES (%s, %s, %s, %s, 'active', NOW())
+            INSERT INTO alerts (title, description, level, barangay, status, timestamp, recommended_action, incident_status)
+            VALUES (%s, %s, %s, %s, 'active', NOW(), %s, %s)
         """, (
             f"Verified: {report['type']} at {report['location']}",
             f"Verified by LGU Official ({verified_by})\nUser Report: {report['description']}\nFlood Level: {flood_level}",
             alert_level,
-            report['location']
+            report['location'],
+            recommendations,
+            report_status
         ))
         
         db.commit()

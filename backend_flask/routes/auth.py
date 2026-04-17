@@ -82,7 +82,8 @@ def login():
                 "username": user.username,
                 "role": user.role,
                 "must_change_password": must_change,
-                "full_name": user.full_name
+                "full_name": user.full_name,
+                "barangay": user.barangay
             }
         }), 200
     
@@ -124,20 +125,21 @@ def register():
         user_id = cursor.lastrowid
         cursor.close()
         
-        # Send credentials via email
+        # Send credentials via email (new refactored service)
         from utils.email_service import send_credentials_email
-        email_sent, email_msg = send_credentials_email(email, full_name, generated_password)
+        success, email_response = send_credentials_email(email, full_name, generated_password)
         
-        if email_sent:
+        if success:
             return jsonify({
                 "message": "Account created! Please check your email for credentials.",
                 "user_id": user_id
             }), 201
         else:
-             return jsonify({
-                "message": "Account created, but failed to send email. Please contact admin.",
+            # More descriptive error message for the mobile user
+            return jsonify({
+                "message": f"Account created, but credentials email failed: {email_response}",
                 "user_id": user_id,
-                "error": email_msg
+                "error": email_response
             }), 201
             
     except Exception as e:
@@ -148,15 +150,27 @@ def register():
 def change_password():
     data = request.get_json()
     user_id = data.get('user_id')
+    current_password = data.get('current_password')
     new_password = data.get('new_password')
     
-    if not user_id or not new_password:
-        return jsonify({"error": "Missing user_id or new_password"}), 400
+    if not user_id or not current_password or not new_password:
+        return jsonify({"error": "Missing required fields"}), 400
         
     db = get_db()
     cursor = db.cursor()
     
     try:
+        # Verify current password
+        cursor.execute("SELECT password FROM users WHERE id = %s", (user_id,))
+        user_row = cursor.fetchone()
+        
+        if not user_row:
+            return jsonify({"error": "User not found"}), 404
+            
+        if not check_password_hash(user_row['password'], current_password):
+            return jsonify({"error": "Incorrect current password"}), 401
+
+        # Proceed to update with new password
         new_hash = generate_password_hash(new_password)
         cursor.execute("""
             UPDATE users 

@@ -3,13 +3,14 @@ from utils.db import get_db
 from werkzeug.security import check_password_hash
 
 class User:
-    def __init__(self, id, username, role, password_hash, must_change_password=False, full_name=None):
+    def __init__(self, id, username, role, password_hash, must_change_password=False, full_name=None, barangay=None):
         self.id = id
         self.username = username
         self.role = role
         self.password_hash = password_hash
         self.must_change_password = must_change_password
         self.full_name = full_name or username # Fallback to username if no name
+        self.barangay = barangay
 
     @staticmethod
     def find_by_username(username):
@@ -36,7 +37,8 @@ class User:
                 username=user_data['username'],
                 role=user_data['role'],
                 password_hash=user_data['password'],
-                full_name=full_name
+                full_name=full_name,
+                barangay="All Locations" # Admins have access to all areas
             )
 
         # 2. Check users table (mobile users) using email as username
@@ -52,7 +54,8 @@ class User:
                 role=user_data.get('role', 'user'), # Use role from DB or default to 'user'
                 password_hash=user_data['password'],
                 must_change_password=bool(user_data.get('must_change_password', 0)),
-                full_name=user_data.get('full_name')
+                full_name=user_data.get('full_name'),
+                barangay=user_data.get('barangay')
             )
             
         return None

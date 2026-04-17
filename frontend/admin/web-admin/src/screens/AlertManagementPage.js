@@ -12,6 +12,11 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [alertMessage, setAlertMessage] = useState("");
     const [alertTitle, setAlertTitle] = useState("");
     const [recommendedAction, setRecommendedAction] = useState("");
+    
+    // Verification state
+    const [verifyFloodLevel, setVerifyFloodLevel] = useState("medium");
+    const [recommendations, setRecommendations] = useState("");
+    const [incidentStatus, setIncidentStatus] = useState("Active");
     const [verifications, setVerifications] = useState([]);
     const [allReports, setAllReports] = useState([]);
     const [alertHistory, setAlertHistory] = useState([]);
@@ -379,7 +384,9 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     verified_by: localStorage.getItem("userName") || "Admin",
-                    flood_level: report.flood_level_reported || "medium"
+                    flood_level: verifyFloodLevel,
+                    recommendations: recommendations,
+                    report_status: incidentStatus
                 })
             });
 
@@ -583,6 +590,9 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     onPress={() => {
                                         setSelectedReportForModal(item);
                                         setShowReportDetailsModal(true);
+                                        setVerifyFloodLevel(item.flood_level_reported || "medium");
+                                        setRecommendations("");
+                                        setIncidentStatus("Active");
                                         fetchSensorDataForBarangay(item.location);
                                     }}
                                 >
@@ -913,6 +923,87 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             <Text style={{ marginTop: 8, color: '#ef4444', fontFamily: "Poppins_600SemiBold" }}>No sensor data available</Text>
                                         </View>
                                     )}
+
+                                    {/* Verification Inputs */}
+                                    <View style={{ backgroundColor: '#f0f9ff', padding: 16, borderRadius: 12, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#0ea5e9' }}>
+                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: '#0ea5e9', marginBottom: 12, letterSpacing: 1 }}>OFFICIAL VERIFICATION</Text>
+                                        
+                                        {/* Flood Level */}
+                                        <View style={{ marginBottom: 16 }}>
+                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 8 }}>Declare Official Flood Level:</Text>
+                                            <View style={{ flexDirection: "row", gap: 8 }}>
+                                                {[
+                                                    { level: "low", label: "Low", color: "#16a34a" },
+                                                    { level: "medium", label: "Medium", color: "#f59e0b" },
+                                                    { level: "high", label: "High", color: "#ef4444" },
+                                                ].map(({ level, label, color }) => (
+                                                    <TouchableOpacity
+                                                        key={level}
+                                                        onPress={() => setVerifyFloodLevel(level)}
+                                                        style={{
+                                                            flex: 1,
+                                                            paddingVertical: 10,
+                                                            borderRadius: 8,
+                                                            alignItems: "center",
+                                                            backgroundColor: verifyFloodLevel === level ? color + "20" : "#ffffff",
+                                                            borderWidth: verifyFloodLevel === level ? 2 : 1,
+                                                            borderColor: verifyFloodLevel === level ? color : "#e2e8f0",
+                                                        }}
+                                                    >
+                                                        <Text style={{ color: verifyFloodLevel === level ? color : "#64748b", fontFamily: "Poppins_600SemiBold", fontSize: 12 }}>{label}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+
+                                        {/* Incident Status */}
+                                        <View style={{ marginBottom: 16 }}>
+                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 8 }}>Current Incident Status:</Text>
+                                            <View style={{ flexDirection: "row", gap: 8 }}>
+                                                {["Active", "Resolved"].map((status) => (
+                                                    <TouchableOpacity
+                                                        key={status}
+                                                        onPress={() => setIncidentStatus(status)}
+                                                        style={{
+                                                            flex: 1,
+                                                            paddingVertical: 10,
+                                                            borderRadius: 8,
+                                                            alignItems: "center",
+                                                            backgroundColor: incidentStatus === status ? "#0ea5e920" : "#ffffff",
+                                                            borderWidth: incidentStatus === status ? 2 : 1,
+                                                            borderColor: incidentStatus === status ? "#0ea5e9" : "#e2e8f0",
+                                                        }}
+                                                    >
+                                                        <Text style={{ color: incidentStatus === status ? "#0ea5e9" : "#64748b", fontFamily: "Poppins_600SemiBold", fontSize: 11 }}>{status}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+
+                                        {/* Recommendations */}
+                                        <View>
+                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 8 }}>Official Recommendations:</Text>
+                                            <TextInput
+                                                style={{
+                                                    backgroundColor: "#ffffff",
+                                                    color: "#1e293b",
+                                                    borderRadius: 8,
+                                                    padding: 12,
+                                                    borderWidth: 1,
+                                                    borderColor: "#e2e8f0",
+                                                    minHeight: 80,
+                                                    textAlignVertical: "top",
+                                                    fontFamily: "Poppins_400Regular",
+                                                    fontSize: 13
+                                                }}
+                                                placeholder="e.g., Evacuate to higher ground, avoid flooded streets..."
+                                                placeholderTextColor="#94a3b8"
+                                                value={recommendations}
+                                                onChangeText={setRecommendations}
+                                                multiline
+                                            />
+                                        </View>
+                                    </View>
 
                                     {/* Action Buttons */}
                                     <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>

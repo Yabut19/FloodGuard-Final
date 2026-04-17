@@ -18,6 +18,8 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
     const [showConfirmBroadcast, setShowConfirmBroadcast] = useState(false);
     const [verifyFloodLevel, setVerifyFloodLevel] = useState("medium");
     const [verifyNotes, setVerifyNotes] = useState("");
+    const [recommendations, setRecommendations] = useState("");
+    const [incidentStatus, setIncidentStatus] = useState("Active");
     const [submittingVerify, setSubmittingVerify] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     const [submittingReject, setSubmittingReject] = useState(false);
@@ -58,7 +60,9 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     verified_by: currentUser.email || currentUser.username || "Admin",
-                    flood_level: verifyFloodLevel
+                    flood_level: verifyFloodLevel,
+                    recommendations: recommendations,
+                    report_status: incidentStatus
                 })
             });
 
@@ -296,6 +300,8 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                         setShowVerifyModal(true);
                                         setVerifyFloodLevel("medium");
                                         setVerifyNotes("");
+                                        setRecommendations("");
+                                        setIncidentStatus("Active");
                                     }}
                                 >
                                     {/* Left: Report Details */}
@@ -342,6 +348,15 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                     {report.reporter_name || "Anonymous"}
                                                 </Text>
                                             </View>
+
+                                            {report.registered_location && (
+                                                <View style={{ backgroundColor: "#eff6ff", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderLeftWidth: 2, borderLeftColor: "#3b82f6" }}>
+                                                    <Text style={{ color: "#3b82f6", fontSize: 10 }}>Registered Home</Text>
+                                                    <Text style={{ color: "#1e40af", fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
+                                                        {report.registered_location}
+                                                    </Text>
+                                                </View>
+                                            )}
 
                                             {report.flood_level_reported && (
                                                 <View
@@ -406,6 +421,8 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                 setShowVerifyModal(true);
                                                 setVerifyFloodLevel("medium");
                                                 setVerifyNotes("");
+                                                setRecommendations("");
+                                                setIncidentStatus("Active");
                                             }}
                                         >
                                             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -508,6 +525,14 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                         </Text>
                                                     )}
                                                 </View>
+                                                {selectedReport.registered_location && (
+                                                    <View>
+                                                        <Text style={{ color: "#94a3b8", fontSize: 11 }}>Registered Home</Text>
+                                                        <Text style={{ color: "#1e40af", fontFamily: "Poppins_600SemiBold" }}>
+                                                            {selectedReport.registered_location}
+                                                        </Text>
+                                                    </View>
+                                                )}
                                                 <View>
                                                     <Text style={{ color: "#94a3b8", fontSize: 11 }}>Submitted</Text>
                                                     <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>
@@ -636,10 +661,44 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             </View>
                                         </View>
 
-                                        {/* Notes */}
-                                        <View>
+                                        {/* Incident Status */}
+                                        <View style={{ marginBottom: 16 }}>
                                             <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
-                                                Verification Notes (Optional):
+                                                Incident Status:
+                                            </Text>
+                                            <View style={{ flexDirection: "row", gap: 8 }}>
+                                                {["Active", "Resolved"].map((status) => (
+                                                    <TouchableOpacity
+                                                        key={status}
+                                                        onPress={() => setIncidentStatus(status)}
+                                                        style={{
+                                                            flex: 1,
+                                                            paddingVertical: 10,
+                                                            borderRadius: 8,
+                                                            alignItems: "center",
+                                                            backgroundColor: incidentStatus === status ? "#3b82f620" : "#f1f5f9",
+                                                            borderWidth: incidentStatus === status ? 2 : 1,
+                                                            borderColor: incidentStatus === status ? "#3b82f6" : "#DDF6D2",
+                                                        }}
+                                                    >
+                                                        <Text
+                                                            style={{
+                                                                color: incidentStatus === status ? "#3b82f6" : "#94a3b8",
+                                                                fontFamily: incidentStatus === status ? "Poppins_700Bold" : "Poppins_600SemiBold",
+                                                                fontSize: 12,
+                                                            }}
+                                                        >
+                                                            {status}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+
+                                        {/* Recommendations */}
+                                        <View style={{ marginBottom: 16 }}>
+                                            <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
+                                                Official Recommendations:
                                             </Text>
                                             <TextInput
                                                 style={{
@@ -653,7 +712,33 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                                     textAlignVertical: "top",
                                                     fontFamily: "Poppins_400Regular",
                                                 }}
-                                                placeholder="Why are you verifying this? Any cross-checks done?"
+                                                placeholder="e.g., Evacuate to higher ground, avoid flooded streets..."
+                                                placeholderTextColor="#94a3b8"
+                                                value={recommendations}
+                                                onChangeText={setRecommendations}
+                                                multiline
+                                            />
+                                        </View>
+
+                                        {/* Verification Notes */}
+                                        <View>
+                                            <Text style={{ color: "#0f172a", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
+                                                Internal Verification Notes (Optional):
+                                            </Text>
+                                            <TextInput
+                                                style={{
+                                                    backgroundColor: "#f1f5f9",
+                                                    color: "#0f172a",
+                                                    borderRadius: 8,
+                                                    padding: 12,
+                                                    borderWidth: 1,
+                                                    borderColor: "#DDF6D2",
+                                                    minHeight: 60,
+                                                    textAlignVertical: "top",
+                                                    fontFamily: "Poppins_400Regular",
+                                                    fontSize: 12
+                                                }}
+                                                placeholder="Internal notes for audit log..."
                                                 placeholderTextColor="#94a3b8"
                                                 value={verifyNotes}
                                                 onChangeText={setVerifyNotes}

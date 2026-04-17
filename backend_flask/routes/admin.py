@@ -92,12 +92,18 @@ def create_user(current_user):
         cursor.close()
         
         # Send credentials via email (primarily for LGU creation)
-        if role == 'lgu_admin':
-            logger.info(f"Attempting to send email to {email}")
-            success, message = send_credentials_email(email, full_name or email, password)
-            logger.info(f"Email send result: {success}, {message}")
+        if role in ['lgu_admin', 'lgu']:
+            logger.info(f"Attempting to send admin email to {email}")
+            admin_flag = True
+            success, message = send_credentials_email(email, full_name or email, password, is_admin=admin_flag)
+            logger.info(f"Admin email send result: {success}, {message}")
+        elif role == 'user':
+            logger.info(f"Attempting to send standard user email to {email}")
+            success, message = send_credentials_email(email, full_name or email, password, is_admin=False)
+            logger.info(f"User email send result: {success}, {message}")
         else:
-             success = True
+            success = True
+            message = "Email skip for super_admin"
         
         return jsonify({
             "message": f"Account with role '{role}' created successfully",

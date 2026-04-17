@@ -12,7 +12,7 @@ def get_db_connection():
 
 def run_schema(cursor):
     print("Applying schema...")
-    with open('backend_flask/db_schema.sql', 'r') as f:
+    with open('db_schema.sql', 'r') as f:
         schema = f.read()
         statements = schema.split(';')
         for statement in statements:

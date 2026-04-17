@@ -48,6 +48,9 @@ export const useTheme = () => useContext(ThemeContext);
 const LocationContext = createContext(null);
 const useUserLocation = () => useContext(LocationContext);
 
+const NotificationContext = createContext(null);
+const useNotifications = () => useContext(NotificationContext);
+
 export const theme = {
   background: "#1E2A38",
   surface: "#283747",
@@ -79,7 +82,7 @@ const ACCOUNT_IMAGE = require("./assets/flood.png");
 const LOCATION_IMAGE = require("./assets/flood4.jpg");
 const NOTIFY_IMAGE = require("./assets/flood5.jpg");
 const LOGO = require("./assets/logo.png");
-const API_BASE = "http://192.168.137.165:5000"; // Your machine's LAN IP — update if it changes
+const API_BASE = "http://192.168.68.101:5000"; // Updated to current machine IP (192.168.68.101)
 
 const safeGoBack = (navigation, fallback) => {
   if (navigation?.canGoBack?.()) {
@@ -201,17 +204,10 @@ const SETTINGS_ITEMS = [
   },
   {
     id: "locations",
-    title: "Monitored Locations",
-    description: "Manage your tracked areas",
+    title: "Location Map",
+    description: "View real-time evacuation routes and centers",
     icon: "map",
     section: "Location & Map",
-  },
-  {
-    id: "language",
-    title: "Language",
-    description: "English (US)",
-    icon: "language",
-    section: "App Settings",
   },
   {
     id: "privacy",
@@ -837,93 +833,138 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.landingContainerFixed}>
       <WelcomeAlertModal
         visible={showWelcome}
         userName={userData?.full_name || userData?.name}
         onDismiss={handleWelcomeDismiss}
       />
-      <View style={styles.landingPage}>
-        <View style={styles.landingPageOverlay} />
-        <View style={styles.landingCard}>
-          <Text style={styles.landingTitle}>Admin Access</Text>
-          <Text style={styles.landingCaption}>Secure login for System Administrators</Text>
+      <FloatingParticles />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1, justifyContent: 'center', padding: 24 }}
+      >
+        {/* Header Section */}
+        <View style={{ alignItems: 'center', marginBottom: 40 }}>
+          <Image source={LOGO} style={[styles.landingLogo, { width: 100, height: 100, marginBottom: 20 }]} />
+          <Text style={[styles.landingTitle, { fontSize: 28, marginBottom: 8, letterSpacing: 0.5 }]}>Welcome Back</Text>
+          <Text style={[styles.landingCaption, { textAlign: 'center', maxWidth: '85%', lineHeight: 20 }]}>
+            Sign in to access real-time flood intelligence and community updates.
+          </Text>
+        </View>
 
-          <View style={{ width: "100%", marginVertical: 20 }}>
-            <View style={{ backgroundColor: "#1E2A38", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "rgba(123, 189, 232, 0.15)" }}>
-              <Text style={{ fontSize: 12, color: "#7BBDE8", marginBottom: 6, fontWeight: "700", letterSpacing: 1 }}>
-                EMAIL ADDRESS
-              </Text>
+        {/* Glassmorphism Logic Card */}
+        <View style={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+          borderRadius: 28, 
+          padding: 24, 
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.12,
+          shadowRadius: 24,
+          elevation: 12
+        }}>
+          
+          {/* Email Input */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold", marginBottom: 8, letterSpacing: 0.5 }}>
+              EMAIL ADDRESS
+            </Text>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center',
+              backgroundColor: "#f8fafc",
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: "#e2e8f0"
+            }}>
+              <Ionicons name="mail-outline" size={20} color="#94a3b8" style={{ marginLeft: 16 }} />
               <TextInput
-                style={{
-                  backgroundColor: "#283747",
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 16,
-                  color: "#ffffff",
-                  fontSize: 14,
-                  borderWidth: 1,
-                  borderColor: "rgba(123, 189, 232, 0.05)"
-                }}
+                style={{ flex: 1, padding: 16, color: "#0f172a", fontSize: 15, fontFamily: "Poppins_400Regular" }}
                 placeholder="juan@example.com"
-                placeholderTextColor="#49769F"
+                placeholderTextColor="#94a3b8"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
               />
-
-              <Text style={{ fontSize: 12, color: "#7BBDE8", marginBottom: 6, fontWeight: "700", letterSpacing: 1 }}>
-                PASSWORD
-              </Text>
-              <View style={{ position: "relative", justifyContent: "center" }}>
-                <TextInput
-                  style={{
-                    backgroundColor: "#283747",
-                    padding: 12,
-                    borderRadius: 8,
-                    color: "#ffffff",
-                    fontSize: 14,
-                    paddingRight: 40,
-                    borderWidth: 1,
-                    borderColor: "rgba(123, 189, 232, 0.05)"
-                  }}
-                  placeholder="Enter your password"
-                  placeholderTextColor="#49769F"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity
-                  style={{ position: "absolute", right: 12 }}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off" : "eye"}
-                    size={20}
-                    color="#64748b"
-                  />
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.landingSecondary}
+          {/* Password Input */}
+          <View style={{ marginBottom: 30 }}>
+            <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold", marginBottom: 8, letterSpacing: 0.5 }}>
+              PASSWORD
+            </Text>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center',
+              backgroundColor: "#f8fafc",
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: "#e2e8f0"
+            }}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={{ marginLeft: 16 }} />
+              <TextInput
+                style={{ flex: 1, padding: 16, color: "#0f172a", fontSize: 15, fontFamily: "Poppins_400Regular" }}
+                placeholder="Enter your password"
+                placeholderTextColor="#94a3b8"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 16 }}>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <TouchableOpacity 
             onPress={onLogin}
             disabled={loading}
+            style={{
+              backgroundColor: "#74C5E6",
+              paddingVertical: 18,
+              borderRadius: 14,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              shadowColor: "#74C5E6",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 10,
+              elevation: 4
+            }}
           >
-            <Text style={styles.landingSecondaryText}>{loading ? "Authenticating..." : "Sign In"}</Text>
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <>
+                <Ionicons name="log-in-outline" size={22} color="white" style={{ marginRight: 10 }} />
+                <Text style={{ color: "white", fontWeight: "700", fontSize: 17, fontFamily: "Poppins_600SemiBold" }}>
+                  Sign In
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.landingSecondary, { marginTop: 12, backgroundColor: "transparent", borderColor: "rgba(255, 255, 255, 0.2)" }]}
+          <TouchableOpacity 
             onPress={() => navigation.goBack()}
+            style={{ paddingVertical: 16, marginTop: 10, alignItems: 'center' }}
           >
-            <Text style={styles.landingSecondaryText}>Cancel</Text>
+            <Text style={{ color: "#64748b", fontWeight: "600", fontSize: 15 }}>Back to Landing</Text>
           </TouchableOpacity>
         </View>
-      </View>
+
+        {/* Footer info */}
+        <View style={{ marginTop: 40, alignItems: 'center' }}>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: "Poppins_400Regular" }}>
+            FloodGuard Ecosystem • Community Edition v1.2
+          </Text>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -932,12 +973,19 @@ const ChangePasswordScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
+  const isPasswordStrong = newPassword.length >= 6;
 
   const onChangePassword = async () => {
-    if (!newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
     }
@@ -962,14 +1010,24 @@ const ChangePasswordScreen = ({ navigation }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: user.id,
+          current_password: currentPassword,
           new_password: newPassword
         }),
       });
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert("Success", "Password changed successfully!", [
-          { text: "OK", onPress: () => navigation.replace("MainDrawer") }
+        Alert.alert("Success", "Password changed successfully! You will now be logged out for security.", [
+          { 
+            text: "OK", 
+            onPress: async () => {
+              await AsyncStorage.multiRemove(['userData', 'userRole']);
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "Login" }],
+              });
+            } 
+          }
         ]);
       } else {
         Alert.alert("Error", data.error || "Failed to update password.");
@@ -982,60 +1040,163 @@ const ChangePasswordScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ImageBackground source={LANDING_BG} style={styles.landingPage}>
-        <View style={styles.landingPageOverlay} />
-        <View style={styles.landingCard}>
-          <Text style={styles.landingTitle}>Security Update</Text>
-          <Text style={styles.landingCaption}>Please set a new password for your account.</Text>
+    <SafeAreaView style={styles.landingContainerFixed}>
+      <FloatingParticles />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1, justifyContent: 'center', padding: 24 }}
+      >
+        {/* Header */}
+        <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          <View style={{ backgroundColor: 'rgba(116, 197, 230, 0.2)', padding: 16, borderRadius: 24, marginBottom: 16 }}>
+            <Ionicons name="shield-checkmark" size={40} color="#74C5E6" />
+          </View>
+          <Text style={[styles.landingTitle, { fontSize: 24, marginBottom: 8 }]}>Secure Your Account</Text>
+          <Text style={[styles.landingCaption, { textAlign: 'center', maxWidth: '80%' }]}>
+            Create a strong password to protect your personal information.
+          </Text>
+        </View>
 
-          <View style={{ width: "100%", marginVertical: 20 }}>
-            <View style={{ backgroundColor: "rgba(255,255,255,0.9)", borderRadius: 12, padding: 16 }}>
-
-              <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 4, fontWeight: "600" }}>
-                New Password
-              </Text>
+        {/* Glassmorphism Card */}
+        <View style={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+          borderRadius: 24, 
+          padding: 24, 
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.1,
+          shadowRadius: 20,
+          elevation: 10
+        }}>
+          
+          {/* Current Password Input */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
+              CURRENT PASSWORD
+            </Text>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center',
+              backgroundColor: "#f1f5f9",
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: "#e2e8f0"
+            }}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={{ marginLeft: 14 }} />
               <TextInput
-                style={{
-                  backgroundColor: "#f1f5f9",
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 16,
-                  color: "#0f172a",
-                  fontSize: 16
-                }}
-                placeholder="Enter new password"
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry
+                style={{ flex: 1, padding: 14, color: "#0f172a", fontSize: 16, fontFamily: "Poppins_400Regular" }}
+                placeholder="Enter current password"
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                secureTextEntry={!showCurrentPassword}
               />
-
-              <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 4, fontWeight: "600" }}>
-                Confirm Password
-              </Text>
-              <TextInput
-                style={{
-                  backgroundColor: "#f1f5f9",
-                  padding: 12,
-                  borderRadius: 8,
-                  color: "#0f172a",
-                  fontSize: 16
-                }}
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-              />
+              <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)} style={{ padding: 14 }}>
+                <Ionicons name={showCurrentPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
+              </TouchableOpacity>
             </View>
           </View>
 
-          <PrimaryButton
-            label={loading ? "Updating..." : "Update Password"}
+          {/* New Password Input */}
+          <View style={{ marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold" }}>
+                NEW PASSWORD
+              </Text>
+              {isPasswordStrong && <Ionicons name="checkmark-circle" size={16} color="#16a34a" />}
+            </View>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center',
+              backgroundColor: "#f8fafc",
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: newPassword.length > 0 ? (isPasswordStrong ? "#16a34a" : "#cbd5e1") : "#e2e8f0"
+            }}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={{ marginLeft: 14 }} />
+              <TextInput
+                style={{ flex: 1, padding: 14, color: "#0f172a", fontSize: 16, fontFamily: "Poppins_400Regular" }}
+                placeholder="Enter at least 6 characters"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry={!showNewPassword}
+              />
+              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={{ padding: 14 }}>
+                <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Confirm Password Input */}
+          <View style={{ marginBottom: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold" }}>
+                CONFIRM PASSWORD
+              </Text>
+              {passwordsMatch && <Ionicons name="checkmark-done-circle" size={16} color="#16a34a" />}
+            </View>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center',
+              backgroundColor: "#f8fafc",
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: confirmPassword.length > 0 ? (passwordsMatch ? "#16a34a" : "#ef4444") : "#e2e8f0"
+            }}>
+              <Ionicons name="key-outline" size={20} color="#94a3b8" style={{ marginLeft: 14 }} />
+              <TextInput
+                style={{ flex: 1, padding: 14, color: "#0f172a", fontSize: 16, fontFamily: "Poppins_400Regular" }}
+                placeholder="Repeat your password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={{ padding: 14 }}>
+                <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+            {confirmPassword.length > 0 && !passwordsMatch && (
+              <Text style={{ fontSize: 12, color: "#ef4444", marginTop: 6, marginLeft: 2 }}>Passwords do not match</Text>
+            )}
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity 
             onPress={onChangePassword}
-            disabled={loading}
-          />
+            disabled={loading || !passwordsMatch || !isPasswordStrong}
+            style={{
+              backgroundColor: (passwordsMatch && isPasswordStrong) ? "#74C5E6" : "#cbd5e1",
+              paddingVertical: 16,
+              borderRadius: 12,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              shadowColor: "#74C5E6",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: (passwordsMatch && isPasswordStrong) ? 0.3 : 0,
+              shadowRadius: 8,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="white" style={{ marginRight: 8 }} />
+                <Text style={{ color: "white", fontWeight: "700", fontSize: 16, fontFamily: "Poppins_600SemiBold" }}>
+                  Update Password
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Back Link */}
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            style={{ paddingVertical: 16, marginTop: 8, alignItems: 'center' }}
+          >
+            <Text style={{ color: "#64748b", fontWeight: "600", fontSize: 14 }}>Maybe Later</Text>
+          </TouchableOpacity>
         </View>
-      </ImageBackground>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -1589,168 +1750,11 @@ const CustomHeader = ({ navigation, title, subtitle }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const [isNotifVisible, setIsNotifVisible] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [readIds, setReadIds] = useState([]);
+  const { notifications, unreadCount, loading, readIds, markAsRead, markAllAsRead } = useNotifications();
 
   const topInset = Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 0;
 
-  useEffect(() => {
-    loadReadIds();
-    fetchNotifications(); // Initial fetch
-
-    // Set up polling interval (every 30 seconds)
-    const interval = setInterval(() => {
-      fetchNotifications(true); // true indicates a background poll
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadReadIds = async () => {
-    try {
-      const stored = await AsyncStorage.getItem("notif_read_ids");
-      if (stored) setReadIds(JSON.parse(stored));
-    } catch (e) {
-      console.error("Error loading read ids:", e);
-    }
-  };
-
-  const saveReadIds = async (ids) => {
-    try {
-      await AsyncStorage.setItem("notif_read_ids", JSON.stringify(ids));
-    } catch (e) {
-      console.error("Error saving read ids:", e);
-    }
-  };
-
-  const markAsRead = (id) => {
-    if (!readIds.includes(id)) {
-      const newReadIds = [...readIds, id];
-      setReadIds(newReadIds);
-      saveReadIds(newReadIds);
-    }
-  };
-
-  const markAllAsRead = () => {
-    const allIds = notifications.map(n => n.id);
-    const newReadIds = Array.from(new Set([...readIds, ...allIds]));
-    setReadIds(newReadIds);
-    saveReadIds(newReadIds);
-  };
-
-  const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
-
-  const fetchNotifications = async (isBackground = false) => {
-    try {
-      if (!isBackground) setLoading(true);
-
-      // Get user data to fetch personalized subscribed alerts
-      const storedUser = await AsyncStorage.getItem("userData");
-      let alertsUrl = `${API_BASE}/api/alerts/`;
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        if (user?.id) {
-          alertsUrl = `${API_BASE}/api/subscriptions/user/${user.id}/alerts`;
-        }
-      }
-
-      const [alertsRes, reportsRes] = await Promise.all([
-        fetch(alertsUrl),
-        fetch(`${API_BASE}/api/reports/?status=verified`)
-      ]);
-
-      let alerts = [];
-      let reports = [];
-
-      if (alertsRes.ok) {
-        try {
-          alerts = await alertsRes.json();
-        } catch (e) {
-          console.warn('Could not parse alerts JSON', e, await alertsRes.text());
-          alerts = [];
-        }
-      } else {
-        console.warn('Alerts API error', alertsRes.status, await alertsRes.text());
-      }
-
-      if (reportsRes.ok) {
-        try {
-          reports = await reportsRes.json();
-        } catch (e) {
-          console.warn('Could not parse reports JSON', e, await reportsRes.text());
-          reports = [];
-        }
-      } else {
-        console.warn('Reports API error', reportsRes.status, await reportsRes.text());
-      }
-
-      const normalizedAlerts = (alerts || []).map(a => ({
-        ...a,
-        id: `alert-${a.id}`,
-        sourceType: 'announcement',
-        icon: ' megaphone-outline',
-        accent: a.level === 'critical' ? '#e2463b' : a.level === 'warning' ? '#f29339' : '#f5c542',
-        displayType: 'ANNOUNCEMENT'
-      }));
-
-      const normalizedReports = (reports || []).map(r => ({
-        ...r,
-        id: `report-${r.id}`,
-        title: `${r.type} at ${r.location}`,
-        description: r.description,
-        sourceType: 'community_report',
-        icon: 'people-outline',
-        accent: '#74C5E6',
-        displayType: 'COMMUNITY REPORT'
-      }));
-
-      const combined = [...normalizedAlerts, ...normalizedReports].sort((a, b) =>
-        new Date(b.timestamp) - new Date(a.timestamp)
-      );
-
-      const latestItems = combined.slice(0, 5);
-
-      // Pop-up logic for new alerts
-      if (latestItems.length > 0) {
-        const latestId = latestItems[0].id;
-        const storedLastId = await AsyncStorage.getItem("last_notif_id");
-
-        if (storedLastId && storedLastId !== latestId) {
-          const newItem = latestItems[0];
-          // Show pop-up for new items
-          Alert.alert(
-            "📢 New Notification",
-            newItem.title || newItem.type,
-            [
-              {
-                text: "View", onPress: () => {
-                  if (newItem.sourceType === 'announcement') {
-                    navigation.navigate("AlertDetail", { alert: newItem });
-                  }
-                }
-              },
-              { text: "Dismiss", style: "cancel" }
-            ]
-          );
-        }
-        await AsyncStorage.setItem("last_notif_id", latestId);
-      }
-
-      setNotifications(latestItems);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      setLoading(false);
-    }
-  };
-
-  const toggleNotif = () => {
-    if (!isNotifVisible) {
-      fetchNotifications();
-    }
-    setIsNotifVisible(!isNotifVisible);
-  };
+  const toggleNotif = () => setIsNotifVisible(!isNotifVisible);
 
   return (
     <View style={[styles.dashHeaderRow, { paddingTop: Platform.OS === "android" ? topInset + 16 : 44 }]}>
@@ -1940,6 +1944,19 @@ const DashboardScreen = ({ navigation }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [latestSensor, setLatestSensor] = useState(null);
   const [loadingSensor, setLoadingSensor] = useState(true);
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('userData');
+        if (stored) setUserData(JSON.parse(stored));
+      } catch (e) {
+        console.log("Error fetching user data in Dashboard", e);
+      }
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     const fetchLatest = async () => {
@@ -2015,7 +2032,7 @@ const DashboardScreen = ({ navigation }) => {
 
           <View style={styles.locationTitleRow}>
             <Ionicons name="location-outline" size={20} color="#74C5E6" />
-            <Text style={styles.locationTitle}>Barangay San Jose</Text>
+            <Text style={styles.locationTitle}>{userData?.barangay || "Mabolo District"}</Text>
           </View>
           <Text style={styles.locationTimeText}>Updated just now</Text>
 
@@ -2418,9 +2435,17 @@ const AlertsScreen = ({ navigation }) => {
         <Text style={styles.alertDescription}>{alert.description}</Text>
         {(alert.recommended_action || alert.actions) ? (
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6, gap: 6 }}>
-            <Ionicons name="checkmark-circle" size={14} color="#16a34a" style={{ marginTop: 1 }} />
+            <Ionicons name="bulb-outline" size={14} color="#16a34a" style={{ marginTop: 1 }} />
             <Text style={[styles.alertMetaText, { flex: 1, color: '#16a34a', fontWeight: '600' }]} numberOfLines={2}>
               {alert.recommended_action || alert.actions}
+            </Text>
+          </View>
+        ) : null}
+        {alert.incident_status ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: alert.incident_status === 'Resolved' ? '#16a34a' : '#f59e0b' }} />
+            <Text style={[styles.alertMetaText, { color: alert.incident_status === 'Resolved' ? '#16a34a' : '#f59e0b', fontWeight: '700', fontSize: 10, textTransform: 'uppercase' }]}>
+              Status: {alert.incident_status}
             </Text>
           </View>
         ) : null}
@@ -2603,7 +2628,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
         <Card style={styles.alertDetailCard}>
           <Text style={styles.alertDetailLabel}>Status</Text>
           <Text style={styles.alertDetailDescription}>
-            {alert.status === "resolved"
+            {alert.incident_status || (alert.status === "resolved"
               ? "NORMAL MONITORING"
               : alert.severity === "critical" || alert.title?.toLowerCase().includes("evacuat")
                 ? "ASSISTED EVACUATION"
@@ -2611,7 +2636,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
                   ? "PRE-EMPTIVE EVACUATION"
                   : alert.severity === "advisory" || alert.title?.toLowerCase().includes("advisory")
                     ? "ALERT / READY"
-                    : "NORMAL MONITORING"}
+                    : "NORMAL MONITORING")}
           </Text>
         </Card>
       </ScrollView>
@@ -2749,7 +2774,17 @@ centers.forEach(function(c){
 var uIcon=L.divIcon({html:'<div style="width:20px;height:20px;border-radius:50%;background:#74C5E6;border:3px solid #fff;box-shadow:0 0 12px rgba(116,197,230,.8)"></div>',iconSize:[20,20],iconAnchor:[10,10],className:''});
 var userMarker=L.marker([uLat,uLng],{icon:uIcon,zIndexOffset:1000}).addTo(map).bindTooltip('You are here',{className:'evac-tip',direction:'top',offset:[0,-12]});
 var activeCenterId=centers.length>0?centers[0].id:null;
-if(centers.length>0)drawRoute(centers[0]);
+
+// Initial view: Fit map to show user + ALL evacuation centers
+setTimeout(function(){
+  var allPoints = [[uLat, uLng]];
+  centers.forEach(function(c){ allPoints.push([c.lat, c.lng]); });
+  if(allPoints.length > 1) {
+    map.fitBounds(allPoints, {padding: [70, 70], animate: true});
+  }
+  if(centers.length > 0) drawRoute(centers[0]);
+}, 500);
+
 function handleRNMessage(id){activeCenterId=id;var c=markerMap[id];if(c)drawRoute(c);}
 function updateUserLocation(lat,lng){uLat=lat;uLng=lng;userMarker.setLatLng([lat,lng]);if(activeCenterId){var c=markerMap[activeCenterId];if(c)drawRoute(c);}}
 function onMsg(e){try{var d=JSON.parse(e.data);if(d.type==='select')handleRNMessage(d.id);else if(d.type==='location')updateUserLocation(d.lat,d.lng);}catch(ex){}}
@@ -2813,7 +2848,7 @@ const buildNavMapHTML = (center, userLat, userLng) => {
 </style>
 </head><body><div id="map"></div><script>
 var uLat=${userLat},uLng=${userLng},cLat=${cLat},cLng=${cLng};
-var map=L.map('map',{zoomControl:false}).setView([uLat,uLng],17);
+var map=L.map('map',{zoomControl:false}).setView([uLat,uLng],15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 // Destination marker
@@ -2835,7 +2870,11 @@ var userMarker=L.marker([uLat,uLng],{icon:uIcon,zIndexOffset:1000}).addTo(map);
 
 // Straight-line placeholder until OSRM responds
 var straight=L.polyline([[uLat,uLng],[cLat,cLng]],{color:'#74C5E6',weight:4,dashArray:'10,7',opacity:0.45}).addTo(map);
-map.fitBounds([[uLat,uLng],[cLat,cLng]],{padding:[50,50]});
+
+// Fit map to show both markers immediately (with a small delay to ensure parent sizing)
+setTimeout(function(){
+  map.fitBounds([[uLat,uLng],[cLat,cLng]],{padding:[70,70],animate:true});
+}, 400);
 
 // OSRM route (replaces straight line)
 var shadowLine=null,routeLine=null;
@@ -2846,7 +2885,7 @@ function setRoute(coords){
   shadowLine=L.polyline(coords,{color:'rgba(0,0,0,0.25)',weight:12,lineJoin:'round',lineCap:'round'}).addTo(map);
   routeLine=L.polyline(coords,{color:'#74C5E6',weight:7,opacity:0.95,lineJoin:'round',lineCap:'round'}).addTo(map);
   userMarker.bringToFront();
-  map.fitBounds(routeLine.getBounds(),{padding:[50,50]});
+  map.fitBounds(routeLine.getBounds(),{padding:[70,70],animate:true});
 }
 
 // Live position update — re-centers map on user
@@ -3081,7 +3120,7 @@ const EvacuationScreen = ({ navigation }) => {
                       styles.centerActionBtnPrimary,
                       center.status !== "open" && styles.centerActionBtnDisabled
                     ]}
-                    onPress={() => openDirections(center.coordinate, center.name)}
+                    onPress={() => navigation.navigate("ActiveNavigation", { center })}
                     disabled={center.status !== "open"}
                   >
                     <LinearGradient
@@ -3421,7 +3460,7 @@ const ReportScreen = ({ navigation, userName }) => {
   const [recentReports, setRecentReports] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [userData, setUserData] = useState(null);
-  const locationLabel = "Barangay San Jose, Cebu City";
+  const locationLabel = userData?.barangay || "Mabolo District";
 
   const reporterName = userName || "Anonymous";
 
@@ -3935,6 +3974,23 @@ const SettingsScreen = ({ navigation }) => {
             fetchSubscriptions(userData.id);
           }
           setShowSubscriptions(true);
+        } else if (item.id === "locations") {
+          navigation.navigate("EvacuationMap");
+        } else if (item.id === "privacy") {
+          Alert.alert(
+            "Privacy & Security",
+            "• Data Encryption: All your personal data is encrypted in transit and at rest.\n\n• Location Usage: Your location is only used to send relevant proximity alerts and is never shared with 3rd parties.\n\n• Account Security: We recommend changing your password every 90 days.",
+            [
+              { text: "Change Password", onPress: () => navigation.navigate("ChangePassword") },
+              { text: "Close", style: "cancel" }
+            ]
+          );
+        } else if (item.id === "help") {
+          Alert.alert(
+            "Help & Documentation",
+            "• How it works: Sensors detect water levels and alert the LGU. Verified reports are then broadcasted to you.\n\n• Alerts: Red indicates Critical (Evacuate), Orange is Warning (Prepare), Blue is Advisory (Monitor).\n\n• Contact Support: admin@floodguard.gov",
+            [{ text: "Close", style: "cancel" }]
+          );
         } else if (item.type !== "toggle") {
           console.log(`Navigate to ${item.id}`);
         }
@@ -4511,6 +4567,144 @@ function LocationProvider({ children }) {
   );
 }
 
+function NotificationProvider({ children }) {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [readIds, setReadIds] = useState([]);
+
+  useEffect(() => {
+    loadReadIds();
+    fetchNotifications();
+
+    const interval = setInterval(() => {
+      fetchNotifications(true);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadReadIds = async () => {
+    try {
+      const stored = await AsyncStorage.getItem("notif_read_ids");
+      if (stored) setReadIds(JSON.parse(stored));
+    } catch (e) {
+      console.error("Error loading read ids:", e);
+    }
+  };
+
+  const saveReadIds = async (ids) => {
+    try {
+      await AsyncStorage.setItem("notif_read_ids", JSON.stringify(ids));
+    } catch (e) {
+      console.error("Error saving read ids:", e);
+    }
+  };
+
+  const markAsRead = (id) => {
+    if (!readIds.includes(id)) {
+      const newReadIds = [...readIds, id];
+      setReadIds(newReadIds);
+      saveReadIds(newReadIds);
+    }
+  };
+
+  const markAllAsRead = () => {
+    const allIds = notifications.map(n => n.id);
+    const newReadIds = Array.from(new Set([...readIds, ...allIds]));
+    setReadIds(newReadIds);
+    saveReadIds(newReadIds);
+  };
+
+  const fetchNotifications = async (isBackground = false) => {
+    try {
+      if (!isBackground) setLoading(true);
+      const storedUser = await AsyncStorage.getItem("userData");
+      let alertsUrl = `${API_BASE}/api/alerts/`;
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (user?.id) {
+          alertsUrl = `${API_BASE}/api/subscriptions/user/${user.id}/alerts`;
+        }
+      }
+
+      const [alertsRes, reportsRes] = await Promise.all([
+        fetch(alertsUrl),
+        fetch(`${API_BASE}/api/reports/?status=verified`)
+      ]);
+
+      let alerts = [];
+      let reports = [];
+
+      if (alertsRes.ok) alerts = await alertsRes.json();
+      if (reportsRes.ok) reports = await reportsRes.json();
+
+      const normalizedAlerts = (alerts || []).map(a => ({
+        ...a,
+        id: `alert-${a.id}`,
+        title: a.title,
+        message: a.message,
+        sourceType: 'announcement',
+        icon: ' megaphone-outline',
+        accent: a.level === 'critical' ? '#e2463b' : a.level === 'warning' ? '#f29339' : '#f5c542',
+        displayType: 'ANNOUNCEMENT',
+        time: new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }));
+
+      const normalizedReports = (reports || []).map(r => ({
+        ...r,
+        id: `report-${r.id}`,
+        title: r.type,
+        description: r.description,
+        message: `Verified report at ${r.location}`,
+        sourceType: 'community_report',
+        icon: r.icon || 'people-outline',
+        accent: '#74C5E6',
+        displayType: 'COMMUNITY REPORT',
+        time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }));
+
+      const combined = [...normalizedAlerts, ...normalizedReports].sort((a, b) =>
+        new Date(b.created_at || b.timestamp) - new Date(a.created_at || a.timestamp)
+      );
+
+      const latestItems = combined.slice(0, 5);
+
+      // Pop-up logic for new alerts
+      if (latestItems.length > 0 && isBackground) {
+        const latestId = latestItems[0].id;
+        const storedLastId = await AsyncStorage.getItem("last_notif_id");
+
+        if (storedLastId && storedLastId !== latestId) {
+          const newItem = latestItems[0];
+          Alert.alert(
+            "📢 New Notification",
+            newItem.title || newItem.message,
+            [{ text: "Dismiss", style: "cancel" }]
+          );
+        }
+        await AsyncStorage.setItem("last_notif_id", latestId);
+      }
+
+      setNotifications(latestItems);
+    } catch (e) {
+      console.error("Error fetching notifications:", e);
+    } finally {
+      if (!isBackground) setLoading(false);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
+
+  return (
+    <NotificationContext.Provider value={{
+      notifications, unreadCount, loading, readIds,
+      markAsRead, markAllAsRead, refresh: fetchNotifications
+    }}>
+      {children}
+    </NotificationContext.Provider>
+  );
+}
+
 export default function App() {
   const [form, setForm] = useState({ fullName: "", email: "", phone: "" });
   const [selection, setSelection] = useState("");
@@ -4519,7 +4713,8 @@ export default function App() {
 
   return (
     <LocationProvider>
-      <ThemeContext.Provider value={{ theme }}>
+      <NotificationProvider>
+        <ThemeContext.Provider value={{ theme }}>
         <StatusBar
           barStyle="light-content"
           backgroundColor={theme.background}
@@ -4573,7 +4768,8 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </ThemeContext.Provider>
-    </LocationProvider>
+    </NotificationProvider>
+  </LocationProvider>
   );
 }
 
