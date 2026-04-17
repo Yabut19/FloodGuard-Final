@@ -844,234 +844,270 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 animationType="slide"
                 onRequestClose={() => setShowReportDetailsModal(false)}
             >
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
-                    <View style={{ backgroundColor: '#ffffff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '90%', overflow: 'hidden' }}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            {selectedReportForModal && (
-                                <View style={{ paddingHorizontal: 24, paddingVertical: 16 }}>
-                                    {/* Header */}
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                        <Text style={{ fontSize: 20, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>Report Details</Text>
-                                        <TouchableOpacity onPress={() => setShowReportDetailsModal(false)}>
-                                            <Feather name="x" size={24} color="#64748b" />
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    {/* Original Report Section */}
-                                    <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#3b82f6' }}>
-                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: '#3b82f6', marginBottom: 8, letterSpacing: 1 }}>CITIZEN REPORT</Text>
-                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#1e293b', marginBottom: 4 }}>
-                                            {selectedReportForModal.type} - {selectedReportForModal.location}
-                                        </Text>
-                                        <Text style={{ fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 12 }}>
-                                            {selectedReportForModal.description}
-                                        </Text>
-                                        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-                                            <View>
-                                                <Text style={{ fontSize: 11, color: '#94a3b8' }}>Reporter</Text>
-                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>
-                                                    {selectedReportForModal.reporter_name || 'Anonymous'}
-                                                </Text>
-                                            </View>
-                                            <View>
-                                                <Text style={{ fontSize: 11, color: '#94a3b8' }}>Reported Level</Text>
-                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#0f172a' }}>
-                                                    {selectedReportForModal.flood_level_reported || 'Not specified'}
-                                                </Text>
-                                            </View>
-                                            <View>
-                                                <Text style={{ fontSize: 11, color: '#94a3b8' }}>Time</Text>
-                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>
-                                                    {new Date(selectedReportForModal.timestamp).toLocaleTimeString()}
-                                                </Text>
-                                            </View>
+                <View style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'flex-end' }}>
+                    <View style={{ backgroundColor: '#f8fafc', borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '92%', overflow: 'hidden' }}>
+                        {selectedReportForModal && (
+                            <>
+                                {/* Sticky Header */}
+                                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Feather name="file-text" size={18} color="#3b82f6" />
                                         </View>
-
-                                        {selectedReportForModal.image_url && (
-                                            <Image
-                                                source={{ uri: `${API_BASE_URL}${selectedReportForModal.image_url}` }}
-                                                style={{ width: '100%', aspectRatio: 16/9, borderRadius: 8, marginTop: 12, borderWidth: 1, borderColor: "#e2e8f0" }}
-                                                resizeMode="contain"
-                                            />
-                                        )}
-                                    </View>
-
-                                    {/* Sensor Data Section */}
-                                    {loadingSensorData ? (
-                                        <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 16, alignItems: 'center', justifyContent: 'center', height: 150 }}>
-                                            <ActivityIndicator size="large" color="#3b82f6" />
-                                            <Text style={{ marginTop: 8, color: '#64748b' }}>Loading sensor data...</Text>
-                                        </View>
-                                    ) : sensorDataForReport ? (
-                                        <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#f59e0b' }}>
-                                            <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: '#f59e0b', marginBottom: 8, letterSpacing: 1 }}>SENSOR DATA</Text>
-                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                                                <View>
-                                                    <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Sensor ID</Text>
-                                                    <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>
-                                                        {sensorDataForReport.sensor_id || 'N/A'}
-                                                    </Text>
-                                                </View>
-                                                <View>
-                                                    <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Flood Level</Text>
-                                                    <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>
-                                                        {sensorDataForReport.flood_level}cm
-                                                    </Text>
-                                                </View>
-                                                <View>
-                                                    <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Status</Text>
-                                                    <View style={{ backgroundColor: sensorDataForReport.status === 'ALARM' ? '#fee2e2' : sensorDataForReport.status === 'WARNING' ? '#fef3c7' : '#dcfce7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: sensorDataForReport.status === 'ALARM' ? '#991b1b' : sensorDataForReport.status === 'WARNING' ? '#92400e' : '#166534' }}>
-                                                            {sensorDataForReport.status}
-                                                        </Text>
-                                                    </View>
-                                                </View>
-                                            </View>
-
-                                            {/* Consistency Comparison */}
-                                            {(() => {
-                                                const consistency = getSensorConsistency(selectedReportForModal.flood_level_reported, sensorDataForReport.flood_level);
-                                                return (
-                                                    <View style={{ backgroundColor: consistency.color + '15', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: consistency.color + '40' }}>
-                                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: consistency.color, marginBottom: 4 }}>
-                                                            {consistency.icon} {consistency.status}
-                                                        </Text>
-                                                        <Text style={{ fontSize: 12, color: '#64748b' }}>
-                                                            {consistency.status === 'MATCHING' && 'Citizen report matches sensor reading - High confidence'}
-                                                            {consistency.status === 'SIMILAR' && 'Citizen report is similar to sensor reading - Medium confidence'}
-                                                            {consistency.status === 'DIFFERENT' && 'Citizen report differs from sensor reading - Review carefully'}
-                                                        </Text>
-                                                    </View>
-                                                );
-                                            })()}
-                                        </View>
-                                    ) : (
-                                        <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, marginBottom: 16, alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
-                                            <Feather name="alert-circle" size={32} color="#ef4444" />
-                                            <Text style={{ marginTop: 8, color: '#ef4444', fontFamily: "Poppins_600SemiBold" }}>No sensor data available</Text>
-                                        </View>
-                                    )}
-
-                                    {/* Verification Inputs */}
-                                    <View style={{ backgroundColor: '#f0f9ff', padding: 16, borderRadius: 12, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#0ea5e9' }}>
-                                        <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: '#0ea5e9', marginBottom: 12, letterSpacing: 1 }}>OFFICIAL VERIFICATION</Text>
-                                        
-                                        {/* Flood Level */}
-                                        <View style={{ marginBottom: 16 }}>
-                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 8 }}>Declare Official Flood Level:</Text>
-                                            <View style={{ flexDirection: "row", gap: 8 }}>
-                                                {[
-                                                    { level: "low", label: "Low", color: "#16a34a" },
-                                                    { level: "medium", label: "Medium", color: "#f59e0b" },
-                                                    { level: "high", label: "High", color: "#ef4444" },
-                                                ].map(({ level, label, color }) => (
-                                                    <TouchableOpacity
-                                                        key={level}
-                                                        onPress={() => setVerifyFloodLevel(level)}
-                                                        style={{
-                                                            flex: 1,
-                                                            paddingVertical: 10,
-                                                            borderRadius: 8,
-                                                            alignItems: "center",
-                                                            backgroundColor: verifyFloodLevel === level ? color + "20" : "#ffffff",
-                                                            borderWidth: verifyFloodLevel === level ? 2 : 1,
-                                                            borderColor: verifyFloodLevel === level ? color : "#e2e8f0",
-                                                        }}
-                                                    >
-                                                        <Text style={{ color: verifyFloodLevel === level ? color : "#64748b", fontFamily: "Poppins_600SemiBold", fontSize: 12 }}>{label}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
-                                        </View>
-
-                                        {/* Incident Status */}
-                                        <View style={{ marginBottom: 16 }}>
-                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 4 }}>
-                                                Current Incident Status <Text style={{ color: '#ef4444' }}>*</Text>
-                                            </Text>
-                                            {statusError && (
-                                                <Text style={{ color: '#ef4444', fontSize: 12, marginBottom: 6 }}>
-                                                    ⚠ Status is required before verifying.
-                                                </Text>
-                                            )}
-                                            <View style={{ flexDirection: "row", gap: 8 }}>
-                                                {["Active", "Resolved"].map((status) => (
-                                                    <TouchableOpacity
-                                                        key={status}
-                                                        onPress={() => { setIncidentStatus(status); setStatusError(false); }}
-                                                        style={{
-                                                            flex: 1,
-                                                            paddingVertical: 10,
-                                                            borderRadius: 8,
-                                                            alignItems: "center",
-                                                            backgroundColor: incidentStatus === status ? "#0ea5e920" : "#ffffff",
-                                                            borderWidth: incidentStatus === status ? 2 : 1,
-                                                            borderColor: incidentStatus === status ? "#0ea5e9" : statusError ? "#ef4444" : "#e2e8f0",
-                                                        }}
-                                                    >
-                                                        <Text style={{ color: incidentStatus === status ? "#0ea5e9" : "#64748b", fontFamily: "Poppins_600SemiBold", fontSize: 11 }}>{status}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
-                                        </View>
-
-                                        {/* Recommendations — required */}
                                         <View>
-                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#1e293b', marginBottom: 4 }}>
-                                                Official Recommendations <Text style={{ color: '#ef4444' }}>*</Text>
+                                            <Text style={{ fontSize: 16, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>Citizen Report</Text>
+                                            <Text style={{ fontSize: 11, color: '#94a3b8', fontFamily: "Poppins_400Regular" }}>
+                                                {new Date(selectedReportForModal.timestamp).toLocaleString()}
                                             </Text>
-                                            {recError && (
-                                                <Text style={{ color: '#ef4444', fontSize: 12, marginBottom: 6 }}>
-                                                    ⚠ Recommendation is required before verifying.
-                                                </Text>
-                                            )}
-                                            <TextInput
-                                                style={{
-                                                    backgroundColor: "#ffffff",
-                                                    color: "#1e293b",
-                                                    borderRadius: 8,
-                                                    padding: 12,
-                                                    borderWidth: recError ? 2 : 1,
-                                                    borderColor: recError ? "#ef4444" : "#e2e8f0",
-                                                    minHeight: 80,
-                                                    textAlignVertical: "top",
-                                                    fontFamily: "Poppins_400Regular",
-                                                    fontSize: 13
-                                                }}
-                                                placeholder="e.g., Evacuate to higher ground, avoid flooded streets..."
-                                                placeholderTextColor="#94a3b8"
-                                                value={recommendedAction}
-                                                onChangeText={(v) => { setRecommendedAction(v); if (v.trim()) setRecError(false); }}
-                                                multiline
-                                            />
                                         </View>
                                     </View>
-
-                                    {/* Action Buttons */}
-                                    <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-                                        <TouchableOpacity
-                                            style={{ flex: 1, paddingVertical: 12, backgroundColor: '#fee2e2', borderRadius: 8, alignItems: 'center' }}
-                                            onPress={() => handleReject(selectedReportForModal.id, selectedReportForModal)}
-                                        >
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                <Feather name="x-circle" size={16} color="#991b1b" />
-                                                <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#991b1b' }}>Dismiss Report</Text>
-                                            </View>
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity
-                                            style={{ flex: 1, paddingVertical: 12, backgroundColor: '#dcfce7', borderRadius: 8, alignItems: 'center' }}
-                                            onPress={() => handleVerify(selectedReportForModal.id, selectedReportForModal)}
-                                        >
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                <Feather name="check-circle" size={16} color="#166534" />
-                                                <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: '#166534' }}>Verify & Broadcast</Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => setShowReportDetailsModal(false)}
+                                        style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                        <Feather name="x" size={16} color="#64748b" />
+                                    </TouchableOpacity>
                                 </View>
-                            )}
-                        </ScrollView>
+
+                                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+                                    <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+
+                                        {/* Report Info Card */}
+                                        <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 20, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                                <View style={{ flex: 1 }}>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                                        <View style={{ backgroundColor: '#dbeafe', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                                                            <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: '#1d4ed8' }}>{selectedReportForModal.type?.toUpperCase()}</Text>
+                                                        </View>
+                                                        {selectedReportForModal.flood_level_reported && (
+                                                            <View style={{ backgroundColor: '#fef3c7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                                                                <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: '#92400e' }}>{selectedReportForModal.flood_level_reported.toUpperCase()}</Text>
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                    <Text style={{ fontSize: 15, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>{selectedReportForModal.location}</Text>
+                                                </View>
+                                            </View>
+
+                                            <Text style={{ fontSize: 13, color: '#475569', lineHeight: 20, marginBottom: 16 }}>
+                                                {selectedReportForModal.description}
+                                            </Text>
+
+                                            <View style={{ flexDirection: 'row', gap: 0, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 2 }}>Reporter</Text>
+                                                    <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>
+                                                        {selectedReportForModal.reporter_name || 'Anonymous'}
+                                                    </Text>
+                                                </View>
+                                                <View style={{ width: 1, backgroundColor: '#f1f5f9', marginHorizontal: 12 }} />
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 2 }}>Submitted</Text>
+                                                    <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#1e293b' }}>
+                                                        {new Date(selectedReportForModal.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </Text>
+                                                </View>
+                                            </View>
+
+                                            {selectedReportForModal.image_url && (
+                                                <Image
+                                                    source={{ uri: `${API_BASE_URL}${selectedReportForModal.image_url}` }}
+                                                    style={{ width: '100%', aspectRatio: 16/9, borderRadius: 10, marginTop: 14, backgroundColor: '#f1f5f9' }}
+                                                    resizeMode="cover"
+                                                />
+                                            )}
+                                        </View>
+
+                                        {/* Sensor Intel Card */}
+                                        {loadingSensorData ? (
+                                            <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 20, marginBottom: 12, alignItems: 'center', justifyContent: 'center', height: 100, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+                                                <ActivityIndicator size="small" color="#f59e0b" />
+                                                <Text style={{ marginTop: 8, color: '#94a3b8', fontSize: 12 }}>Loading sensor data...</Text>
+                                            </View>
+                                        ) : sensorDataForReport ? (
+                                            <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 20, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                                    <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <Feather name="radio" size={14} color="#d97706" />
+                                                    </View>
+                                                    <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>Sensor Intelligence</Text>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                                                    <View style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 10, padding: 12, alignItems: 'center' }}>
+                                                        <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Sensor ID</Text>
+                                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: '#1e293b' }}>{sensorDataForReport.sensor_id || 'N/A'}</Text>
+                                                    </View>
+                                                    <View style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 10, padding: 12, alignItems: 'center' }}>
+                                                        <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Flood Level</Text>
+                                                        <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>{sensorDataForReport.flood_level}<Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular" }}>cm</Text></Text>
+                                                    </View>
+                                                    <View style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 10, padding: 12, alignItems: 'center' }}>
+                                                        <Text style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Status</Text>
+                                                        <View style={{ backgroundColor: sensorDataForReport.status === 'ALARM' ? '#fee2e2' : sensorDataForReport.status === 'WARNING' ? '#fef3c7' : '#dcfce7', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 }}>
+                                                            <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: sensorDataForReport.status === 'ALARM' ? '#991b1b' : sensorDataForReport.status === 'WARNING' ? '#92400e' : '#166534' }}>
+                                                                {sensorDataForReport.status}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
+
+                                                {(() => {
+                                                    const c = getSensorConsistency(selectedReportForModal.flood_level_reported, sensorDataForReport.flood_level);
+                                                    return (
+                                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.color + '12', padding: 10, borderRadius: 8 }}>
+                                                            <Text style={{ fontSize: 16 }}>{c.icon}</Text>
+                                                            <Text style={{ fontSize: 12, color: c.color, fontFamily: "Poppins_600SemiBold", flex: 1 }}>
+                                                                {c.status === 'MATCHING' && 'Report matches sensor — High confidence'}
+                                                                {c.status === 'SIMILAR' && 'Report is similar to sensor — Medium confidence'}
+                                                                {c.status === 'DIFFERENT' && 'Report differs from sensor — Review carefully'}
+                                                            </Text>
+                                                        </View>
+                                                    );
+                                                })()}
+                                            </View>
+                                        ) : null}
+
+                                        {/* Official Assessment Card */}
+                                        <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 20, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+                                                <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: '#e0f2fe', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <Feather name="shield" size={14} color="#0284c7" />
+                                                </View>
+                                                <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>Official Assessment</Text>
+                                            </View>
+
+                                            {/* Flood Level */}
+                                            <View style={{ marginBottom: 18 }}>
+                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Flood Level</Text>
+                                                <View style={{ flexDirection: "row", gap: 8 }}>
+                                                    {[
+                                                        { level: "low", label: "Low", color: "#16a34a", bg: "#f0fdf4" },
+                                                        { level: "medium", label: "Medium", color: "#d97706", bg: "#fffbeb" },
+                                                        { level: "high", label: "High", color: "#dc2626", bg: "#fef2f2" },
+                                                    ].map(({ level, label, color, bg }) => (
+                                                        <TouchableOpacity
+                                                            key={level}
+                                                            onPress={() => setVerifyFloodLevel(level)}
+                                                            style={{
+                                                                flex: 1,
+                                                                paddingVertical: 10,
+                                                                borderRadius: 10,
+                                                                alignItems: "center",
+                                                                backgroundColor: verifyFloodLevel === level ? bg : "#f8fafc",
+                                                                borderWidth: 1.5,
+                                                                borderColor: verifyFloodLevel === level ? color : 'transparent',
+                                                            }}
+                                                        >
+                                                            <Text style={{ color: verifyFloodLevel === level ? color : "#94a3b8", fontFamily: verifyFloodLevel === level ? "Poppins_700Bold" : "Poppins_400Regular", fontSize: 12 }}>{label}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                            </View>
+
+                                            {/* Divider */}
+                                            <View style={{ height: 1, backgroundColor: '#f1f5f9', marginBottom: 18 }} />
+
+                                            {/* Incident Status */}
+                                            <View style={{ marginBottom: 18 }}>
+                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                                    Incident Status <Text style={{ color: '#ef4444' }}>*</Text>
+                                                </Text>
+                                                {statusError && (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, backgroundColor: '#fef2f2', padding: 8, borderRadius: 8 }}>
+                                                        <Feather name="alert-circle" size={13} color="#ef4444" />
+                                                        <Text style={{ color: '#ef4444', fontSize: 12, fontFamily: "Poppins_400Regular" }}>Please select a status before verifying.</Text>
+                                                    </View>
+                                                )}
+                                                <View style={{ flexDirection: "row", gap: 8 }}>
+                                                    {[
+                                                        { value: "Active", icon: "alert-triangle", color: "#d97706", bg: "#fffbeb" },
+                                                        { value: "Resolved", icon: "check-circle", color: "#16a34a", bg: "#f0fdf4" },
+                                                    ].map(({ value, icon, color, bg }) => (
+                                                        <TouchableOpacity
+                                                            key={value}
+                                                            onPress={() => { setIncidentStatus(value); setStatusError(false); }}
+                                                            style={{
+                                                                flex: 1,
+                                                                paddingVertical: 11,
+                                                                borderRadius: 10,
+                                                                alignItems: "center",
+                                                                flexDirection: 'row',
+                                                                justifyContent: 'center',
+                                                                gap: 6,
+                                                                backgroundColor: incidentStatus === value ? bg : "#f8fafc",
+                                                                borderWidth: 1.5,
+                                                                borderColor: incidentStatus === value ? color : statusError ? '#fca5a5' : 'transparent',
+                                                            }}
+                                                        >
+                                                            <Feather name={icon} size={13} color={incidentStatus === value ? color : "#94a3b8"} />
+                                                            <Text style={{ color: incidentStatus === value ? color : "#94a3b8", fontFamily: incidentStatus === value ? "Poppins_700Bold" : "Poppins_400Regular", fontSize: 12 }}>{value}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                            </View>
+
+                                            {/* Divider */}
+                                            <View style={{ height: 1, backgroundColor: '#f1f5f9', marginBottom: 18 }} />
+
+                                            {/* Official Recommendation */}
+                                            <View>
+                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                                    Official Recommendation <Text style={{ color: '#ef4444' }}>*</Text>
+                                                </Text>
+                                                {recError && (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, backgroundColor: '#fef2f2', padding: 8, borderRadius: 8 }}>
+                                                        <Feather name="alert-circle" size={13} color="#ef4444" />
+                                                        <Text style={{ color: '#ef4444', fontSize: 12, fontFamily: "Poppins_400Regular" }}>A recommendation is required before verifying.</Text>
+                                                    </View>
+                                                )}
+                                                <TextInput
+                                                    style={{
+                                                        backgroundColor: recError ? "#fef2f2" : "#f8fafc",
+                                                        color: "#1e293b",
+                                                        borderRadius: 10,
+                                                        padding: 14,
+                                                        borderWidth: 1.5,
+                                                        borderColor: recError ? "#fca5a5" : "#f1f5f9",
+                                                        minHeight: 90,
+                                                        textAlignVertical: "top",
+                                                        fontFamily: "Poppins_400Regular",
+                                                        fontSize: 13,
+                                                        lineHeight: 20,
+                                                    }}
+                                                    placeholder="e.g., Evacuate to higher ground, avoid flooded areas..."
+                                                    placeholderTextColor="#cbd5e1"
+                                                    value={recommendedAction}
+                                                    onChangeText={(v) => { setRecommendedAction(v); if (v.trim()) setRecError(false); }}
+                                                    multiline
+                                                />
+                                            </View>
+                                        </View>
+
+                                    </View>
+                                </ScrollView>
+
+                                {/* Sticky Action Buttons */}
+                                <View style={{ backgroundColor: '#ffffff', paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#f1f5f9', flexDirection: 'row', gap: 10 }}>
+                                    <TouchableOpacity
+                                        style={{ flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderColor: '#fca5a5', backgroundColor: '#fff' }}
+                                        onPress={() => handleReject(selectedReportForModal.id, selectedReportForModal)}
+                                    >
+                                        <Feather name="x" size={15} color="#dc2626" />
+                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: '#dc2626' }}>Dismiss</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={{ flex: 2, paddingVertical: 13, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, backgroundColor: '#0f172a' }}
+                                        onPress={() => handleVerify(selectedReportForModal.id, selectedReportForModal)}
+                                    >
+                                        <Feather name="send" size={15} color="#ffffff" />
+                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: '#ffffff' }}>Verify & Broadcast</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        )}
                     </View>
                 </View>
             </Modal>
