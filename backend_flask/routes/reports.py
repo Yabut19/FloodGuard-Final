@@ -226,7 +226,7 @@ def verify_report(report_id):
     verified_by = data.get('verified_by')  # LGU admin username/email
     flood_level = data.get('flood_level')  # Official flood level classification
     
-    recommendations = data.get('recommendations')
+    recommendations = data.get('recommendations') or data.get('recommended_action', '')
     report_status = data.get('report_status') or 'Active'
     
     if not verified_by:
@@ -266,12 +266,12 @@ def verify_report(report_id):
     cursor.close()
     
     # ── Auto-escalate to create official alert ──────────────────────────────────
+    alert_creation_warning = None
     try:
-        # Create an official alert from this verified report
         cursor = db.cursor()
         alert_level = 'advisory' if flood_level in ['low', 'ankle-high'] else \
                      'warning' if flood_level in ['medium', 'waist-high'] else 'critical'
-        
+
         cursor.execute("""
             INSERT INTO alerts (title, description, level, barangay, status, timestamp, recommended_action, incident_status)
             VALUES (%s, %s, %s, %s, 'active', NOW(), %s, %s)
@@ -280,13 +280,13 @@ def verify_report(report_id):
             f"Verified by LGU Official ({verified_by})\nUser Report: {report['description']}\nFlood Level: {flood_level}",
             alert_level,
             report['location'],
-            recommendations,
-            report_status
+            recommendations or '',
+            report_status or 'Active'
         ))
-        
+
         db.commit()
         cursor.close()
-        
+
         # Trigger subscriptions notification
         try:
             from routes.subscriptions import auto_escalate
@@ -294,16 +294,21 @@ def verify_report(report_id):
                 auto_escalate()
         except Exception as e:
             current_app.logger.warning(f"Auto-escalation failed: {e}")
-    
+
     except Exception as e:
-        logger.error("Error creating alert from verified report: %s", e)
-    
-    return jsonify({
+        logger.error("Error creating alert from verified report: %s", e, exc_info=True)
+        alert_creation_warning = str(e)
+
+    response_body = {
         "message": "Report verified and broadcast as official alert",
         "report_id": report_id,
         "verified_by": verified_by,
         "verified_at": now
-    }), 200
+    }
+    if alert_creation_warning:
+        response_body["alert_warning"] = f"Report saved but alert broadcast failed: {alert_creation_warning}"
+
+    return jsonify(response_body), 200
 
 
 @reports_bp.route('/<int:report_id>/reject', methods=['POST'])

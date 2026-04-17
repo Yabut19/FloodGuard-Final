@@ -10,6 +10,36 @@ def get_db_connection():
         database=Config.DB_NAME
     )
 
+def run_migrations(conn=None, cursor=None):
+    """Add any columns that are in the schema but missing from the live DB."""
+    _owns_conn = conn is None
+    if _owns_conn:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+    required_columns = [
+        ("reports", "recommendations",   "TEXT DEFAULT NULL"),
+        ("reports", "report_status",     "VARCHAR(100) DEFAULT NULL"),
+        ("alerts",  "recommended_action","VARCHAR(500) DEFAULT NULL"),
+        ("alerts",  "incident_status",   "VARCHAR(100) DEFAULT 'Active'"),
+    ]
+
+    for table, column, col_def in required_columns:
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s
+        """, (Config.DB_NAME, table, column))
+        if cursor.fetchone()[0] == 0:
+            cursor.execute(f"ALTER TABLE `{table}` ADD COLUMN `{column}` {col_def}")
+            conn.commit()
+            print(f"  [migration] Added `{table}`.`{column}`")
+        else:
+            print(f"  [migration] `{table}`.`{column}` already exists — skipped")
+
+    if _owns_conn:
+        cursor.close()
+        conn.close()
+
 def run_schema(cursor):
     print("Applying schema...")
     with open('db_schema.sql', 'r') as f:
@@ -85,6 +115,8 @@ if __name__ == "__main__":
         cursor = conn.cursor()
         run_schema(cursor)
         seed_data(cursor, conn)
+        print("Running column migrations...")
+        run_migrations(conn, cursor)
         cursor.close()
         conn.close()
         print("Database setup successful!")

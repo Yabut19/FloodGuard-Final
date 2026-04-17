@@ -24,6 +24,13 @@ app.config.from_object(Config)
 # Enable CORS for frontend integration
 CORS(app)
 
+# Auto-apply DB column migrations on startup
+try:
+    from setup_db import run_migrations
+    run_migrations()
+except Exception as _mig_err:
+    logging.warning("DB migration check failed: %s", _mig_err)
+
 from routes.admin import admin_bp
 
 # Register Blueprints
