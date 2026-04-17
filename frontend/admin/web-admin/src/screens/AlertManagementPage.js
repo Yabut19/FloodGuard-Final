@@ -15,7 +15,6 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     
     // Verification state
     const [verifyFloodLevel, setVerifyFloodLevel] = useState("medium");
-    const [recommendations, setRecommendations] = useState("");
     const [incidentStatus, setIncidentStatus] = useState("Active");
     const [verifications, setVerifications] = useState([]);
     const [allReports, setAllReports] = useState([]);
@@ -362,7 +361,6 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 alert("Alert broadcasted successfully!");
                 setAlertMessage("");
                 setAlertTitle("");
-                setRecommendedAction("");
                 setSelectedBarangays([]);
                 fetchAlertHistory(); // Refresh history list
             } else {
@@ -377,23 +375,35 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     };
 
     const handleVerify = async (id, report) => {
+        if (!recommendedAction || !recommendedAction.trim()) {
+            const proceed = window.confirm("No official recommendation has been entered. Proceed without one?");
+            if (!proceed) return;
+        }
         try {
             // Update report status to verified
-            await fetch(`${API_BASE_URL}/api/reports/${id}/verify`, {
+            const response = await fetch(`${API_BASE_URL}/api/reports/${id}/verify`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     verified_by: localStorage.getItem("userName") || "Admin",
                     flood_level: verifyFloodLevel,
-                    recommendations: recommendations,
+                    recommendations: recommendedAction,
+                    recommended_action: recommendedAction,
                     report_status: incidentStatus
                 })
             });
+
+            if (!response.ok) {
+                const err = await response.json();
+                alert("Error: " + (err.error || "Verification failed"));
+                return;
+            }
 
             // Auto-broadcast as official alert (already done by backend)
             alert("✅ Report verified and broadcasted as official alert!");
             setVerifications(verifications.filter((v) => v.id !== id));
             setShowReportDetailsModal(false);
+            setRecommendedAction("");
             fetchPendingReports();
             fetchAllReports();
             fetchActiveAlerts();
@@ -591,7 +601,6 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         setSelectedReportForModal(item);
                                         setShowReportDetailsModal(true);
                                         setVerifyFloodLevel(item.flood_level_reported || "medium");
-                                        setRecommendations("");
                                         setIncidentStatus("Active");
                                         fetchSensorDataForBarangay(item.location);
                                     }}
@@ -998,8 +1007,8 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                 }}
                                                 placeholder="e.g., Evacuate to higher ground, avoid flooded streets..."
                                                 placeholderTextColor="#94a3b8"
-                                                value={recommendations}
-                                                onChangeText={setRecommendations}
+                                                value={recommendedAction}
+                                                onChangeText={setRecommendedAction}
                                                 multiline
                                             />
                                         </View>

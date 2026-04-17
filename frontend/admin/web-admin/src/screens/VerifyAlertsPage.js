@@ -53,6 +53,23 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
     const handleVerify = async () => {
         if (!selectedReport) return;
 
+        if (!recommendations || !recommendations.trim()) {
+            Alert.alert(
+                "No Recommendation",
+                "You have not entered an official recommendation. Do you want to proceed without one?",
+                [
+                    { text: "Go Back", style: "cancel" },
+                    { text: "Proceed Anyway", onPress: () => submitVerify() }
+                ]
+            );
+            return;
+        }
+        submitVerify();
+    };
+
+    const submitVerify = async () => {
+        if (!selectedReport) return;
+
         try {
             setSubmittingVerify(true);
             const response = await fetch(`${API_BASE}/api/reports/${selectedReport.id}/verify`, {
@@ -62,6 +79,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                     verified_by: currentUser.email || currentUser.username || "Admin",
                     flood_level: verifyFloodLevel,
                     recommendations: recommendations,
+                    recommended_action: recommendations,
                     report_status: incidentStatus
                 })
             });
