@@ -1,9 +1,20 @@
 import time
+import json
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from utils.db import get_db
 from datetime import datetime
 
 iot_bp = Blueprint("iot", __name__)
+
+
+def _emit_sensor_update(payload: dict):
+    """Broadcast sensor data to all WebSocket clients. Importted lazily to avoid circular import."""
+    try:
+        from app import socketio
+        socketio.emit("sensor_update", payload, namespace="/")
+        print(f"[WS] Broadcast sent for {payload.get('sensor_id')}", flush=True)
+    except Exception as _e:
+        print(f"[WS] Broadcast failed: {_e}", flush=True)
 
 # In-memory thresholds — updated via PUT /api/iot/thresholds from admin panel
 _thresholds = {
@@ -68,18 +79,8 @@ def sensor_reading():
     longitude = data.get("longitude")
     maps_url = data.get("maps_url")
     
-    # Use provided timestamp or current local time
-    timestamp = data.get("timestamp")
-    if timestamp:
-        if isinstance(timestamp, (list, tuple)):
-            try:
-                timestamp = "{}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*timestamp[:6])
-            except Exception:
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        elif isinstance(timestamp, str):
-            timestamp = timestamp.replace("T", " ")
-    else:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # ALWAYS use server local time to avoid timezone mismatch or future-dated poisons
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if flood_level is None:
         return jsonify({"error": "flood_level is required"}), 400
@@ -107,6 +108,21 @@ def sensor_reading():
 
         db.commit()
         cur.close()
+
+        # ── Broadcast to all WebSocket clients instantly ────────────────
+        ws_payload = {
+            "sensor_id":    sensor_id,
+            "flood_level":  float(flood_level),
+            "raw_distance": float(raw_distance) if raw_distance is not None else 0.0,
+            "status":       status,
+            "latitude":     float(latitude) if latitude else None,
+            "longitude":    float(longitude) if longitude else None,
+            "maps_url":     maps_url,
+            "is_offline":   False,
+            "timestamp":    timestamp,
+        }
+        _emit_sensor_update(ws_payload)
+
         return jsonify({"message": "Reading recorded successfully"}), 201
     except Exception as e:
         db.rollback()
@@ -142,7 +158,7 @@ def latest_sensor():
         created_at_dt = datetime.now()
 
     age_seconds = (datetime.now() - created_at_dt).total_seconds()
-    is_offline = age_seconds > 30
+    is_offline = age_seconds > 5
 
     row["is_offline"] = is_offline
     row["status"] = "OFFLINE" if is_offline else (row.get("status") or "UNKNOWN")
@@ -213,8 +229,8 @@ def sensor_status():
 
     age_seconds = (datetime.now() - created_at_dt).total_seconds()
 
-    # 10 seconds buffer: covers 1s ESP32 interval + network jitter
-    if age_seconds > 10:
+    # 5 seconds buffer: covers 1s ESP32 interval + network jitter
+    if age_seconds > 5:
         return jsonify({
             "status": "OFFLINE",
             "flood_level": 0,
@@ -276,7 +292,7 @@ def sensor_by_location():
         created_at_dt = datetime.now()
 
     age_seconds = (datetime.now() - created_at_dt).total_seconds()
-    is_offline = age_seconds > 30
+    is_offline = age_seconds > 5
 
     row["is_offline"] = is_offline
     row["status"] = "OFFLINE" if is_offline else (row.get("status") or "UNKNOWN")
@@ -363,10 +379,10 @@ def get_all_sensors_status():
                 if is_disabled:
                     s['is_offline'] = True
                 else:
-                    # Check if offline by reading age (using local time to match DB)
+                    # Check if offline by reading age (1s interval + network jitter → 5s timeout)
                     created_at_dt = latest['created_at']
                     age_seconds = (datetime.now() - created_at_dt).total_seconds()
-                    s['is_offline'] = age_seconds > 30
+                    s['is_offline'] = age_seconds > 5
             else:
                 s['flood_level'] = 0
                 s['raw_distance'] = 0
@@ -635,7 +651,7 @@ def stream():
                             created_at_dt = datetime.now()
 
                     age = (datetime.now() - created_at_dt).total_seconds()
-                    is_offline = age > 10
+                    is_offline = age > 15
 
                     payload = {
                         "sensor_id":    row.get("sensor_id"),
@@ -731,7 +747,7 @@ def live_stream():
                     else:
                         age = 9999
                     is_disabled = s.get("sensor_status") == "inactive"
-                    is_offline  = is_disabled or (age > 30)
+                    is_offline  = is_disabled or (age > 5)
                     sensors.append({
                         "id":           s["id"],
                         "name":         s["name"],

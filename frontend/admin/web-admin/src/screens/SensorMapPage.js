@@ -6,6 +6,7 @@ import AdminSidebar from "../components/AdminSidebar";
 import RealTimeClock from "../components/RealTimeClock";
 import { MABOLO_REGION } from "../config/constants";
 import { API_BASE_URL } from "../config/api";
+import useSensorSocket from "../utils/useSensorSocket";
 
 const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [selectedSensor, setSelectedSensor] = useState(null);
@@ -48,43 +49,28 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
         }
     };
 
-    // Fetch data on mount + SSE for live sensor level updates
+    // Fetch data on mount + periodic full refresh every 30 s
     useEffect(() => {
         fetchSensorData();
-        const interval = setInterval(fetchSensorData, 10000); // full refresh every 10 s
-
-        let es;
-        if (typeof EventSource !== "undefined") {
-            const connect = () => {
-                es = new EventSource(`${API_BASE_URL}/api/iot/live`);
-                es.onmessage = (e) => {
-                    try {
-                        const d = JSON.parse(e.data);
-                        if (d.sensors) {
-                            setSensorData(prev => prev.map(s => {
-                                const live = d.sensors.find(ls => ls.id === s.sensor_id);
-                                if (!live) return s;
-                                return {
-                                    ...s,
-                                    flood_level: Number(live.flood_level || 0),
-                                    raw_distance: Number(live.raw_distance || 0),
-                                    status: live.is_offline ? "offline" : (live.status?.toLowerCase() || "normal"),
-                                    is_offline: live.is_offline,
-                                };
-                            }));
-                        }
-                    } catch (_) {}
-                };
-                es.onerror = () => { es.close(); setTimeout(connect, 3000); };
-            };
-            connect();
-        }
-
-        return () => {
-            clearInterval(interval);
-            if (es) es.close();
-        };
+        const interval = setInterval(fetchSensorData, 30000);
+        return () => { clearInterval(interval); };
     }, []);
+
+    // ── Real-time WebSocket: patch matching sensor on each sensor_update event ──
+    useSensorSocket((reading) => {
+        setSensorData(prev => prev.map(s => {
+            if (s.sensor_id !== reading.sensor_id) return s;
+            const isOffline = reading.is_offline || false;
+            return {
+                ...s,
+                flood_level:  Number(reading.flood_level || 0),
+                raw_distance: Number(reading.raw_distance || 0),
+                status:       isOffline ? "offline" : (reading.status?.toLowerCase() || "normal"),
+                is_offline:   isOffline,
+                last_updated: new Date().toLocaleString(),
+            };
+        }));
+    });
 
     // ── Animation for blinking dots ───────────────────────────────
     const blinkAnim = React.useRef(new Animated.Value(1)).current;

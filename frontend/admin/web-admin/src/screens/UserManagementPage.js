@@ -7,6 +7,7 @@ import AdminSidebar from "../components/AdminSidebar";
 import RealTimeClock from "../components/RealTimeClock";
 import { API_BASE_URL } from "../config/api";
 import { authFetch } from "../utils/helpers";
+import useUserSocket from "../utils/useUserSocket";
 
 const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -55,6 +56,12 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
     useEffect(() => {
         fetchUsers();
     }, []);
+
+    // Listen for real-time user updates (registration, deletion, role change, etc.)
+    useUserSocket(() => {
+        console.log("Real-time update: Refreshing user list...");
+        fetchUsers();
+    });
 
     const getRoleBadgeStyle = (role) => {
         switch (role) {

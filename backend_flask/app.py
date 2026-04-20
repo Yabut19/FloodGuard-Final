@@ -1,6 +1,7 @@
 import logging
 from flask import Flask
 from flask_cors import CORS
+from flask_socketio import SocketIO
 from config import Config
 
 logging.basicConfig(
@@ -22,7 +23,12 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Enable CORS for frontend integration
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+# ── WebSocket (Socket.IO) ──────────────────────────────────────────────────────
+# 'threading' mode is used for compatibility with Python 3.13/3.14.
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading",
+                    logger=False, engineio_logger=False)
 
 # Auto-apply DB column migrations on startup
 try:
@@ -52,9 +58,37 @@ app.teardown_appcontext(close_db)
 def home():
     return {"message": "FloodGuard Flask Backend is Running!"}
 
+# ── Socket.IO event handlers ───────────────────────────────────────────────────
+@socketio.on("connect")
+def on_connect():
+    logging.info("[WS] Client connected")
+    try:
+        from utils.db import get_db
+        db = get_db()
+        cur = db.cursor(dictionary=True)
+        cur.execute("""
+            SELECT sensor_id, raw_distance, flood_level, status, created_at
+            FROM iot_readings
+            ORDER BY created_at DESC LIMIT 1
+        """)
+        row = cur.fetchone()
+        cur.close()
+        db.close()
+        
+        if row:
+            if hasattr(row["created_at"], "isoformat"):
+                row["timestamp"] = row["created_at"].isoformat()
+            socketio.emit("sensor_update", row)
+    except Exception as e:
+        print("[WS] Failed to send latest data on connect:", e)
+
+@socketio.on("disconnect")
+def on_disconnect():
+    logging.info("[WS] Client disconnected")
+
+
 if __name__ == '__main__':
-    # Running on port 5000 by default.
-    # Use 'flask run' in production or gunicorn.
     import os
     debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    app.run(debug=debug_mode, host='0.0.0.0', port=5000, threaded=True)
+    # Use socketio.run() which handles the threading server automatically
+    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=5000)

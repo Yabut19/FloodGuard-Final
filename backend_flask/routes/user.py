@@ -6,6 +6,14 @@ from config import Config
 
 user_bp = Blueprint('user', __name__)
 
+def _emit_user_update():
+    """Broadcast user list change to all WebSocket clients."""
+    try:
+        from app import socketio
+        socketio.emit("user_update", {"message": "refresh"})
+    except Exception:
+        pass
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 def allowed_file(filename):
@@ -92,6 +100,8 @@ def upload_avatar(user_id):
             
             db.commit()
             
+            _emit_user_update()
+            
             return jsonify({
                 "message": "Avatar updated successfully",
                 "avatar_url": avatar_url
@@ -143,6 +153,8 @@ def update_user_profile(user_id):
             """, (full_name, email, phone, user_id))
         
         db.commit()
+        
+        _emit_user_update()
         
         return jsonify({"message": "Profile updated successfully"}), 200
         

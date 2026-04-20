@@ -6,6 +6,7 @@ import { styles } from "../styles/globalStyles";
 import AdminSidebar from "../components/AdminSidebar";
 import RealTimeClock from "../components/RealTimeClock";
 import { API_BASE_URL } from "../config/api";
+import useSensorSocket from "../utils/useSensorSocket";
 
 const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const isSuperAdmin = userRole === "superadmin";
@@ -160,40 +161,38 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     useEffect(() => {
         fetchSensors();
         fetchHealthData();
-        healthIntervalRef.current = setInterval(fetchHealthData, 10000);
-
-        let es;
-        if (typeof EventSource !== "undefined") {
-            const connect = () => {
-                es = new EventSource(`${API_BASE_URL}/api/iot/live`);
-                es.onmessage = (e) => {
-                    try {
-                        const d = JSON.parse(e.data);
-                        if (d.sensors) {
-                            setLiveSensors(prev => prev.map(s => {
-                                const live = d.sensors.find(ls => ls.id === s.id);
-                                if (!live) return s;
-                                return {
-                                    ...s,
-                                    flood_level: Number(live.flood_level || 0),
-                                    raw_distance: Number(live.raw_distance || 0),
-                                    reading_status: live.status || s.reading_status,
-                                    is_offline: live.is_offline,
-                                };
-                            }));
-                        }
-                    } catch (_) {}
-                };
-                es.onerror = () => { es.close(); setTimeout(connect, 3000); };
-            };
-            connect();
-        }
-
-        return () => {
-            clearInterval(healthIntervalRef.current);
-            if (es) es.close();
-        };
+        healthIntervalRef.current = setInterval(fetchHealthData, 30000);
+        return () => { clearInterval(healthIntervalRef.current); };
     }, []);
+
+    // ── Real-time WebSocket: instantly patch readings without polling ────────
+    useSensorSocket((reading) => {
+        setLiveSensors(prev => prev.map(s => {
+            if (s.id !== reading.sensor_id) return s;
+            return {
+                ...s,
+                flood_level:    Number(reading.flood_level ?? 0),
+                raw_distance:   Number(reading.raw_distance ?? 0),
+                reading_status: reading.status || s.reading_status,
+                is_offline:     reading.is_offline || false,
+            };
+        }));
+        // Also auto-update the selected sensor health modal if open
+        setSelectedSensorHealth(prev => {
+            if (!prev) return prev;
+            if (prev.id !== reading.sensor_id) return prev;
+            return {
+                ...prev,
+                live: {
+                    ...prev.live,
+                    flood_level:    Number(reading.flood_level ?? 0),
+                    raw_distance:   Number(reading.raw_distance ?? 0),
+                    reading_status: reading.status,
+                    is_offline:     reading.is_offline || false,
+                }
+            };
+        });
+    });
 
     // ── Animation for blinking dots ───────────────────────────────
     const blinkAnim = useRef(new Animated.Value(1)).current;
@@ -482,14 +481,23 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                     if (map && s.lat && s.lng) map.setView([s.lat, s.lng], 17);
                                                 }}
                                             >
-                                                <View style={styles.sensorListItemContent}>
+                                                 <View style={styles.sensorListItemContent}>
                                                     <Text style={styles.sensorListItemName}>{s.name}</Text>
                                                     <Text style={styles.sensorListItemBarangay}>
                                                         Brgy. {s.barangay || "—"}
                                                     </Text>
-                                                    <Text style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                                                        {s.is_offline ? "Offline" : `${Number(s.flood_level || 0).toFixed(1)} cm · ${status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}`}
-                                                    </Text>
+                                                    {s.is_offline ? (
+                                                        <Text style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>Offline</Text>
+                                                    ) : (
+                                                        <>
+                                                            <Text style={{ fontSize: 12, color: "#3b82f6", marginTop: 2, fontFamily: "Poppins_600SemiBold" }}>
+                                                                Flood: {Number(s.flood_level || 0).toFixed(1)} cm
+                                                            </Text>
+                                                            <Text style={{ fontSize: 11, color: "#64748b", marginTop: 1 }}>
+                                                                Raw dist: {Number(s.raw_distance || 0).toFixed(1)} cm
+                                                            </Text>
+                                                        </>
+                                                    )}
                                                 </View>
                                                 {s.is_offline ? (
                                                     <View style={[styles.sensorListItemDot, { backgroundColor: dotColor }]} />
@@ -646,6 +654,32 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
                                                 <View style={pg.cardDivider} />
 
+                                                {/* Live Data Row — updates via SSE */}
+                                                <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingBottom: 12 }}>
+                                                    <View style={{
+                                                        flex: 1, backgroundColor: isOnline ? "#eff6ff" : "#f8fafc",
+                                                        borderRadius: 10, padding: 10, alignItems: "center",
+                                                        borderWidth: 1, borderColor: isOnline ? "#dbeafe" : "#e2e8f0"
+                                                    }}>
+                                                        <Text style={{ fontSize: 10, color: "#64748b", fontFamily: "Poppins_600SemiBold", letterSpacing: 0.5 }}>FLOOD LEVEL</Text>
+                                                        <Text style={{ fontSize: 22, color: isOnline ? "#1e40af" : "#94a3b8", fontFamily: "Poppins_700Bold", marginTop: 2 }}>
+                                                            {isOnline ? `${Number(live?.flood_level || 0).toFixed(1)}` : "—"}
+                                                        </Text>
+                                                        <Text style={{ fontSize: 10, color: "#94a3b8" }}>cm</Text>
+                                                    </View>
+                                                    <View style={{
+                                                        flex: 1, backgroundColor: isOnline ? "#f0f9ff" : "#f8fafc",
+                                                        borderRadius: 10, padding: 10, alignItems: "center",
+                                                        borderWidth: 1, borderColor: isOnline ? "#bae6fd" : "#e2e8f0"
+                                                    }}>
+                                                        <Text style={{ fontSize: 10, color: "#64748b", fontFamily: "Poppins_600SemiBold", letterSpacing: 0.5 }}>RAW DISTANCE</Text>
+                                                        <Text style={{ fontSize: 22, color: isOnline ? "#0284c7" : "#94a3b8", fontFamily: "Poppins_700Bold", marginTop: 2 }}>
+                                                            {isOnline ? `${Number(live?.raw_distance || 0).toFixed(1)}` : "—"}
+                                                        </Text>
+                                                        <Text style={{ fontSize: 10, color: "#94a3b8" }}>cm</Text>
+                                                    </View>
+                                                </View>
+
                                                 <View style={pg.cardStats}>
                                                     <View style={pg.statItem}>
                                                         <Feather name="navigation" size={13} color="#64748b" />
@@ -786,7 +820,8 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     </LinearGradient>
 
                                     <View style={pg.modalBody}>
-                                        <View style={{ flexDirection: "row", gap: 16, marginBottom: 16 }}>
+                                        {/* Battery + Signal row */}
+                                        <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
                                             <View style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 12, padding: 16, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" }}>
                                                 <Feather name="battery-charging" size={18} color={getBatteryColor(sh.live?.battery_level || sh.battery_level)} />
                                                 <Text style={{ fontSize: 11, color: "#64748b", fontFamily: "Poppins_600SemiBold", marginTop: 4 }}>BATTERY</Text>
@@ -795,20 +830,34 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             <View style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 12, padding: 16, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" }}>
                                                 <Feather name="wifi" size={18} color="#3b82f6" />
                                                 <Text style={{ fontSize: 11, color: "#64748b", fontFamily: "Poppins_600SemiBold", marginTop: 4 }}>SIGNAL</Text>
-                                                <Text style={{ fontSize: 20, color: "#0f172a", fontFamily: "Poppins_700Bold" }}>{sh.live?.signal_strength || sh.signal_strength || "Strong"}</Text>
+                                                <Text style={{ fontSize: 16, color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>{sh.live?.signal_strength || sh.signal_strength || "Strong"}</Text>
                                             </View>
                                         </View>
 
-                                        <View style={{ backgroundColor: isOff ? "#f1f5f9" : "#eff6ff", borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: isOff ? "#cbd5e1" : "#dbeafe", marginBottom: 16 }}>
-                                            <Text style={{ fontSize: 12, color: isOff ? "#64748b" : "#3b82f6", fontFamily: "Poppins_700Bold", letterSpacing: 1 }}>CURRENT FLOOD LEVEL</Text>
-                                            <Text style={{ fontSize: 44, color: isOff ? "#94a3b8" : "#1e40af", fontFamily: "Poppins_800ExtraBold", marginVertical: 4 }}>
-                                                {isOff ? "—" : `${Number(sh.live?.flood_level || 0).toFixed(1)} cm`}
-                                            </Text>
-                                            <Text style={{ fontSize: 12, color: "#64748b", fontFamily: "Poppins_400Regular", marginBottom: 6 }}>
-                                                {isOff ? "Raw: —" : `Raw dist: ${Number(sh.live?.raw_distance || 0).toFixed(1)} cm`}
-                                            </Text>
-                                            <View style={{ backgroundColor: st.bg, paddingHorizontal: 16, paddingVertical: 4, borderRadius: 16, borderWidth: 1, borderColor: st.border }}>
-                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_700Bold", color: st.text }}>{reading_st.charAt(0).toUpperCase() + reading_st.slice(1).toLowerCase()}</Text>
+                                        {/* Flood Level + Raw Distance — live via SSE */}
+                                        <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
+                                            <View style={{ flex: 1, backgroundColor: isOff ? "#f1f5f9" : "#eff6ff", borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: isOff ? "#cbd5e1" : "#dbeafe" }}>
+                                                <Feather name="trending-up" size={16} color={isOff ? "#94a3b8" : "#3b82f6"} />
+                                                <Text style={{ fontSize: 11, color: isOff ? "#94a3b8" : "#3b82f6", fontFamily: "Poppins_700Bold", letterSpacing: 0.5, marginTop: 4 }}>FLOOD LEVEL</Text>
+                                                <Text style={{ fontSize: 36, color: isOff ? "#94a3b8" : "#1e40af", fontFamily: "Poppins_800ExtraBold", marginVertical: 2 }}>
+                                                    {isOff ? "—" : Number(sh.live?.flood_level ?? 0).toFixed(1)}
+                                                </Text>
+                                                <Text style={{ fontSize: 11, color: "#94a3b8" }}>cm depth</Text>
+                                            </View>
+                                            <View style={{ flex: 1, backgroundColor: isOff ? "#f1f5f9" : "#f0f9ff", borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: isOff ? "#cbd5e1" : "#bae6fd" }}>
+                                                <Feather name="radio" size={16} color={isOff ? "#94a3b8" : "#0284c7"} />
+                                                <Text style={{ fontSize: 11, color: isOff ? "#94a3b8" : "#0284c7", fontFamily: "Poppins_700Bold", letterSpacing: 0.5, marginTop: 4 }}>RAW DISTANCE</Text>
+                                                <Text style={{ fontSize: 36, color: isOff ? "#94a3b8" : "#0284c7", fontFamily: "Poppins_800ExtraBold", marginVertical: 2 }}>
+                                                    {isOff ? "—" : Number(sh.live?.raw_distance ?? 0).toFixed(1)}
+                                                </Text>
+                                                <Text style={{ fontSize: 11, color: "#94a3b8" }}>cm to ground</Text>
+                                            </View>
+                                        </View>
+
+                                        {/* Alert level badge */}
+                                        <View style={{ alignItems: "center", marginBottom: 16 }}>
+                                            <View style={{ backgroundColor: st.bg, paddingHorizontal: 20, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: st.border }}>
+                                                <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: st.text }}>{reading_st}</Text>
                                             </View>
                                         </View>
 

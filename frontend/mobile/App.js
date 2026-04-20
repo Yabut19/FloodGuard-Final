@@ -82,7 +82,7 @@ const ACCOUNT_IMAGE = require("./assets/flood.png");
 const LOCATION_IMAGE = require("./assets/flood4.jpg");
 const NOTIFY_IMAGE = require("./assets/flood5.jpg");
 const LOGO = require("./assets/logo.png");
-const API_BASE = "http://192.168.68.104:5000"; // Updated to current machine IP (172.16.17.33)
+const API_BASE = "http://10.199.140.238:5000"; // Updated to current machine IP (172.16.17.33)
 
 const safeGoBack = (navigation, fallback) => {
   if (navigation?.canGoBack?.()) {
@@ -840,8 +840,8 @@ const LoginScreen = ({ navigation }) => {
         onDismiss={handleWelcomeDismiss}
       />
       <FloatingParticles />
-      
-      <KeyboardAvoidingView 
+
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1, justifyContent: 'center', padding: 24 }}
       >
@@ -855,24 +855,24 @@ const LoginScreen = ({ navigation }) => {
         </View>
 
         {/* Glassmorphism Logic Card */}
-        <View style={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-          borderRadius: 28, 
-          padding: 24, 
+        <View style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: 28,
+          padding: 24,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 12 },
           shadowOpacity: 0.12,
           shadowRadius: 24,
           elevation: 12
         }}>
-          
+
           {/* Email Input */}
           <View style={{ marginBottom: 20 }}>
             <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold", marginBottom: 8, letterSpacing: 0.5 }}>
               EMAIL ADDRESS
             </Text>
-            <View style={{ 
-              flexDirection: 'row', 
+            <View style={{
+              flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: "#f8fafc",
               borderRadius: 14,
@@ -897,8 +897,8 @@ const LoginScreen = ({ navigation }) => {
             <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold", marginBottom: 8, letterSpacing: 0.5 }}>
               PASSWORD
             </Text>
-            <View style={{ 
-              flexDirection: 'row', 
+            <View style={{
+              flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: "#f8fafc",
               borderRadius: 14,
@@ -921,7 +921,7 @@ const LoginScreen = ({ navigation }) => {
           </View>
 
           {/* Action Buttons */}
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={onLogin}
             disabled={loading}
             style={{
@@ -950,7 +950,7 @@ const LoginScreen = ({ navigation }) => {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ paddingVertical: 16, marginTop: 10, alignItems: 'center' }}
           >
@@ -1018,15 +1018,15 @@ const ChangePasswordScreen = ({ navigation }) => {
 
       if (response.ok) {
         Alert.alert("Success", "Password changed successfully! You will now be logged out for security.", [
-          { 
-            text: "OK", 
+          {
+            text: "OK",
             onPress: async () => {
               await AsyncStorage.multiRemove(['userData', 'userRole']);
               navigation.reset({
                 index: 0,
                 routes: [{ name: "Login" }],
               });
-            } 
+            }
           }
         ]);
       } else {
@@ -1042,7 +1042,7 @@ const ChangePasswordScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.landingContainerFixed}>
       <FloatingParticles />
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1, justifyContent: 'center', padding: 24 }}
       >
@@ -1058,24 +1058,24 @@ const ChangePasswordScreen = ({ navigation }) => {
         </View>
 
         {/* Glassmorphism Card */}
-        <View style={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-          borderRadius: 24, 
-          padding: 24, 
+        <View style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: 24,
+          padding: 24,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 10 },
           shadowOpacity: 0.1,
           shadowRadius: 20,
           elevation: 10
         }}>
-          
+
           {/* Current Password Input */}
           <View style={{ marginBottom: 20 }}>
             <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700", fontFamily: "Poppins_600SemiBold", marginBottom: 8 }}>
               CURRENT PASSWORD
             </Text>
-            <View style={{ 
-              flexDirection: 'row', 
+            <View style={{
+              flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: "#f1f5f9",
               borderRadius: 12,
@@ -1104,8 +1104,8 @@ const ChangePasswordScreen = ({ navigation }) => {
               </Text>
               {isPasswordStrong && <Ionicons name="checkmark-circle" size={16} color="#16a34a" />}
             </View>
-            <View style={{ 
-              flexDirection: 'row', 
+            <View style={{
+              flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: "#f8fafc",
               borderRadius: 12,
@@ -1134,8 +1134,8 @@ const ChangePasswordScreen = ({ navigation }) => {
               </Text>
               {passwordsMatch && <Ionicons name="checkmark-done-circle" size={16} color="#16a34a" />}
             </View>
-            <View style={{ 
-              flexDirection: 'row', 
+            <View style={{
+              flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: "#f8fafc",
               borderRadius: 12,
@@ -1160,7 +1160,7 @@ const ChangePasswordScreen = ({ navigation }) => {
           </View>
 
           {/* Submit Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={onChangePassword}
             disabled={loading || !passwordsMatch || !isPasswordStrong}
             style={{
@@ -1189,7 +1189,7 @@ const ChangePasswordScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           {/* Back Link */}
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ paddingVertical: 16, marginTop: 8, alignItems: 'center' }}
           >
@@ -1945,6 +1945,9 @@ const DashboardScreen = ({ navigation }) => {
   const [latestSensor, setLatestSensor] = useState(null);
   const [loadingSensor, setLoadingSensor] = useState(true);
   const [userData, setUserData] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const esRef = useRef(null);
+  const fallbackRef = useRef(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -1958,34 +1961,53 @@ const DashboardScreen = ({ navigation }) => {
     fetchUser();
   }, []);
 
+  // Real-time sensor stream via SSE, with polling fallback
   useEffect(() => {
-    const fetchLatest = async () => {
-      try {
-        setLoadingSensor(true);
-        const res = await fetch(`${API_BASE}/api/iot/latest`);
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        const data = await res.json();
-        if (data && data.sensor_id) {
-          setLatestSensor({
-            ...data,
-            flood_level: Number(data.flood_level ?? 0),
-            raw_distance: Number(data.raw_distance ?? 0),
-            status: data.is_offline ? "OFFLINE" : (data.status || "UNKNOWN"),
-          });
-        } else {
-          setLatestSensor(null);
-        }
-      } catch (e) {
-        console.warn("Failed fetch latest sensor", e);
+    const parseSensor = (data) => {
+      if (data && data.sensor_id) {
+        setLatestSensor({
+          ...data,
+          flood_level: Number(data.flood_level ?? 0),
+          raw_distance: Number(data.raw_distance ?? 0),
+          status: data.is_offline ? "OFFLINE" : (data.status || "UNKNOWN"),
+        });
+        setLastUpdated(new Date());
+      } else {
         setLatestSensor(null);
-      } finally {
-        setLoadingSensor(false);
       }
+      setLoadingSensor(false);
     };
 
-    fetchLatest();
-    const id = setInterval(fetchLatest, 3000);
-    return () => clearInterval(id);
+    const startPolling = () => {
+      const poll = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/iot/latest`);
+          if (res.ok) parseSensor(await res.json());
+          else setLoadingSensor(false);
+        } catch (e) { setLoadingSensor(false); }
+      };
+      poll();
+      fallbackRef.current = setInterval(poll, 5000);
+    };
+
+    if (typeof EventSource !== "undefined") {
+      const connectSSE = () => {
+        try {
+          const es = new EventSource(`${API_BASE}/api/iot/stream`);
+          esRef.current = es;
+          es.onmessage = (e) => { try { parseSensor(JSON.parse(e.data)); } catch (_) { } };
+          es.onerror = () => { es.close(); esRef.current = null; setTimeout(connectSSE, 5000); };
+        } catch (_) { startPolling(); }
+      };
+      connectSSE();
+    } else {
+      startPolling();
+    }
+
+    return () => {
+      if (esRef.current) { esRef.current.close(); esRef.current = null; }
+      if (fallbackRef.current) { clearInterval(fallbackRef.current); fallbackRef.current = null; }
+    };
   }, []);
 
   useFocusEffect(
@@ -2007,6 +2029,19 @@ const DashboardScreen = ({ navigation }) => {
     navigation.replace("Landing");
   };
 
+  const isOffline = !latestSensor || latestSensor.status === "OFFLINE";
+  const statusColor = getStatusColor(latestSensor?.status || "UNKNOWN");
+  const floodLevel = Number(latestSensor?.flood_level ?? 0);
+  const rawDistance = Number(latestSensor?.raw_distance ?? 0);
+  const fillPct = Math.max(0, Math.min(100, (floodLevel / 50) * 100));
+  const formatUpdated = () => {
+    if (!lastUpdated) return "Waiting for data...";
+    const diff = Math.floor((Date.now() - lastUpdated) / 1000);
+    if (diff < 10) return "Just now";
+    if (diff < 60) return `${diff}s ago`;
+    return `${Math.floor(diff / 60)}m ago`;
+  };
+
   return (
     <SafeAreaView style={styles.dashboardSafe}>
       <LogoutConfirmationModal
@@ -2024,9 +2059,11 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.locationCard}>
           <View style={styles.locationHeaderRow}>
             <Text style={styles.locationLabel}>CURRENT LOCATION</Text>
-            <View style={styles.safeBadge}>
-              <View style={styles.safeBadgeDot} />
-              <Text style={styles.safeBadgeText}>SAFE</Text>
+            <View style={[styles.safeBadge, isOffline && { backgroundColor: 'rgba(148,163,184,0.15)' }]}>
+              <View style={[styles.safeBadgeDot, isOffline && { backgroundColor: '#94a3b8' }]} />
+              <Text style={[styles.safeBadgeText, isOffline && { color: '#94a3b8' }]}>
+                {isOffline ? "OFFLINE" : (latestSensor?.status === "NORMAL" ? "SAFE" : latestSensor?.status || "SAFE")}
+              </Text>
             </View>
           </View>
 
@@ -2034,32 +2071,46 @@ const DashboardScreen = ({ navigation }) => {
             <Ionicons name="location-outline" size={20} color="#74C5E6" />
             <Text style={styles.locationTitle}>{userData?.barangay || "Mabolo District"}</Text>
           </View>
-          <Text style={styles.locationTimeText}>Updated just now</Text>
+          <Text style={styles.locationTimeText}>
+            {isOffline ? "Sensor offline" : `Updated ${formatUpdated()}`}
+          </Text>
 
           <View style={styles.riskLevelRow}>
             <Text style={styles.riskLevelLabel}>Risk Level</Text>
             <View style={styles.riskLevelBarTrack}>
-              <View style={styles.riskLevelBarFill} />
+              <View style={[styles.riskLevelBarFill, { width: `${fillPct}%`, backgroundColor: statusColor }]} />
             </View>
-            <Text style={styles.riskLevelValue}>LOW</Text>
+            <Text style={[styles.riskLevelValue, { color: statusColor }]}>
+              {isOffline ? "—" : (latestSensor?.status || "NORMAL")}
+            </Text>
           </View>
         </View>
 
         <View style={styles.sensorMainCard}>
-          <View style={styles.sensorCardHeader}>
+          <View style={[styles.sensorCardHeader, { alignItems: 'center' }]}>
             <View>
               <Text style={styles.sensorCardTitle}>Flood Monitoring System</Text>
-              <Text style={styles.sensorCardSubtitle}>Station: Main Street Bridge</Text>
+              <Text style={styles.sensorCardSubtitle}>Station: {latestSensor?.sensor_id || "Main Street Bridge"}</Text>
             </View>
-
+            {/* Live / Offline pill */}
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 5,
+              backgroundColor: isOffline ? 'rgba(148,163,184,0.12)' : 'rgba(34,197,94,0.12)',
+              paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20,
+            }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: isOffline ? '#94a3b8' : '#22c55e' }} />
+              <Text style={{ fontSize: 11, color: isOffline ? '#94a3b8' : '#22c55e', fontWeight: '700' }}>
+                {isOffline ? "OFFLINE" : "LIVE"}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.gaugeContainerOuter}>
             <View style={styles.gaugeGlassContainer}>
               <View style={styles.gaugeCapsule}>
                 <WaterWave
-                  color={getStatusColor(latestSensor?.status || "UNKNOWN")}
-                  fillPercentage={latestSensor ? Math.max(0, Math.min(100, ((latestSensor.flood_level || 0) / 50) * 100)) : 0}
+                  color={statusColor}
+                  fillPercentage={fillPct}
                 />
 
                 {/* Level Markers — 50 cm max */}
@@ -2079,13 +2130,21 @@ const DashboardScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.readingContainer}>
+              {/* Flood Level */}
               <View style={styles.gaugeReading}>
-                <Text style={styles.gaugeReadingValue}>{latestSensor ? Number(latestSensor.flood_level).toFixed(1) : "--"}</Text>
+                <Text style={styles.gaugeReadingValue}>
+                  {loadingSensor ? "--" : floodLevel.toFixed(1)}
+                </Text>
                 <Text style={styles.gaugeReadingUnit}>cm</Text>
               </View>
+              <Text style={{ color: theme.textSecondary, fontSize: 10, textAlign: 'center', marginBottom: 6, letterSpacing: 0.5 }}>
+                FLOOD LEVEL
+              </Text>
               <View style={styles.statusChip}>
-                <View style={[styles.statusChipDot, { backgroundColor: getStatusColor(latestSensor?.status || "UNKNOWN") }]} />
-                <Text style={styles.statusChipText}>{latestSensor ? `${latestSensor.is_offline ? "OFFLINE" : (latestSensor.status || "UNKNOWN")} LEVEL` : "NO DATA"}</Text>
+                <View style={[styles.statusChipDot, { backgroundColor: statusColor }]} />
+                <Text style={styles.statusChipText}>
+                  {loadingSensor ? "LOADING" : (isOffline ? "OFFLINE" : (latestSensor?.status || "UNKNOWN"))}
+                </Text>
               </View>
             </View>
           </View>
@@ -2095,7 +2154,7 @@ const DashboardScreen = ({ navigation }) => {
               <Feather name="info" size={14} color="#64748b" />
               <Text style={styles.thresholdText}>Sensor Max Range: <Text style={styles.thresholdTextBold}>50 cm</Text></Text>
             </View>
-            <Text style={styles.sensorIdText}>STATION ID: {latestSensor?.sensor_id || "sensor-1"}</Text>
+            <Text style={styles.sensorIdText}>STATION ID: {latestSensor?.sensor_id || "—"}</Text>
           </View>
         </View>
       </ScrollView>
@@ -2559,7 +2618,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
     fetch(`${API_BASE}/api/alerts/${rawId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setAlert(prev => ({ ...prev, ...data })); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   if (!alert) {
@@ -2645,7 +2704,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
       <ScrollView contentContainerStyle={styles.alertDetailContent}>
         <Card style={styles.alertDetailCard}>
           <Text style={styles.alertDetailTitle}>{alert.title}</Text>
-          
+
           {/* Detailed Level Indicator */}
           {alert.level && (
             <View style={{ flexDirection: 'row', marginTop: 12, marginBottom: 8, alignItems: 'center', gap: 8 }}>
@@ -4836,61 +4895,61 @@ export default function App() {
     <LocationProvider>
       <NotificationProvider>
         <ThemeContext.Provider value={{ theme }}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={theme.background}
-        />
-        <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName="Loading"
-            screenOptions={{
-              headerShown: false,
-              animationEnabled: false,
-              cardStyleInterpolator: CardStyleInterpolators.forNoAnimation,
-            }}
-          >
-            <Stack.Screen name="Loading" component={LoadingScreen} />
-            <Stack.Screen name="Landing" component={LandingScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="Account">
-              {(props) => (
-                <AccountScreen {...props} form={form} setForm={setForm} />
-              )}
-            </Stack.Screen>
-            <Stack.Screen name="Location">
-              {(props) => (
-                <LocationScreen
-                  {...props}
-                  selection={selection}
-                  setSelection={setSelection}
-                  area={area}
-                  setArea={setArea}
-                />
-              )}
-            </Stack.Screen>
-            <Stack.Screen name="Notifications">
-              {(props) => (
-                <NotificationsScreen
-                  {...props}
-                  toggles={toggles}
-                  setToggles={setToggles}
-                  form={form}
-                  selection={selection}
-                />
-              )}
-            </Stack.Screen>
-            <Stack.Screen name="MainDrawer" component={MainDrawer} />
-            <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
-            <Stack.Screen name="EvacuationMap" component={EvacuationMapScreen} />
-            <Stack.Screen name="ActiveNavigation" component={ActiveNavigationScreen} />
-            <Stack.Screen name="Map" component={MapScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </ThemeContext.Provider>
-    </NotificationProvider>
-  </LocationProvider>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor={theme.background}
+          />
+          <NavigationContainer>
+            <Stack.Navigator
+              initialRouteName="Loading"
+              screenOptions={{
+                headerShown: false,
+                animationEnabled: false,
+                cardStyleInterpolator: CardStyleInterpolators.forNoAnimation,
+              }}
+            >
+              <Stack.Screen name="Loading" component={LoadingScreen} />
+              <Stack.Screen name="Landing" component={LandingScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="Account">
+                {(props) => (
+                  <AccountScreen {...props} form={form} setForm={setForm} />
+                )}
+              </Stack.Screen>
+              <Stack.Screen name="Location">
+                {(props) => (
+                  <LocationScreen
+                    {...props}
+                    selection={selection}
+                    setSelection={setSelection}
+                    area={area}
+                    setArea={setArea}
+                  />
+                )}
+              </Stack.Screen>
+              <Stack.Screen name="Notifications">
+                {(props) => (
+                  <NotificationsScreen
+                    {...props}
+                    toggles={toggles}
+                    setToggles={setToggles}
+                    form={form}
+                    selection={selection}
+                  />
+                )}
+              </Stack.Screen>
+              <Stack.Screen name="MainDrawer" component={MainDrawer} />
+              <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+              <Stack.Screen name="EvacuationMap" component={EvacuationMapScreen} />
+              <Stack.Screen name="ActiveNavigation" component={ActiveNavigationScreen} />
+              <Stack.Screen name="Map" component={MapScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </ThemeContext.Provider>
+      </NotificationProvider>
+    </LocationProvider>
   );
 }
 
@@ -6057,7 +6116,7 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 10,
     color: theme.textSecondary,
   },
-  
+
   // Official Verification UI Enhancement
   verificationSection: {
     marginTop: 14,

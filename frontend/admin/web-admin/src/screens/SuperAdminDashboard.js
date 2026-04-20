@@ -7,6 +7,7 @@ import RealTimeClock from "../components/RealTimeClock";
 import LiveSensorStatus from "../components/LiveSensorStatus";
 import WelcomeBanner from "../components/WelcomeBanner";
 import { API_BASE_URL } from "../config/api";
+import useSensorSocket from "../utils/useSensorSocket";
 
 const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) => {
     const [stats, setStats] = useState({ active_sensors: 0, active_alerts: 0, registered_users: 0, avg_water_level: 0 });
@@ -23,46 +24,32 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
         }
         fetchAll();
         refreshRef.current = setInterval(fetchAll, 15000);
-
-        let es;
-        if (typeof EventSource !== "undefined") {
-            const connect = () => {
-                es = new EventSource(`${API_BASE_URL}/api/iot/live`);
-                es.onmessage = (e) => {
-                    try {
-                        const d = JSON.parse(e.data);
-                        if (d.sensors) {
-                            setLiveSensors(d.sensors.map(s => ({
-                                id: s.id, name: s.name, location: s.barangay,
-                                waterLevel: s.flood_level,
-                                rawDistance: s.raw_distance || 0,
-                                status: s.is_offline ? "OFFLINE" : (s.status || "NORMAL"),
-                                battery: s.battery_level, signal: s.signal_strength,
-                            })));
-                        }
-                        if (d.active_alerts) setRecentAlerts(d.active_alerts.slice(0, 5));
-                        if (d.sensors) {
-                            setStats(prev => ({
-                                ...prev,
-                                active_alerts: d.active_alerts ? d.active_alerts.length : prev.active_alerts,
-                                active_sensors: d.sensors.filter(s => !s.is_offline).length,
-                                avg_water_level: d.sensors.length
-                                    ? d.sensors.reduce((acc, s) => acc + (s.flood_level || 0), 0) / d.sensors.length
-                                    : prev.avg_water_level,
-                            }));
-                        }
-                    } catch (_) {}
-                };
-                es.onerror = () => { es.close(); setTimeout(connect, 3000); };
-            };
-            connect();
-        }
-
-        return () => {
-            clearInterval(refreshRef.current);
-            if (es) es.close();
-        };
+        return () => { clearInterval(refreshRef.current); };
     }, []);
+
+    // ── Real-time WebSocket: patch matching sensor on each sensor_update event ──
+    useSensorSocket((reading) => {
+        setLiveSensors(prev => {
+            const updated = prev.map(s =>
+                s.id === reading.sensor_id
+                    ? {
+                        ...s,
+                        waterLevel:  reading.flood_level,
+                        rawDistance: reading.raw_distance || 0,
+                        status:      reading.is_offline ? "OFFLINE" : (reading.status || "NORMAL"),
+                      }
+                    : s
+            );
+            setStats(prev => ({
+                ...prev,
+                active_sensors: updated.filter(s => s.status !== "OFFLINE").length,
+                avg_water_level: updated.length
+                    ? updated.reduce((a, s) => a + (s.waterLevel || 0), 0) / updated.length
+                    : prev.avg_water_level,
+            }));
+            return updated;
+        });
+    });
 
     const fetchAll = async () => {
         await Promise.all([fetchStats(), fetchAlerts(), fetchSensors()]);
@@ -234,10 +221,13 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                                                 <View style={{ flex: 1 }}>
                                                     <Text style={styles.dashboardSensorTitle}>{sensor.name}</Text>
                                                     <Text style={styles.dashboardSensorMeta}>
-                                                        Brgy. {sensor.location || "—"} · {" "}
+                                                        Brgy. {sensor.location || "—"} ·{" "}
                                                         <Text style={styles.dashboardSensorMetaStrong}>
-                                                            {isOffline ? "OFFLINE" : `${Number(sensor.waterLevel || 0).toFixed(1)} cm`}
+                                                            {isOffline ? "OFFLINE" : `Flood: ${Number(sensor.waterLevel || 0).toFixed(1)} cm`}
                                                         </Text>
+                                                        {!isOffline && (
+                                                            <Text> · Raw: <Text style={styles.dashboardSensorMetaStrong}>{Number(sensor.rawDistance || 0).toFixed(1)} cm</Text></Text>
+                                                        )}
                                                         {" "}· Batt: <Text style={styles.dashboardSensorMetaStrong}>{sensor.battery ?? "—"}%</Text>
                                                     </Text>
                                                 </View>

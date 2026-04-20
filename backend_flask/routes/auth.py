@@ -4,12 +4,20 @@ from models.user import User
 import jwt
 import datetime
 from config import Config
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from utils.db import get_db
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
+
+def _emit_user_update():
+    """Broadcast user list change to all WebSocket clients."""
+    try:
+        from app import socketio
+        socketio.emit("user_update", {"message": "refresh"})
+    except Exception:
+        pass
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -66,11 +74,11 @@ def login():
         must_change = False
         try:
              db = get_db()
-             cursor = db.cursor()
+             cursor = db.cursor(dictionary=True)
              cursor.execute("SELECT must_change_password FROM users WHERE id = %s", (user.id,))
              result = cursor.fetchone()
              if result:
-                 must_change = bool(result[0])
+                 must_change = bool(result['must_change_password'])
              cursor.close()
         except Exception as e:
              logger.warning("Could not fetch must_change_password for user %s: %s", user.id, e)
@@ -125,22 +133,26 @@ def register():
         user_id = cursor.lastrowid
         cursor.close()
         
-        # Send credentials via email (new refactored service)
+        # Send credentials email in a background thread so the response
+        # is instant and doesn't depend on SMTP availability.
+        import threading
         from utils.email_service import send_credentials_email
-        success, email_response = send_credentials_email(email, full_name, generated_password)
+
+        def _send_email_bg():
+            ok, msg = send_credentials_email(email, full_name, generated_password)
+            if ok:
+                logger.info("[register] Credentials email sent to %s", email)
+            else:
+                logger.warning("[register] Email to %s failed: %s", email, msg)
+
+        threading.Thread(target=_send_email_bg, daemon=True).start()
         
-        if success:
-            return jsonify({
-                "message": "Account created! Please check your email for credentials.",
-                "user_id": user_id
-            }), 201
-        else:
-            # More descriptive error message for the mobile user
-            return jsonify({
-                "message": f"Account created, but credentials email failed: {email_response}",
-                "user_id": user_id,
-                "error": email_response
-            }), 201
+        _emit_user_update()
+        
+        return jsonify({
+            "message": "Account created! Check your email for your temporary password.",
+            "user_id": user_id
+        }), 201
             
     except Exception as e:
         cursor.close()
@@ -157,7 +169,7 @@ def change_password():
         return jsonify({"error": "Missing required fields"}), 400
         
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
     
     try:
         # Verify current password
@@ -178,6 +190,8 @@ def change_password():
             WHERE id = %s
         """, (new_hash, user_id))
         db.commit()
+        
+        _emit_user_update()
         
         return jsonify({"message": "Password updated successfully"}), 200
     except Exception as e:

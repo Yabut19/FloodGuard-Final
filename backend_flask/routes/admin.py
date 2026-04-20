@@ -6,6 +6,14 @@ from utils.auth_middleware import admin_required, lgu_or_admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
+def _emit_user_update():
+    """Broadcast user list change to all WebSocket clients."""
+    try:
+        from app import socketio
+        socketio.emit("user_update", {"message": "refresh"})
+    except Exception:
+        pass
+
 @admin_bp.route('/fix-db', methods=['GET'])
 def fix_db():
     try:
@@ -91,24 +99,26 @@ def create_user(current_user):
         user_id = cursor.lastrowid
         cursor.close()
         
-        # Send credentials via email (primarily for LGU creation)
-        if role in ['lgu_admin', 'lgu']:
-            logger.info(f"Attempting to send admin email to {email}")
-            admin_flag = True
-            success, message = send_credentials_email(email, full_name or email, password, is_admin=admin_flag)
-            logger.info(f"Admin email send result: {success}, {message}")
-        elif role == 'user':
-            logger.info(f"Attempting to send standard user email to {email}")
-            success, message = send_credentials_email(email, full_name or email, password, is_admin=False)
-            logger.info(f"User email send result: {success}, {message}")
-        else:
-            success = True
-            message = "Email skip for super_admin"
+        # Send credentials email in a background thread
+        import threading
+
+        def _send_bg():
+            if role in ['lgu_admin', 'lgu']:
+                ok, msg = send_credentials_email(email, full_name or email, password, is_admin=True)
+            elif role == 'user':
+                ok, msg = send_credentials_email(email, full_name or email, password, is_admin=False)
+            else:
+                return  # No email for super_admin
+            level = logger.info if ok else logger.warning
+            level("[create-user] Email to %s: %s", email, msg)
+
+        threading.Thread(target=_send_bg, daemon=True).start()
+        
+        _emit_user_update()
         
         return jsonify({
             "message": f"Account with role '{role}' created successfully",
             "user_id": user_id,
-            "email_sent": success if role == 'lgu_admin' else False
         }), 201
     except Exception as e:
         cursor.close()
@@ -166,6 +176,7 @@ def delete_user(current_user, user_id):
 
         cursor.execute(f"DELETE FROM {table} WHERE id = %s", (db_id,))
         db.commit()
+        _emit_user_update()
         return jsonify({"message": "User deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -189,6 +200,7 @@ def update_user_status(current_user, user_id):
             db_id = user_id[2:]
             cursor.execute(f"UPDATE {table} SET status = %s WHERE id = %s", (new_status, db_id))
             db.commit()
+            _emit_user_update()
             return jsonify({"message": "Status updated successfully"}), 200
         else:
              return jsonify({"error": "Cannot update status for this user type"}), 400
@@ -215,6 +227,7 @@ def update_user_role(current_user, user_id):
             if new_role in ['user', 'lgu_admin', 'super_admin']:
                 cursor.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, db_id))
                 db.commit()
+                _emit_user_update()
                 return jsonify({"message": "Role updated successfully"}), 200
             else:
                 return jsonify({"error": "Invalid role specified"}), 400
