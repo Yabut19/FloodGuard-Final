@@ -64,6 +64,7 @@ def on_connect():
     logging.info("[WS] Client connected")
     try:
         from utils.db import get_db
+        import decimal
         db = get_db()
         cur = db.cursor(dictionary=True)
         cur.execute("""
@@ -73,12 +74,18 @@ def on_connect():
         """)
         row = cur.fetchone()
         cur.close()
-        db.close()
         
         if row:
+            # Fix decimal serialization
+            for key, val in row.items():
+                if isinstance(val, decimal.Decimal):
+                    row[key] = float(val)
+            
             if hasattr(row["created_at"], "isoformat"):
                 row["timestamp"] = row["created_at"].isoformat()
+            
             socketio.emit("sensor_update", row)
+        db.close()
     except Exception as e:
         print("[WS] Failed to send latest data on connect:", e)
 
@@ -91,4 +98,4 @@ if __name__ == '__main__':
     import os
     debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
     # Use socketio.run() which handles the threading server automatically
-    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=debug_mode, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)

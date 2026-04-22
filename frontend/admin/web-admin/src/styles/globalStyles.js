@@ -2664,7 +2664,7 @@ export const styles = StyleSheet.create({
         color: "#1a3d0a",
     },
     liveSensorScrollContent: {
-        paddingVertical: 8, // padding for shadow
+        paddingVertical: 12, // padding for shadow and scrollbar
         paddingHorizontal: 4,
         flexGrow: 1,
     },
@@ -2673,7 +2673,8 @@ export const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 32,
         flex: 1,
-        minWidth: 340,
+        minWidth: 380,
+        maxWidth: 500, // Prevent it from stretching too far on ultra-wide screens
         marginRight: 24,
         alignItems: "center", // Center contents horizontally
         shadowColor: "#000",

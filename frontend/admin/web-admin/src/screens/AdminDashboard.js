@@ -13,6 +13,7 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
     const [stats, setStats] = useState({ active_sensors: 0, active_alerts: 0, registered_users: 0, avg_water_level: 0 });
     const [recentAlerts, setRecentAlerts] = useState([]);
     const [liveSensors, setLiveSensors] = useState([]);
+    const [thresholds, setThresholds] = useState({ advisory_level: 15, warning_level: 30, critical_level: 50 });
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState("Admin User");
     const [msgCount, setMsgCount] = useState(0);
@@ -29,34 +30,40 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
     }, []);
 
     // ── Real-time WebSocket: patch matching sensor on each sensor_update event ──
-    const wsConnected = useSensorSocket((reading) => {
-        console.log("[Dashboard] Event received:", reading);
-        setMsgCount(c => c + 1);
-        setLiveSensors(prev => {
-            const updated = prev.map(s =>
-                s.id === reading.sensor_id
-                    ? {
-                        ...s,
-                        waterLevel:  reading.flood_level,
-                        rawDistance: reading.raw_distance || 0,
-                        status:      reading.is_offline ? "OFFLINE" : (reading.status || "NORMAL"),
-                      }
-                    : s
-            );
-            // Recompute stats from updated list
-            setStats(prev => ({
-                ...prev,
-                active_sensors: updated.filter(s => s.status !== "OFFLINE").length,
-                avg_water_level: updated.length
-                    ? updated.reduce((a, s) => a + (s.waterLevel || 0), 0) / updated.length
-                    : prev.avg_water_level,
-            }));
-            return updated;
-        });
-    });
+    const wsConnected = useSensorSocket(
+        (reading) => {
+            console.log("[Dashboard] Event received:", reading);
+            setMsgCount(c => c + 1);
+            setLiveSensors(prev => {
+                const updated = prev.map(s =>
+                    s.id === reading.sensor_id
+                        ? {
+                            ...s,
+                            waterLevel:  reading.flood_level,
+                            rawDistance: reading.raw_distance || 0,
+                            status:      reading.is_offline ? "OFFLINE" : (reading.status || "NORMAL"),
+                          }
+                        : s
+                );
+                // Recompute stats from updated list
+                setStats(prev => ({
+                    ...prev,
+                    active_sensors: updated.filter(s => s.status !== "OFFLINE").length,
+                    avg_water_level: updated.length
+                        ? updated.reduce((a, s) => a + (s.waterLevel || 0), 0) / updated.length
+                        : prev.avg_water_level,
+                }));
+                return updated;
+            });
+        },
+        (newThresholds) => {
+            console.log("[Dashboard] Thresholds updated:", newThresholds);
+            setThresholds(newThresholds);
+        }
+    );
 
     const fetchAll = async () => {
-        await Promise.all([fetchStats(), fetchAlerts(), fetchSensors()]);
+        await Promise.all([fetchStats(), fetchAlerts(), fetchSensors(), fetchThresholds()]);
         setLoading(false);
     };
 
@@ -89,6 +96,13 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
                 status: s.is_offline ? "OFFLINE" : (s.reading_status || "NORMAL"),
                 battery: s.battery_level, signal: s.signal_strength,
             })));
+        } catch (e) { /* silent */ }
+    };
+
+    const fetchThresholds = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/config/thresholds`);
+            if (res.ok) setThresholds(await res.json());
         } catch (e) { /* silent */ }
     };
 
@@ -167,7 +181,7 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
                         </View>
 
                         {/* Live Sensor Gauges */}
-                        <LiveSensorStatus sensors={liveSensors} />
+                        <LiveSensorStatus sensors={liveSensors} thresholds={thresholds} />
 
                         {/* Two-column */}
                         <View style={styles.dashboardTwoColumn}>

@@ -214,6 +214,7 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [activeSection, setActiveSection] = useState("home");
 
     const isMobile = width < 1024;
 
@@ -222,8 +223,30 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
     const aboutRef = useRef(null);
     const featuresRef = useRef(null);
     const contactRef = useRef(null);
+    const sectionOffsets = useRef({ home: 0, about: 0, features: 0, contact: 0 });
 
-    const scrollToSection = (sectionRef) => {
+    const handleScroll = (event) => {
+        const scrollY = event.nativeEvent.contentOffset.y;
+        const threshold = 300; // Update indicator when section is 300px from top
+        
+        let current = 'home';
+        if (scrollY >= sectionOffsets.current.contact - threshold) {
+            current = 'contact';
+        } else if (scrollY >= sectionOffsets.current.features - threshold) {
+            current = 'features';
+        } else if (scrollY >= sectionOffsets.current.about - threshold) {
+            current = 'about';
+        } else {
+            current = 'home';
+        }
+        
+        if (activeSection !== current) {
+            setActiveSection(current);
+        }
+    };
+
+    const scrollToSection = (sectionRef, sectionName) => {
+        if (sectionName) setActiveSection(sectionName);
         if (sectionRef && sectionRef.current && scrollRef.current) {
             sectionRef.current.measureLayout(
                 scrollRef.current.getInnerViewNode(),
@@ -307,17 +330,29 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
 
                     {!isMobile && (
                         <View style={localStyles.navCenter}>
-                            <TouchableOpacity style={[localStyles.navLinkContainer, localStyles.navLinkActive]} onPress={() => scrollToSection(homeRef)}>
-                                <Text style={[localStyles.navLinkText, { color: '#ffffff' }]}>Home</Text>
+                            <TouchableOpacity 
+                                style={[localStyles.navLinkContainer, activeSection === 'home' && localStyles.navLinkActive]} 
+                                onPress={() => scrollToSection(homeRef, 'home')}
+                            >
+                                <Text style={[localStyles.navLinkText, activeSection === 'home' && { color: '#ffffff' }]}>Home</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={localStyles.navLinkContainer} onPress={() => scrollToSection(aboutRef)}>
-                                <Text style={localStyles.navLinkText}>About</Text>
+                            <TouchableOpacity 
+                                style={[localStyles.navLinkContainer, activeSection === 'about' && localStyles.navLinkActive]} 
+                                onPress={() => scrollToSection(aboutRef, 'about')}
+                            >
+                                <Text style={[localStyles.navLinkText, activeSection === 'about' && { color: '#ffffff' }]}>About</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={localStyles.navLinkContainer} onPress={() => scrollToSection(featuresRef)}>
-                                <Text style={localStyles.navLinkText}>Features</Text>
+                            <TouchableOpacity 
+                                style={[localStyles.navLinkContainer, activeSection === 'features' && localStyles.navLinkActive]} 
+                                onPress={() => scrollToSection(featuresRef, 'features')}
+                            >
+                                <Text style={[localStyles.navLinkText, activeSection === 'features' && { color: '#ffffff' }]}>Features</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={localStyles.navLinkContainer} onPress={() => scrollToSection(contactRef)}>
-                                <Text style={localStyles.navLinkText}>Contact</Text>
+                            <TouchableOpacity 
+                                style={[localStyles.navLinkContainer, activeSection === 'contact' && localStyles.navLinkActive]} 
+                                onPress={() => scrollToSection(contactRef, 'contact')}
+                            >
+                                <Text style={[localStyles.navLinkText, activeSection === 'contact' && { color: '#ffffff' }]}>Contact</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -345,8 +380,13 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
                 contentContainerStyle={localStyles.scrollWrapper} 
                 showsVerticalScrollIndicator={false}
                 scrollEventThrottle={16}
+                onScroll={handleScroll}
             >
-                <View ref={homeRef} style={[localStyles.mainFlexbox, { minHeight: height - 100 }]}>
+                <View 
+                    ref={homeRef} 
+                    style={[localStyles.mainFlexbox, { minHeight: height - 100 }]}
+                    onLayout={(e) => { sectionOffsets.current.home = e.nativeEvent.layout.y; }}
+                >
                     <View style={[localStyles.heroInner, { flexDirection: isMobile ? 'column' : 'row', paddingHorizontal: isMobile ? 24 : 54 }]}>
                         {/* LEFT HERO SECTION */}
                         <View style={localStyles.heroSection}>
@@ -367,7 +407,11 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
             </View>
 
                 {/* ABOUT SECTION */}
-                <View ref={aboutRef} style={[localStyles.contentSection, { marginTop: 100, minHeight: height - 100, paddingHorizontal: isMobile ? 24 : 54 }]}>
+                <View 
+                    ref={aboutRef} 
+                    style={[localStyles.contentSection, { marginTop: 100, minHeight: height - 100, paddingHorizontal: isMobile ? 24 : 54 }]}
+                    onLayout={(e) => { sectionOffsets.current.about = e.nativeEvent.layout.y; }}
+                >
                     <Text style={[localStyles.sectionLabel, { textAlign: 'center', marginBottom: 12 }]}>OUR MISSION</Text>
                     <Text style={[localStyles.mainHeadline, { color: '#BDD8E9', textAlign: 'center', fontSize: 56, marginBottom: 16 }]}>About FloodGuard</Text>
                     <Text style={[localStyles.subHeadline, { textAlign: 'center', maxWidth: 800, alignSelf: 'center', marginBottom: 48 }]}>
@@ -404,7 +448,11 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
                 </View>
 
                 {/* FEATURES SECTION */}
-                <View ref={featuresRef} style={[localStyles.contentSection, { marginTop: 100, minHeight: height - 100, paddingHorizontal: isMobile ? 24 : 54 }]}>
+                <View 
+                    ref={featuresRef} 
+                    style={[localStyles.contentSection, { marginTop: 100, minHeight: height - 100, paddingHorizontal: isMobile ? 24 : 54 }]}
+                    onLayout={(e) => { sectionOffsets.current.features = e.nativeEvent.layout.y; }}
+                >
                     <Text style={[localStyles.sectionLabel, { textAlign: 'center', marginBottom: 12 }]}>CAPABILITIES</Text>
                     <Text style={[localStyles.mainHeadline, { color: '#BDD8E9', textAlign: 'center', fontSize: 56, marginBottom: 16 }]}>System Features</Text>
                     <Text style={[localStyles.subHeadline, { textAlign: 'center', maxWidth: 800, alignSelf: 'center', marginBottom: 48 }]}>
@@ -451,7 +499,11 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
                 </View>
 
                 {/* CONTACT SECTION */}
-                <View ref={contactRef} style={[localStyles.contentSection, { marginTop: 100, marginBottom: 100, minHeight: height - 100, paddingHorizontal: isMobile ? 24 : 54 }]}>
+                <View 
+                    ref={contactRef} 
+                    style={[localStyles.contentSection, { marginTop: 100, marginBottom: 100, minHeight: height - 100, paddingHorizontal: isMobile ? 24 : 54 }]}
+                    onLayout={(e) => { sectionOffsets.current.contact = e.nativeEvent.layout.y; }}
+                >
                     <Text style={[localStyles.sectionLabel, { textAlign: 'center', marginBottom: 12 }]}>GET IN TOUCH</Text>
                     <Text style={[localStyles.mainHeadline, { color: '#BDD8E9', textAlign: 'center', fontSize: 56, marginBottom: 16 }]}>Contact Us</Text>
                     <Text style={[localStyles.subHeadline, { textAlign: 'center', maxWidth: 800, alignSelf: 'center', marginBottom: 48 }]}>
@@ -515,10 +567,10 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
                             </Text>
                         </View>
                         <View style={localStyles.footerLinks}>
-                            <TouchableOpacity onPress={() => scrollToSection(homeRef)}><Text style={localStyles.footerLinkText}>Home</Text></TouchableOpacity>
-                            <TouchableOpacity onPress={() => scrollToSection(aboutRef)}><Text style={localStyles.footerLinkText}>About</Text></TouchableOpacity>
-                            <TouchableOpacity onPress={() => scrollToSection(featuresRef)}><Text style={localStyles.footerLinkText}>Features</Text></TouchableOpacity>
-                            <TouchableOpacity onPress={() => scrollToSection(contactRef)}><Text style={localStyles.footerLinkText}>Contact</Text></TouchableOpacity>
+                            <TouchableOpacity onPress={() => scrollToSection(homeRef, 'home')}><Text style={localStyles.footerLinkText}>Home</Text></TouchableOpacity>
+                            <TouchableOpacity onPress={() => scrollToSection(aboutRef, 'about')}><Text style={localStyles.footerLinkText}>About</Text></TouchableOpacity>
+                            <TouchableOpacity onPress={() => scrollToSection(featuresRef, 'features')}><Text style={localStyles.footerLinkText}>Features</Text></TouchableOpacity>
+                            <TouchableOpacity onPress={() => scrollToSection(contactRef, 'contact')}><Text style={localStyles.footerLinkText}>Contact</Text></TouchableOpacity>
                         </View>
                         <View style={[localStyles.footerCredits, { alignItems: width > 768 ? 'flex-end' : 'center' }]}>
                             <Text style={localStyles.footerCreditsText}>© 2026 FloodGuard Team</Text>

@@ -8,8 +8,14 @@ def get_stats():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    # Active Sensors
-    cursor.execute("SELECT COUNT(*) as count FROM sensors WHERE status='active'")
+    # Active Sensors (Truly Online: status='active' AND fresh data < 5s)
+    cursor.execute("""
+        SELECT COUNT(DISTINCT s.id) as count 
+        FROM sensors s
+        JOIN iot_readings r ON s.id = r.sensor_id
+        WHERE s.status = 'active'
+        AND r.created_at >= DATE_SUB(NOW(), INTERVAL 5 SECOND)
+    """)
     active_sensors = cursor.fetchone()['count']
     
     # Active Alerts

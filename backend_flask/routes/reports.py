@@ -309,6 +309,19 @@ def verify_report(report_id):
         logger.error("Error creating alert from verified report: %s", e, exc_info=True)
         alert_creation_warning = str(e)
 
+    # ── REAL-TIME BROADCAST: Instant escalation to all mobile apps ──
+    try:
+        from app import socketio
+        socketio.emit("new_notification", {
+            "type": "verified_report",
+            "id": report_id,
+            "title": f"Verified: {report['type']} at {report['location']}",
+            "description": f"Verified by LGU Official ({verified_by})\nFlood Level: {flood_level}",
+            "level": alert_level,
+            "barangay": report['location']
+        }, namespace="/")
+    except: pass
+
     response_body = {
         "message": "Report verified and broadcast as official alert",
         "report_id": report_id,
@@ -430,7 +443,13 @@ def get_daily_summary():
     total_row = cursor.fetchone()
     total_sensors = total_row['total'] if total_row else 0
     
-    cursor.execute("SELECT COUNT(*) as active FROM sensors WHERE status = 'active'")
+    cursor.execute("""
+        SELECT COUNT(DISTINCT s.id) as active 
+        FROM sensors s
+        JOIN iot_readings r ON s.id = r.sensor_id
+        WHERE s.status = 'active'
+        AND r.created_at >= DATE_SUB(NOW(), INTERVAL 5 SECOND)
+    """)
     active_row = cursor.fetchone()
     active_sensors = active_row['active'] if active_row else 0
     

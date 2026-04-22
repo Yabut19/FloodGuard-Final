@@ -42,6 +42,18 @@ def update_thresholds():
         cur.execute("INSERT INTO system_config (config_key, config_value) VALUES ('warning_level', %s) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value)", (str(warn),))
         cur.execute("INSERT INTO system_config (config_key, config_value) VALUES ('critical_level', %s) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value)", (str(crit),))
         db.commit()
+        
+        # Broadcast threshold update to all WebSocket clients
+        try:
+            from app import socketio
+            socketio.emit("threshold_update", {
+                "advisory_level": adv,
+                "warning_level": warn,
+                "critical_level": crit
+            }, namespace="/")
+        except Exception as ws_err:
+            print(f"[WS] Threshold broadcast failed: {ws_err}")
+
         return jsonify({
             "message": "Thresholds updated",
             "thresholds": {

@@ -27,7 +27,15 @@ import {
   Switch,
   BackHandler,
 } from "react-native";
-import { NavigationContainer, useFocusEffect } from "@react-navigation/native";
+import { NavigationContainer, useFocusEffect, createNavigationContainerRef } from "@react-navigation/native";
+
+export const navigationRef = createNavigationContainerRef();
+
+function globalNavigate(name, params) {
+  if (navigationRef.isReady()) {
+    navigationRef.navigate(name, params);
+  }
+}
 import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer";
 import { LinearGradient } from "expo-linear-gradient";
@@ -41,6 +49,7 @@ import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
+import { io } from "socket.io-client";
 
 export const ThemeContext = createContext();
 export const useTheme = () => useContext(ThemeContext);
@@ -1750,7 +1759,8 @@ const CustomHeader = ({ navigation, title, subtitle }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const [isNotifVisible, setIsNotifVisible] = useState(false);
-  const { notifications, unreadCount, loading, readIds, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, readIds, markAsRead, markAllAsRead, clearDropdown, hiddenIds } = useNotifications();
+  const visibleNotifications = notifications.filter(n => !hiddenIds.includes(n.id)).slice(0, 5);
 
   const topInset = Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 0;
 
@@ -1812,20 +1822,27 @@ const CustomHeader = ({ navigation, title, subtitle }) => {
               borderColor: theme.border
             }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: theme.textPrimary }}>Recent Activity</Text>
-                {unreadCount > 0 && (
-                  <TouchableOpacity onPress={markAllAsRead}>
-                    <Text style={{ color: '#74C5E6', fontSize: 12, fontWeight: '600' }}>Mark all as read</Text>
-                  </TouchableOpacity>
-                )}
+                <Text style={{ fontSize: 16, fontWeight: '800', color: theme.textPrimary }}>Recent Activity</Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {unreadCount > 0 && (
+                    <TouchableOpacity onPress={markAllAsRead}>
+                      <Text style={{ color: '#74C5E6', fontSize: 11, fontWeight: '700' }}>Mark all</Text>
+                    </TouchableOpacity>
+                  )}
+                  {visibleNotifications.length > 0 && (
+                    <TouchableOpacity onPress={clearDropdown}>
+                      <Text style={{ color: theme.textSecondary, fontSize: 11, fontWeight: '700' }}>Clear</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               {loading ? (
                 <ActivityIndicator size="small" color="#74C5E6" />
-              ) : notifications.length === 0 ? (
-                <Text style={{ color: theme.textSecondary, textAlign: 'center', marginVertical: 20 }}>No new notifications</Text>
+              ) : visibleNotifications.length === 0 ? (
+                <Text style={{ color: theme.textSecondary, textAlign: 'center', marginVertical: 20, fontSize: 13 }}>No new notifications</Text>
               ) : (
-                notifications.map(item => {
+                visibleNotifications.map(item => {
                   const isRead = readIds.includes(item.id);
                   return (
                     <TouchableOpacity
@@ -1844,21 +1861,20 @@ const CustomHeader = ({ navigation, title, subtitle }) => {
                         if (item.sourceType === 'announcement') {
                           navigation.navigate("AlertDetail", { alert: item });
                         } else {
-                          // Navigate to report details if implemented, or just AlertDetail for now
                           navigation.navigate("AlertDetail", { alert: item });
                         }
                       }}
                     >
-                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: item.accent + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                        <Ionicons name={item.icon.trim()} size={16} color={item.accent} />
-                        {!isRead && (
-                          <View style={{ position: 'absolute', top: 0, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: '#e2463b', borderWidth: 1, borderColor: theme.surface }} />
-                        )}
+                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: item.accent + '20', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                        <Ionicons name={item.icon} size={15} color={item.accent} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: theme.textPrimary, fontWeight: isRead ? '500' : '700', fontSize: 13 }} numberOfLines={1}>{item.title || item.type}</Text>
-                        <Text style={{ color: theme.textSecondary, fontSize: 11 }}>{new Date(item.timestamp).toLocaleDateString()}</Text>
+                        <Text style={{ color: theme.textPrimary, fontSize: 13, fontWeight: isRead ? '400' : '700' }} numberOfLines={1}>{item.title}</Text>
+                        <Text style={{ color: theme.textSecondary, fontSize: 11 }} numberOfLines={1}>{item.message}</Text>
                       </View>
+                      {!isRead && (
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#e2463b', marginLeft: 8 }} />
+                      )}
                     </TouchableOpacity>
                   );
                 })
@@ -1943,6 +1959,7 @@ const DashboardScreen = ({ navigation }) => {
   const styles = getStyles(theme);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [latestSensor, setLatestSensor] = useState(null);
+  const [thresholds, setThresholds] = useState({ advisory_cm: 10, warning_cm: 15, critical_cm: 25 });
   const [loadingSensor, setLoadingSensor] = useState(true);
   const [userData, setUserData] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -1971,6 +1988,9 @@ const DashboardScreen = ({ navigation }) => {
           raw_distance: Number(data.raw_distance ?? 0),
           status: data.is_offline ? "OFFLINE" : (data.status || "UNKNOWN"),
         });
+        if (data.thresholds) {
+          setThresholds(data.thresholds);
+        }
         setLastUpdated(new Date());
       } else {
         setLatestSensor(null);
@@ -2033,7 +2053,8 @@ const DashboardScreen = ({ navigation }) => {
   const statusColor = getStatusColor(latestSensor?.status || "UNKNOWN");
   const floodLevel = Number(latestSensor?.flood_level ?? 0);
   const rawDistance = Number(latestSensor?.raw_distance ?? 0);
-  const fillPct = Math.max(0, Math.min(100, (floodLevel / 50) * 100));
+  const maxRange = thresholds?.critical_cm || 25;
+  const fillPct = Math.max(0, Math.min(100, (floodLevel / maxRange) * 100));
   const formatUpdated = () => {
     if (!lastUpdated) return "Waiting for data...";
     const diff = Math.floor((Date.now() - lastUpdated) / 1000);
@@ -2113,9 +2134,14 @@ const DashboardScreen = ({ navigation }) => {
                   fillPercentage={fillPct}
                 />
 
-                {/* Level Markers — 50 cm max */}
-                {[50, 37, 25, 12].map((level, i) => (
-                  <React.Fragment key={level}>
+                {/* Level Markers — Dynamic based on thresholds */}
+                {[
+                  Math.round(maxRange),
+                  Math.round(maxRange * 0.75),
+                  Math.round(maxRange * 0.5),
+                  Math.round(maxRange * 0.25)
+                ].map((level, i) => (
+                  <React.Fragment key={`${level}-${i}`}>
                     <View style={[styles.gaugeLevelMark, { top: `${20 * (i + 1)}%` }]}>
                       <Text style={styles.gaugeMarkText}>{level}cm</Text>
                     </View>
@@ -2152,7 +2178,7 @@ const DashboardScreen = ({ navigation }) => {
           <View style={styles.sensorCardFooter}>
             <View style={styles.footerInfoItem}>
               <Feather name="info" size={14} color="#64748b" />
-              <Text style={styles.thresholdText}>Sensor Max Range: <Text style={styles.thresholdTextBold}>50 cm</Text></Text>
+              <Text style={styles.thresholdText}>Current Max Level: <Text style={styles.thresholdTextBold}>{Math.round(maxRange)} cm</Text></Text>
             </View>
             <Text style={styles.sensorIdText}>STATION ID: {latestSensor?.sensor_id || "—"}</Text>
           </View>
@@ -2291,15 +2317,16 @@ const MapScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
 const AlertsScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const { markAllAsRead } = useNotifications();
   const [filter, setFilter] = useState("all");
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const topInset = Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 0;
   const bottomInset = Platform.OS === "android" ? 32 : 16;
+
 
   const fetchAlerts = async () => {
     try {
@@ -2342,8 +2369,19 @@ const AlertsScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchAlerts();
-    const interval = setInterval(fetchAlerts, 5000);
-    return () => clearInterval(interval);
+
+    // ── REAL-TIME BROADCAST: Achieve sub-2-second latency for alerting ──
+    const socket = io(API_BASE, { transports: ["websocket", "polling"] });
+    socket.on("new_notification", () => {
+      console.log("[WS] Alert list refreshing instantly...");
+      fetchAlerts();
+    });
+
+    const interval = setInterval(fetchAlerts, 15000); // Polling as fallback only
+    return () => {
+      socket.disconnect();
+      clearInterval(interval);
+    };
   }, []);
 
   const handleDeleteAlert = (alertId, alertTitle) => {
@@ -2610,8 +2648,14 @@ const AlertDetailScreen = ({ route, navigation }) => {
   const [alert, setAlert] = useState(paramAlert);
   const topInset = Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 0;
 
+  const { markAsRead } = useNotifications();
+
   useEffect(() => {
     if (!paramAlert) return;
+
+    // Mark as read immediately when viewing
+    markAsRead(paramAlert.id);
+
     // Derive the numeric DB id from either plain id or "alert-123" prefix
     const rawId = String(paramAlert.id).replace(/^alert-/, '');
     if (!rawId || isNaN(Number(rawId))) return;
@@ -2625,67 +2669,6 @@ const AlertDetailScreen = ({ route, navigation }) => {
     return null;
   }
 
-  const handleDeleteFromDetail = async () => {
-    Alert.alert(
-      "Delete Alert",
-      `Are you sure you want to delete this alert?\n\n"${alert.title}"`,
-      [
-        {
-          text: "Cancel",
-          onPress: () => { },
-          style: "cancel"
-        },
-        {
-          text: "Delete",
-          onPress: async () => {
-            try {
-              // Get user ID from AsyncStorage
-              const storedUser = await AsyncStorage.getItem("userData");
-              if (!storedUser) {
-                Alert.alert("Error", "User not found. Please log in again.");
-                return;
-              }
-
-              const user = JSON.parse(storedUser);
-              const userId = user?.id;
-
-              if (!userId) {
-                Alert.alert("Error", "User ID not found.");
-                return;
-              }
-
-              const dismissUrl = `${API_BASE}/api/alerts/user/${userId}/dismiss/${alert.id}`;
-              console.log("Dismissing alert from detail at URL:", dismissUrl);
-
-              // Call the dismiss endpoint (user-specific deletion)
-              const response = await fetch(dismissUrl, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json"
-                }
-              });
-
-              console.log("Dismiss response status:", response.status);
-              const responseData = await response.json();
-              console.log("Dismiss response data:", responseData);
-
-              if (response.ok) {
-                // Navigate back to Alerts and refresh
-                navigation.navigate("Alerts");
-                Alert.alert("Success", "Alert deleted successfully");
-              } else {
-                Alert.alert("Error", responseData.error || "Failed to delete alert");
-              }
-            } catch (error) {
-              console.error("Error deleting alert:", error);
-              Alert.alert("Error", "Could not delete alert. Please try again.");
-            }
-          },
-          style: "destructive"
-        }
-      ]
-    );
-  };
 
   return (
     <SafeAreaView style={styles.dashboardSafe}>
@@ -2697,9 +2680,7 @@ const AlertDetailScreen = ({ route, navigation }) => {
           <Ionicons name="arrow-back" size={22} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.mapHeaderTitle}>Alert Details</Text>
-        <TouchableOpacity onPress={handleDeleteFromDetail} style={{ padding: 4 }}>
-          <Feather name="trash-2" size={20} color="#ffffff" />
-        </TouchableOpacity>
+        <View style={{ width: 22 }} />
       </LinearGradient>
       <ScrollView contentContainerStyle={styles.alertDetailContent}>
         <Card style={styles.alertDetailCard}>
@@ -4594,6 +4575,8 @@ const CustomDrawerContent = (props) => {
     props.navigation.replace("Landing");
   };
 
+  const { unreadCount } = useNotifications();
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
@@ -4616,7 +4599,7 @@ const CustomDrawerContent = (props) => {
         <View style={{ paddingVertical: 16 }}>
           {[
             { label: "Home", icon: "home", route: "Dashboard" },
-            { label: "Alerts", icon: "notifications", route: "Alerts", badge: true },
+            { label: "Alerts", icon: "notifications", route: "Alerts", badge: unreadCount > 0 },
             { label: "Evacuate", icon: "map", route: "Evacuate" },
             { label: "Report", icon: "chatbubble", route: "Report" },
             { label: "Settings", icon: "settings", route: "Settings" },
@@ -4635,7 +4618,7 @@ const CustomDrawerContent = (props) => {
                 <Text style={{ marginLeft: 16, fontSize: 16, fontWeight: isActive ? "700" : "500", color: isActive ? "#74C5E6" : theme.textPrimary }}>{item.label}</Text>
                 {item.badge && (
                   <View style={{ marginLeft: "auto", backgroundColor: "#e2463b", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
-                    <Text style={{ color: "#ffffff", fontSize: 12, fontWeight: "700" }}>5</Text>
+                    <Text style={{ color: "#ffffff", fontSize: 12, fontWeight: "700" }}>{unreadCount}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -4752,13 +4735,87 @@ function NotificationProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [readIds, setReadIds] = useState([]);
 
+  const shownIds = useRef(new Set());
+  const readIdsRef = useRef(readIds);
+
+  useEffect(() => {
+    readIdsRef.current = readIds;
+  }, [readIds]);
+
+  // ── REAL-TIME BROADCAST: delivering sub-2-second latency ──
+  useEffect(() => {
+    const socket = io(API_BASE, {
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 10,
+    });
+
+    socket.on("connect", () => console.log("[WS] Alerts connection established"));
+
+    socket.on("new_notification", (data) => {
+      console.log("[WS] Instant alert received:", data);
+
+      const normalizedId = data.type === 'alert' || data.type === 'auto_alert' ? `alert-${data.id || 'new'}` :
+        data.type === 'evacuation_center' ? `evac-${data.id || 'new'}` : `id-${data.id || Date.now()}`;
+
+      // 1. EXACTLY-ONCE CHECK: Check if we've already shown this in the current session
+      if (shownIds.current.has(normalizedId)) {
+        console.log("[WS] Notification already shown/handled in this session:", normalizedId);
+        return;
+      }
+
+      // 2. DISMISSAL CHECK: Check if this item is already marked as read/dismissed in storage
+      if (readIdsRef.current.includes(normalizedId)) {
+        console.log("[WS] Suppressing pop-up for already dismissed item:", normalizedId);
+        return;
+      }
+
+      // Mark as shown immediately to prevent race conditions from concurrent polling
+      shownIds.current.add(normalizedId);
+
+      // Refresh notification list instantly
+      fetchNotifications(true);
+
+      // System-wide popup for high priority alerts
+      const isActiveBroadcast = data.status ? data.status === 'active' : true;
+      if (isActiveBroadcast && (data.level === 'critical' || data.level === 'warning' || data.type === 'alert' || data.type === 'auto_alert')) {
+        Alert.alert(
+          "📢 BROADCAST ALERT",
+          `${data.title}\n\n${data.description}`,
+          [
+            {
+              text: "Dismiss",
+              style: "cancel",
+              onPress: () => markAsRead(normalizedId)
+            },
+            {
+              text: "View Details",
+              style: "default",
+              onPress: () => {
+                markAsRead(normalizedId);
+                // Construct alert object for the detail screen
+                const alertObj = {
+                  ...data,
+                  id: normalizedId,
+                  // Ensure any other required fields for AlertDetailScreen are present
+                };
+                globalNavigate("AlertDetail", { alert: alertObj });
+              }
+            }
+          ]
+        );
+      }
+    });
+
+    return () => socket.disconnect();
+  }, []); // Empty dependency array ensures we only have ONE socket listener
+
   useEffect(() => {
     loadReadIds();
     fetchNotifications();
 
     const interval = setInterval(() => {
       fetchNotifications(true);
-    }, 30000);
+    }, 45000); // Polling as a secondary fallback only
 
     return () => clearInterval(interval);
   }, []);
@@ -4780,6 +4837,19 @@ function NotificationProvider({ children }) {
     }
   };
 
+  const [hiddenIds, setHiddenIds] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem("notif_hidden_ids");
+        if (stored) setHiddenIds(JSON.parse(stored));
+      } catch (e) {
+        console.error("Error loading hidden ids:", e);
+      }
+    })();
+  }, []);
+
   const markAsRead = (id) => {
     if (!readIds.includes(id)) {
       const newReadIds = [...readIds, id];
@@ -4793,6 +4863,17 @@ function NotificationProvider({ children }) {
     const newReadIds = Array.from(new Set([...readIds, ...allIds]));
     setReadIds(newReadIds);
     saveReadIds(newReadIds);
+  };
+
+  const clearDropdown = async () => {
+    const allCurrentIds = notifications.map(n => n.id);
+    const newHidden = Array.from(new Set([...hiddenIds, ...allCurrentIds]));
+    setHiddenIds(newHidden);
+    try {
+      await AsyncStorage.setItem("notif_hidden_ids", JSON.stringify(newHidden));
+    } catch (e) {
+      console.error("Error saving hidden ids:", e);
+    }
   };
 
   const fetchNotifications = async (isBackground = false) => {
@@ -4849,23 +4930,41 @@ function NotificationProvider({ children }) {
 
       const latestItems = combined.slice(0, 5);
 
-      // Pop-up logic for new alerts
+      // Pop-up logic for new alerts (Fallback/Polling)
       if (latestItems.length > 0 && isBackground) {
-        const latestId = latestItems[0].id;
-        const storedLastId = await AsyncStorage.getItem("last_notif_id");
+        const newItem = latestItems[0];
 
-        if (storedLastId && storedLastId !== latestId) {
-          const newItem = latestItems[0];
+        // Suppress pop-up if the user has already read/dismissed, if already shown, or if the broadcast is NOT active
+        const isActive = newItem.status ? newItem.status === 'active' : true;
+        if (!readIds.includes(newItem.id) && !shownIds.current.has(newItem.id) && isActive) {
+          // Mark as shown to prevent duplicate triggers
+          shownIds.current.add(newItem.id);
+
           Alert.alert(
             "📢 New Notification",
             newItem.title || newItem.message,
-            [{ text: "Dismiss", style: "cancel" }]
+            [
+              {
+                text: "Dismiss",
+                style: "cancel",
+                onPress: () => markAsRead(newItem.id)
+              },
+              {
+                text: "View",
+                style: "default",
+                onPress: () => {
+                  markAsRead(newItem.id);
+                  globalNavigate("AlertDetail", { alert: newItem });
+                }
+              }
+            ]
           );
+          // Also save as last seen
+          await AsyncStorage.setItem("last_notif_id", newItem.id);
         }
-        await AsyncStorage.setItem("last_notif_id", latestId);
       }
 
-      setNotifications(latestItems);
+      setNotifications(combined);
     } catch (e) {
       console.error("Error fetching notifications:", e);
     } finally {
@@ -4877,8 +4976,8 @@ function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider value={{
-      notifications, unreadCount, loading, readIds,
-      markAsRead, markAllAsRead, refresh: fetchNotifications
+      notifications, unreadCount, loading, readIds, hiddenIds,
+      markAsRead, markAllAsRead, clearDropdown, refresh: fetchNotifications
     }}>
       {children}
     </NotificationContext.Provider>
@@ -4899,7 +4998,7 @@ export default function App() {
             barStyle="light-content"
             backgroundColor={theme.background}
           />
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <Stack.Navigator
               initialRouteName="Loading"
               screenOptions={{

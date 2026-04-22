@@ -1,5 +1,6 @@
 import logging
 from flask import Blueprint, request, jsonify
+from datetime import datetime
 from utils.db import get_db
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,28 @@ def dismiss_alert_for_user(user_id, alert_id):
         return jsonify({"message": "Alert dismissed for user"}), 200
     except Exception as e:
         logger.error("Failed to dismiss alert %s for user %s: %s", alert_id, user_id, e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+@alerts_bp.route('/user/<int:user_id>/dismiss/all', methods=['POST'])
+def dismiss_all_alerts_for_user(user_id):
+    """Dismiss all current active alerts for a specific user"""
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        # Efficiently insert all active alerts into this user's dismissal list
+        cursor.execute("""
+            INSERT INTO user_alert_dismissals (user_id, alert_id)
+            SELECT %s, id FROM alerts 
+            WHERE status = 'active'
+            ON DUPLICATE KEY UPDATE dismissed_at = NOW()
+        """, (user_id,))
+        
+        db.commit()
+        return jsonify({"message": "All alerts marked as dismissed"}), 200
+    except Exception as e:
+        logger.error("Failed to clear alerts for user %s: %s", user_id, e)
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -137,4 +160,19 @@ def create_alert():
     alert_id = cursor.lastrowid
     cursor.close()
     
+    # ── REAL-TIME BROADCAST: Deliver instantly to mobile apps (latency < 200ms) ──
+    try:
+        from app import socketio
+        socketio.emit("new_notification", {
+            "type": "alert",
+            "id": alert_id,
+            "title": title,
+            "description": description,
+            "level": level,
+            "barangay": barangay,
+            "timestamp": datetime.now().isoformat()
+        }, namespace="/")
+    except Exception as ws_err:
+        logger.warning(f"WebSocket broadcast failed: {ws_err}")
+
     return jsonify({"message": "Alert created successfully", "id": alert_id}), 201

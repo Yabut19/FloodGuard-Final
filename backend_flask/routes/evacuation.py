@@ -46,7 +46,24 @@ def create_evacuation_center():
         """, (alert_title, alert_description, 'advisory', 'All', 'active'))
 
         db.commit()
-        return jsonify({"message": "Evacuation center created successfully", "id": cursor.lastrowid}), 201
+        center_id = cursor.lastrowid
+        alert_id = cursor.lastrowid # Note: alerts table id
+
+        # ── REAL-TIME BROADCAST: Instant delivery to mobile apps ──
+        try:
+            from app import socketio
+            # Notify about new evacuation center
+            socketio.emit("new_notification", {
+                "type": "evacuation_center",
+                "id": center_id,
+                "title": alert_title,
+                "description": alert_description,
+                "location": location,
+                "capacity": capacity
+            }, namespace="/")
+        except: pass
+
+        return jsonify({"message": "Evacuation center created successfully", "id": center_id}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

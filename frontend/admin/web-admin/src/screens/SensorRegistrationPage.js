@@ -171,10 +171,10 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
             if (s.id !== reading.sensor_id) return s;
             return {
                 ...s,
-                flood_level:    Number(reading.flood_level ?? 0),
-                raw_distance:   Number(reading.raw_distance ?? 0),
+                flood_level: Number(reading.flood_level ?? 0),
+                raw_distance: Number(reading.raw_distance ?? 0),
                 reading_status: reading.status || s.reading_status,
-                is_offline:     reading.is_offline || false,
+                is_offline: reading.is_offline || false,
             };
         }));
         // Also auto-update the selected sensor health modal if open
@@ -185,10 +185,10 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 ...prev,
                 live: {
                     ...prev.live,
-                    flood_level:    Number(reading.flood_level ?? 0),
-                    raw_distance:   Number(reading.raw_distance ?? 0),
+                    flood_level: Number(reading.flood_level ?? 0),
+                    raw_distance: Number(reading.raw_distance ?? 0),
                     reading_status: reading.status,
-                    is_offline:     reading.is_offline || false,
+                    is_offline: reading.is_offline || false,
                 }
             };
         });
@@ -481,7 +481,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                     if (map && s.lat && s.lng) map.setView([s.lat, s.lng], 17);
                                                 }}
                                             >
-                                                 <View style={styles.sensorListItemContent}>
+                                                <View style={styles.sensorListItemContent}>
                                                     <Text style={styles.sensorListItemName}>{s.name}</Text>
                                                     <Text style={styles.sensorListItemBarangay}>
                                                         Brgy. {s.barangay || "—"}
@@ -553,7 +553,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         onChangeText={setSearchQuery}
                                     />
                                 </View>
-                                
+
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                                     <View style={{ position: "relative", zIndex: 1000 }}>
                                         <TouchableOpacity style={pg.filterBtn} onPress={() => setShowStatusDropdown(!showStatusDropdown)}>
@@ -571,7 +571,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             </View>
                                         )}
                                     </View>
-                                    
+
                                     {isSuperAdmin && (
                                         <TouchableOpacity style={pg.registerBtn} onPress={() => { resetForm(); setShowRegistrationModal(true); }}>
                                             <Feather name="plus" size={16} color="#fff" style={{ marginRight: 4 }} />
@@ -635,15 +635,17 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                         </View>
                                                     </View>
                                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                                                        <Switch
-                                                            value={live?.enabled !== false}
-                                                            onValueChange={(val) => {
-                                                                handleToggleSensor(sensor, val);
-                                                            }}
-                                                            disabled={togglingId === sensor.id}
-                                                            trackColor={{ false: "#cbd5e1", true: "#86efac" }}
-                                                            thumbColor={live?.enabled === false ? "#94a3b8" : "#16a34a"}
-                                                        />
+                                                        {live?.is_connected && (
+                                                            <Switch
+                                                                value={live?.enabled !== false}
+                                                                onValueChange={(val) => {
+                                                                    handleToggleSensor(sensor, val);
+                                                                }}
+                                                                disabled={togglingId === sensor.id}
+                                                                trackColor={{ false: "#cbd5e1", true: "#86efac" }}
+                                                                thumbColor={live?.enabled !== false ? "#16a34a" : "#94a3b8"}
+                                                            />
+                                                        )}
                                                         {isSuperAdmin && (
                                                             <TouchableOpacity style={pg.deleteBtn} onPress={(e) => { e.stopPropagation?.(); handleDeleteSensor(sensor.id); }}>
                                                                 <Feather name="trash-2" size={15} color="#dc2626" />
@@ -663,7 +665,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                     }}>
                                                         <Text style={{ fontSize: 10, color: "#64748b", fontFamily: "Poppins_600SemiBold", letterSpacing: 0.5 }}>FLOOD LEVEL</Text>
                                                         <Text style={{ fontSize: 22, color: isOnline ? "#1e40af" : "#94a3b8", fontFamily: "Poppins_700Bold", marginTop: 2 }}>
-                                                            {isOnline ? `${Number(live?.flood_level || 0).toFixed(1)}` : "—"}
+                                                            {isOnline ? `${Number(live?.flood_level || 0).toFixed(1)}` : "0.0"}
                                                         </Text>
                                                         <Text style={{ fontSize: 10, color: "#94a3b8" }}>cm</Text>
                                                     </View>
@@ -674,7 +676,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                     }}>
                                                         <Text style={{ fontSize: 10, color: "#64748b", fontFamily: "Poppins_600SemiBold", letterSpacing: 0.5 }}>RAW DISTANCE</Text>
                                                         <Text style={{ fontSize: 22, color: isOnline ? "#0284c7" : "#94a3b8", fontFamily: "Poppins_700Bold", marginTop: 2 }}>
-                                                            {isOnline ? `${Number(live?.raw_distance || 0).toFixed(1)}` : "—"}
+                                                            {isOnline ? `${Number(live?.raw_distance || 0).toFixed(1)}` : "0.0"}
                                                         </Text>
                                                         <Text style={{ fontSize: 10, color: "#94a3b8" }}>cm</Text>
                                                     </View>
@@ -757,26 +759,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                 </View>
                             </View>
 
-                            <View style={pg.formGrid}>
-                                <View style={pg.formGroup}>
-                                    <Text style={pg.formLabel}>Initial Battery (%)</Text>
-                                    <TextInput style={pg.formInput} placeholder="100" placeholderTextColor="#94a3b8"
-                                        keyboardType="numeric" value={formData.battery_level} onChangeText={v => handleInputChange("battery_level", v)} />
-                                </View>
-                                <View style={pg.formGroup}>
-                                    <Text style={pg.formLabel}>Signal Strength</Text>
-                                    <View style={pg.segmentRow}>
-                                        {["strong", "medium", "weak"].map(s => (
-                                            <TouchableOpacity key={s} style={[pg.segment, formData.signal_strength === s && pg.segmentActive]}
-                                                onPress={() => handleInputChange("signal_strength", s)}>
-                                                <Text style={[pg.segmentText, formData.signal_strength === s && pg.segmentTextActive]}>
-                                                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                </View>
-                            </View>
+
                         </ScrollView>
 
                         <View style={pg.modalFooter}>
@@ -820,19 +803,7 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     </LinearGradient>
 
                                     <View style={pg.modalBody}>
-                                        {/* Battery + Signal row */}
-                                        <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
-                                            <View style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 12, padding: 16, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" }}>
-                                                <Feather name="battery-charging" size={18} color={getBatteryColor(sh.live?.battery_level || sh.battery_level)} />
-                                                <Text style={{ fontSize: 11, color: "#64748b", fontFamily: "Poppins_600SemiBold", marginTop: 4 }}>BATTERY</Text>
-                                                <Text style={{ fontSize: 20, color: "#0f172a", fontFamily: "Poppins_700Bold" }}>{sh.live?.battery_level || sh.battery_level || 0}%</Text>
-                                            </View>
-                                            <View style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 12, padding: 16, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" }}>
-                                                <Feather name="wifi" size={18} color="#3b82f6" />
-                                                <Text style={{ fontSize: 11, color: "#64748b", fontFamily: "Poppins_600SemiBold", marginTop: 4 }}>SIGNAL</Text>
-                                                <Text style={{ fontSize: 16, color: "#0f172a", fontFamily: "Poppins_600SemiBold" }}>{sh.live?.signal_strength || sh.signal_strength || "Strong"}</Text>
-                                            </View>
-                                        </View>
+
 
                                         {/* Flood Level + Raw Distance — live via SSE */}
                                         <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
@@ -956,17 +927,17 @@ const pg = StyleSheet.create({
     resultsCount: { fontSize: 13, fontFamily: "Poppins_400Regular", color: "#94a3b8", marginBottom: 16 },
     // Sensor Card Grid
     cardGrid: { flexDirection: "column", gap: 16 },
-    sensorCard: { 
-        backgroundColor: "#fff", 
-        borderRadius: 16, 
-        borderWidth: 1, 
-        borderColor: "#e2e8f0", 
-        overflow: "hidden", 
-        shadowColor: "#000", 
+    sensorCard: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "#e2e8f0",
+        overflow: "hidden",
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06, 
-        shadowRadius: 12, 
-        elevation: 4 
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 4
     },
     cardAccent: { height: 3, width: "100%" },
     cardHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", padding: 16, paddingBottom: 12 },
@@ -993,15 +964,15 @@ const pg = StyleSheet.create({
     emptySubtitle: { fontSize: 14, fontFamily: "Poppins_400Regular", color: "#94a3b8", textAlign: "center" },
     // Health Tab
     healthSummaryRow: { flexDirection: "row", gap: 16, marginBottom: 24, flexWrap: "wrap" },
-    healthCard: { 
-        flex: 1, 
-        minWidth: 180, 
-        backgroundColor: "#fff", 
-        borderRadius: 16, 
-        padding: 24, 
-        flexDirection: "column", 
-        alignItems: "center", 
-        borderWidth: 1, 
+    healthCard: {
+        flex: 1,
+        minWidth: 180,
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        padding: 24,
+        flexDirection: "column",
+        alignItems: "center",
+        borderWidth: 1,
         borderColor: "#e2e8f0",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -1012,11 +983,11 @@ const pg = StyleSheet.create({
     healthCardIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
     healthCardValue: { fontSize: 24, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 4, textAlign: "center" },
     healthCardLabel: { fontSize: 13, fontFamily: "Poppins_500Medium", color: "#64748b", textAlign: "center" },
-    panelCard: { 
-        backgroundColor: "#fff", 
-        borderRadius: 16, 
-        borderWidth: 1, 
-        borderColor: "#e2e8f0", 
+    panelCard: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "#e2e8f0",
         overflow: "hidden",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },

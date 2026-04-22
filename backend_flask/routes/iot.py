@@ -89,10 +89,96 @@ def sensor_reading():
     cur = db.cursor()
     
     try:
-        # Verify sensor exists
-        cur.execute("SELECT id FROM sensors WHERE id = %s", (sensor_id,))
-        if not cur.fetchone():
+        # Verify sensor exists AND fetch its metadata for processing
+        cur.execute("SELECT id, name, barangay, status FROM sensors WHERE id = %s", (sensor_id,))
+        sensor_data = cur.fetchone()
+        if not sensor_data:
             return jsonify({"error": f"Sensor {sensor_id} not registered"}), 404
+        
+        sensor_name = sensor_data[1]
+        sensor_barangay = sensor_data[2]
+        sensor_active_status = sensor_data[3]
+
+        # ── HEARTBEAT UPDATE: Always update last_update to track connection ──
+        # Extract metadata if provided
+        battery_level = data.get("battery_level")
+        signal_strength = data.get("signal_strength")
+        
+        update_query = "UPDATE sensors SET last_update = NOW()"
+        update_params = []
+        if battery_level is not None:
+            update_query += ", battery_level = %s"
+            update_params.append(battery_level)
+        if signal_strength is not None:
+            update_query += ", signal_strength = %s"
+            update_params.append(signal_strength)
+        update_query += " WHERE id = %s"
+        update_params.append(sensor_id)
+        
+        cur.execute(update_query, update_params)
+
+        # ── DATA COLLECTION RULE: Stop recording if sensor is manually OFF ──
+        if sensor_active_status == 'inactive':
+            db.commit()
+            cur.close()
+            # Return success so the sensor knows its ping was received
+            return jsonify({
+                "message": "Heartbeat received, but data collection is disabled (Sensor OFF).",
+                "status": "OFFLINE"
+            }), 201
+
+        # ── INTEGRATION: Recalculate status based on dynamic thresholds ──
+        _sync_thresholds_from_db()
+        lvl = float(flood_level)
+        new_status = "NORMAL"
+        if lvl >= _thresholds.get("critical_cm", 25.0):
+            new_status = "CRITICAL"
+        elif lvl >= _thresholds.get("warning_cm", 15.0):
+            new_status = "WARNING"
+        elif lvl >= _thresholds.get("advisory_cm", 10.0):
+            new_status = "ADVISORY"
+        
+        # Override incoming status with server-calculated value for baseline sync
+        status = new_status
+
+        # ── AUTOMATIC ALERT TRIGGERING ──────────────────────────────────
+        if status != "NORMAL":
+            # Prevent alert spam: check if an active alert for this level/location exists from the last 30 minutes
+            cur.execute("""
+                SELECT id FROM alerts 
+                WHERE barangay = %s AND level = %s AND status = 'active'
+                AND timestamp > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+                LIMIT 1
+            """, (sensor_barangay, status.lower()))
+            
+            if not cur.fetchone():
+                # Define recommended actions based on severity baseline
+                action = "Monitor the situation and stay alert."
+                if status == "CRITICAL":
+                    action = "Immediate evacuation may be required. Proceed to the nearest center."
+                elif status == "WARNING":
+                    action = "Prepare emergency kits and secure belongings."
+                elif status == "ADVISORY":
+                    action = "Stay tuned for further updates."
+
+                cur.execute("""
+                    INSERT INTO alerts (title, description, level, barangay, recommended_action, status, timestamp)
+                    VALUES (%s, %s, %s, %s, %s, 'active', NOW())
+                """, (f"{status.capitalize()} Flood Alert: {sensor_name}", 
+                      f"Detected flood level: {lvl}cm in {sensor_barangay}.", 
+                      status.lower(), sensor_barangay, action))
+
+                # ── REAL-TIME BROADCAST: Deliver auto-alert instantly ──
+                try:
+                    from app import socketio
+                    socketio.emit("new_notification", {
+                        "type": "auto_alert",
+                        "title": f"{status.capitalize()} Flood Alert: {sensor_name}",
+                        "description": f"Flood level: {lvl}cm in {sensor_barangay}.",
+                        "level": status.lower(),
+                        "barangay": sensor_barangay
+                    }, namespace="/")
+                except: pass
 
         # Insert into water_levels
         cur.execute("""
@@ -135,10 +221,12 @@ def latest_sensor():
     db = get_db()
     cur = db.cursor(dictionary=True)
     cur.execute("""
-        SELECT id, sensor_id, raw_distance, flood_level, status,
-               latitude, longitude, maps_url, created_at
-        FROM iot_readings
-        ORDER BY created_at DESC LIMIT 1
+        SELECT r.sensor_id, r.raw_distance, r.flood_level, r.status,
+               r.latitude, r.longitude, r.maps_url, r.created_at, 
+               s.status as sensor_status, s.last_update
+        FROM iot_readings r
+        LEFT JOIN sensors s ON r.sensor_id = s.id
+        ORDER BY r.created_at DESC LIMIT 1
     """)
     row = cur.fetchone()
     cur.close()
@@ -146,29 +234,26 @@ def latest_sensor():
     if not row:
         return jsonify({"error": "No sensor data found"}), 404
 
-    created_at = row.get("created_at")
-    if isinstance(created_at, str):
-        try:
-            created_at_dt = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
-        except Exception:
-            created_at_dt = datetime.now()
-    elif isinstance(created_at, datetime):
-        created_at_dt = created_at
+    # Use last_update for physical connectivity check
+    last_update = row.get("last_update")
+    if isinstance(last_update, datetime):
+        last_update_dt = last_update
     else:
-        created_at_dt = datetime.now()
+        last_update_dt = datetime.now()
 
-    age_seconds = (datetime.now() - created_at_dt).total_seconds()
-    is_offline = age_seconds > 5
+    age_seconds = (datetime.now() - last_update_dt).total_seconds()
+    is_offline = age_seconds > 5 or row.get("sensor_status") == "inactive"
 
     row["is_offline"] = is_offline
     row["status"] = "OFFLINE" if is_offline else (row.get("status") or "UNKNOWN")
 
     try:
-        row["flood_level"] = float(row.get("flood_level") or 0)
+        # Force 0cm if offline OR manually inactive per requirements
+        row["flood_level"] = 0.0 if is_offline else float(row.get("flood_level") or 0)
     except Exception:
         row["flood_level"] = 0.0
     try:
-        row["raw_distance"] = float(row.get("raw_distance") or 0)
+        row["raw_distance"] = 0.0 if is_offline else float(row.get("raw_distance") or 0)
     except Exception:
         row["raw_distance"] = 0.0
 
@@ -196,9 +281,11 @@ def sensor_status():
     db = get_db()
     cur = db.cursor(dictionary=True)
     cur.execute("""
-        SELECT sensor_id, raw_distance, flood_level, status, created_at
-        FROM iot_readings
-        ORDER BY created_at DESC
+        SELECT r.sensor_id, r.raw_distance, r.flood_level, r.status, r.created_at, 
+               s.status as sensor_status, s.last_update
+        FROM iot_readings r
+        LEFT JOIN sensors s ON r.sensor_id = s.id
+        ORDER BY r.created_at DESC
         LIMIT 1
     """)
     row = cur.fetchone()
@@ -212,25 +299,19 @@ def sensor_status():
             "sensor_id": None
         }), 200
 
-    created_at = row.get("created_at")
+    last_update = row.get("last_update")
 
     # Handle both datetime object (MySQL connector) and string
-    if isinstance(created_at, datetime):
-        created_at_dt = created_at
-    elif isinstance(created_at, str):
-        # Strip T separator just in case old rows have it
-        created_at_clean = created_at.replace("T", " ").split(".")[0]
-        try:
-            created_at_dt = datetime.strptime(created_at_clean, "%Y-%m-%d %H:%M:%S")
-        except Exception:
-            created_at_dt = datetime.now()
+    if isinstance(last_update, datetime):
+        last_update_dt = last_update
     else:
-        created_at_dt = datetime.now()
+        last_update_dt = datetime.now()
 
-    age_seconds = (datetime.now() - created_at_dt).total_seconds()
+    age_seconds = (datetime.now() - last_update_dt).total_seconds()
 
     # 5 seconds buffer: covers 1s ESP32 interval + network jitter
-    if age_seconds > 5:
+    # Also force OFFLINE if the sensor has been manually disabled
+    if age_seconds > 5 or row.get("sensor_status") == "inactive":
         return jsonify({
             "status": "OFFLINE",
             "flood_level": 0,
@@ -344,8 +425,8 @@ def get_all_sensors_status():
     db = get_db()
     cur = db.cursor(dictionary=True)
     try:
-        # Get all registered sensors (include status to check active/inactive)
-        cur.execute("SELECT id, name, barangay, lat, lng, status, battery_level, signal_strength FROM sensors")
+        # Get all registered sensors (include status to check active/inactive and last_update for connectivity)
+        cur.execute("SELECT id, name, barangay, lat, lng, status, battery_level, signal_strength, last_update FROM sensors")
         sensors = cur.fetchall()
         
         # Get latest reading for EACH sensor
@@ -376,18 +457,35 @@ def get_all_sensors_status():
                 s['reading_status'] = latest['reading_status']
                 s['last_seen'] = latest['created_at'].isoformat() if isinstance(latest['created_at'], datetime) else str(latest['created_at'])
                 
+                # Physical connection status (independent of manual toggle)
+                # Use sensors.last_update instead of reading timestamp to track connection while OFF
+                last_update_dt = s.get('last_update')
+                if not isinstance(last_update_dt, datetime):
+                    last_update_dt = datetime.now()
+                
+                age_seconds = (datetime.now() - last_update_dt).total_seconds()
+                s['is_connected'] = age_seconds <= 5
+                
                 if is_disabled:
                     s['is_offline'] = True
                 else:
-                    # Check if offline by reading age (1s interval + network jitter → 5s timeout)
-                    created_at_dt = latest['created_at']
-                    age_seconds = (datetime.now() - created_at_dt).total_seconds()
                     s['is_offline'] = age_seconds > 5
+
+                # ── OFFLINE DEFAULT VALUE RULE: Force 0.0 if offline ──
+                if s['is_offline']:
+                    s['flood_level'] = 0.0
+                    s['raw_distance'] = 0.0
+                    s['reading_status'] = 'OFFLINE'
+                else:
+                    s['flood_level'] = float(latest['flood_level']) if latest['flood_level'] else 0
+                    s['raw_distance'] = float(latest['raw_distance']) if latest.get('raw_distance') else 0
+                    s['reading_status'] = latest['reading_status']
             else:
                 s['flood_level'] = 0
                 s['raw_distance'] = 0
                 s['reading_status'] = 'OFFLINE'
                 s['is_offline'] = True
+                s['is_connected'] = False
                 s['last_seen'] = None
 
         # Add enabled flag so frontend knows the switch state
@@ -629,10 +727,11 @@ def stream():
                 db = get_db()
                 cur = db.cursor(dictionary=True)
                 cur.execute("""
-                    SELECT sensor_id, flood_level, raw_distance,
-                           status, latitude, longitude, maps_url, created_at
-                    FROM iot_readings
-                    ORDER BY created_at DESC LIMIT 1
+                    SELECT r.sensor_id, r.flood_level, r.raw_distance,
+                           r.status, r.latitude, r.longitude, r.maps_url, r.created_at, s.status as sensor_status
+                    FROM iot_readings r
+                    LEFT JOIN sensors s ON r.sensor_id = s.id
+                    ORDER BY r.created_at DESC LIMIT 1
                 """)
                 row = cur.fetchone()
                 cur.close()
@@ -651,18 +750,20 @@ def stream():
                             created_at_dt = datetime.now()
 
                     age = (datetime.now() - created_at_dt).total_seconds()
-                    is_offline = age > 15
+                    is_offline = age > 15 or row.get("sensor_status") == "inactive"
 
+                    _sync_thresholds_from_db()
                     payload = {
                         "sensor_id":    row.get("sensor_id"),
-                        "flood_level":  float(row.get("flood_level") or 0),
-                        "raw_distance": float(row.get("raw_distance") or 0),
+                        "flood_level":  0.0 if is_offline else float(row.get("flood_level") or 0),
+                        "raw_distance": 0.0 if is_offline else float(row.get("raw_distance") or 0),
                         "status":       "OFFLINE" if is_offline else (row.get("status") or "NORMAL"),
                         "latitude":     float(row["latitude"]) if row.get("latitude") else None,
                         "longitude":    float(row["longitude"]) if row.get("longitude") else None,
                         "maps_url":     row.get("maps_url"),
                         "is_offline":   is_offline,
                         "timestamp":    str(created_at),
+                        "thresholds":   dict(_thresholds),
                     }
                 else:
                     payload = {
@@ -673,9 +774,7 @@ def stream():
                         "timestamp": None,
                     }
 
-                import ujson as _j
             except Exception:
-                import json as _j
                 payload = {
                     "sensor_id": None, "flood_level": 0,
                     "raw_distance": 0, "status": "OFFLINE",
@@ -685,7 +784,7 @@ def stream():
                 }
 
             import json
-            data_str = json.dumps(payload)
+            data_str = json.dumps(payload, default=str)
             if data_str != last_payload:
                 last_payload = data_str
                 yield "data: {}\n\n".format(data_str)
@@ -754,8 +853,8 @@ def live_stream():
                         "barangay":     s["barangay"],
                         "lat":          float(s["lat"]) if s["lat"] else 0,
                         "lng":          float(s["lng"]) if s["lng"] else 0,
-                        "flood_level":  float(s["flood_level"] or 0),
-                        "raw_distance": float(s["raw_distance"] or 0),
+                        "flood_level":  0.0 if is_offline else float(s["flood_level"] or 0),
+                        "raw_distance": 0.0 if is_offline else float(s["raw_distance"] or 0),
                         "status":       "OFFLINE" if is_offline else (s["reading_status"] or "NORMAL"),
                         "is_offline":   is_offline,
                         "battery_level":   s.get("battery_level"),

@@ -158,9 +158,9 @@ const WaterWave = ({ color, isOffline }) => {
 };
 
 // ── Each card is its own component with its own Animated state ───────────────
-const SensorCard = ({ sensor, isLast }) => {
+const SensorCard = ({ sensor, isLast, thresholds }) => {
     const isOffline = (sensor.status || '').toUpperCase() === 'OFFLINE';
-    const maxLevel = 50;
+    const maxLevel = thresholds?.critical_level || 50;
     const targetFill = isOffline ? 0 : Math.min((Number(sensor.waterLevel) / maxLevel) * 100, 100);
     const color = getStatusColor(sensor.status);
 
@@ -212,19 +212,19 @@ const SensorCard = ({ sensor, isLast }) => {
                         <WaterWave color={color} isOffline={isOffline} />
                     </Animated.View>
 
-                    {/* Scale Markers */}
+                    {/* Scale Markers — Dynamic based on critical threshold */}
                     <View style={styles.sensorPillMarkers}>
                         <View style={styles.sensorPillMarkerLine}>
-                            <Text style={styles.sensorPillMarkerText}>50cm</Text>
+                            <Text style={styles.sensorPillMarkerText}>{Math.round(maxLevel)}cm</Text>
                         </View>
                         <View style={styles.sensorPillMarkerLine}>
-                            <Text style={styles.sensorPillMarkerText}>37cm</Text>
+                            <Text style={styles.sensorPillMarkerText}>{Math.round(maxLevel * 0.75)}cm</Text>
                         </View>
                         <View style={styles.sensorPillMarkerLine}>
-                            <Text style={styles.sensorPillMarkerText}>25cm</Text>
+                            <Text style={styles.sensorPillMarkerText}>{Math.round(maxLevel * 0.5)}cm</Text>
                         </View>
                         <View style={styles.sensorPillMarkerLine}>
-                            <Text style={styles.sensorPillMarkerText}>12cm</Text>
+                            <Text style={styles.sensorPillMarkerText}>{Math.round(maxLevel * 0.25)}cm</Text>
                         </View>
                     </View>
                 </View>
@@ -234,7 +234,7 @@ const SensorCard = ({ sensor, isLast }) => {
             <View style={styles.sensorCardValueSection}>
                 {isOffline ? (
                     <Text style={[styles.sensorCardValueLabel, { color: '#94a3b8' }]}>
-                        —<Text style={styles.sensorCardValueUnit}>cm</Text>
+                        0.0<Text style={styles.sensorCardValueUnit}>cm</Text>
                     </Text>
                 ) : (
                     <Text style={styles.sensorCardValueLabel}>
@@ -245,7 +245,7 @@ const SensorCard = ({ sensor, isLast }) => {
                 {/* Raw distance — lets you verify the IoT device is sending data */}
                 <Text style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'Poppins_400Regular', marginTop: 2 }}>
                     {isOffline
-                        ? 'Raw: —'
+                        ? 'Raw: 0.0 cm'
                         : `Raw dist: ${Number(sensor.rawDistance || 0).toFixed(1)} cm`}
                 </Text>
                 <View style={[styles.sensorCardBadge, { backgroundColor: getStatusBgColor(sensor.status) }]}>
@@ -272,7 +272,7 @@ const SensorCard = ({ sensor, isLast }) => {
 };
 
 // ── Main export ───────────────────────────────────────────────────────────────
-const LiveSensorStatus = ({ sensors = [] }) => {
+const LiveSensorStatus = ({ sensors = [], thresholds = { advisory_level: 15, warning_level: 30, critical_level: 50 } }) => {
     return (
         <View style={styles.liveSensorSection}>
             <View style={styles.liveSensorHeader}>
@@ -282,7 +282,8 @@ const LiveSensorStatus = ({ sensors = [] }) => {
 
             <ScrollView
                 horizontal
-                showsHorizontalScrollIndicator={false}
+                showsHorizontalScrollIndicator={true}
+                persistentScrollbar={true}
                 contentContainerStyle={styles.liveSensorScrollContent}
             >
                 {sensors.map((sensor, index) => (
@@ -290,6 +291,7 @@ const LiveSensorStatus = ({ sensors = [] }) => {
                         key={sensor.name || index}
                         sensor={sensor}
                         isLast={index === sensors.length - 1}
+                        thresholds={thresholds}
                     />
                 ))}
 
