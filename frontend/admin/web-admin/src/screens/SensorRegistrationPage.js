@@ -9,6 +9,7 @@ import { API_BASE_URL } from "../config/api";
 import { formatPST } from "../utils/dateUtils";
 import { authFetch } from "../utils/helpers";
 import useSensorSocket from "../utils/useSensorSocket";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const isSuperAdmin = userRole === "superadmin";
@@ -305,14 +306,15 @@ useEffect(() => {
 const timeoutRef = useRef(null);
     
 useEffect(() => {
-    // Check for sensors that haven't sent data recently (timeout after 35 seconds)
+    // Check for sensors that haven't sent data recently (timeout after 1 second)
     const checkSensorTimeouts = () => {
         setLiveSensors(prev => {
             if (!Array.isArray(prev)) return [];
             const now = new Date();
-            const timeoutMs = 35000; // 35 seconds
+            const timeoutMs = 30000; // 30 seconds
             
-            return prev.map(s => {
+            let changed = false;
+            const updated = prev.map(s => {
                 if (!s) return s;
                 
                 // If sensor was Live but hasn't sent data recently, mark as Disconnected
@@ -321,30 +323,26 @@ useEffect(() => {
                     const timeSinceLastData = now - lastSeenTime;
                     
                     if (timeSinceLastData > timeoutMs) {
+                        changed = true;
                         return {
                             ...s,
                             is_live: false, // Mark as Disconnected
                             is_offline: true,
+                            flood_level: 0,
+                            raw_distance: 0,
                         };
                     }
                 }
                 
-                // Default sensors without last_seen to Disconnected
-                if (!s.last_seen) {
-                    return {
-                        ...s,
-                        is_live: false,
-                        is_offline: true,
-                    };
-                }
-                
                 return s;
             });
+            
+            return changed ? updated : prev;
         });
     };
     
-    // Run timeout check every 10 seconds
-    timeoutRef.current = setInterval(checkSensorTimeouts, 10000);
+    // Run timeout check every 500ms for "zero delay" perception
+    timeoutRef.current = setInterval(checkSensorTimeouts, 500);
     
     return () => {
         if (timeoutRef.current) {
@@ -396,6 +394,9 @@ useSensorSocket((reading) => {
     } catch (error) {
         console.error("Error processing WebSocket update:", error);
     }
+}, () => {
+    console.log("[SensorRegistration] Thresholds changed, refreshing health data...");
+    fetchHealthData(true);
 });
 
 // Animation for blinking dots
@@ -460,6 +461,7 @@ const filteredSensors = sensors.filter(s => {
     let matchStatus = true;
     if (statusFilter === "Live") matchStatus = isLive;
     else if (statusFilter === "Disconnected") matchStatus = !isLive;
+    else if (statusFilter === "Advisory") matchStatus = isLive && isEnabled && live?.reading_status === "ADVISORY";
     else if (statusFilter === "Warning") matchStatus = isLive && isEnabled && live?.reading_status === "WARNING";
     else if (statusFilter === "Critical") matchStatus = isLive && isEnabled && (live?.reading_status === "ALARM" || live?.reading_status === "CRITICAL");
     else if (statusFilter !== "All Status") matchStatus = s.status === statusFilter;
@@ -474,6 +476,7 @@ const getStatusBadge = (status) => {
         maintenance: { bg: "#fef3c7", text: "#92400e", border: "#fcd34d" },
         OFFLINE: { bg: "#f1f5f9", text: "#64748b", border: "#cbd5e1" },
         NORMAL: { bg: "#dcfce7", text: "#166534", border: "#86efac" },
+        ADVISORY: { bg: "#eff6ff", text: "#3b82f6", border: "#dbeafe" },
         WARNING: { bg: "#fef3c7", text: "#92400e", border: "#fcd34d" },
         CRITICAL: { bg: "#fee2e2", text: "#dc2626", border: "#fca5a5" },
     };
@@ -492,37 +495,11 @@ const getBatteryColor = (level) => {
 const totalSensors = liveSensors.length;
 const onlineSensors = liveSensors.filter(s => s.is_live).length;
 const offlineSensors = liveSensors.filter(s => !s.is_live).length;
+const advisorySensors = liveSensors.filter(s => s.is_live && s.enabled && s.reading_status === "ADVISORY").length;
 const warningSensors = liveSensors.filter(s => s.is_live && s.enabled && s.reading_status === "WARNING").length;
 const criticalSensors = liveSensors.filter(s => s.is_live && s.enabled && (s.reading_status === "ALARM" || s.reading_status === "CRITICAL")).length;
 
-// Update WebSocket handler to respect enabled state
-useSensorSocket((reading) => {
-    if (!reading || !reading.sensor_id) return;
-    
-    try {
-        setLiveSensors(prev => {
-            if (!Array.isArray(prev)) return [];
-            return prev.map(s => {
-                if (!s || s.id !== reading.sensor_id) return s;
-                // Only update data if sensor is enabled
-                if (!s.enabled) return s;
-                
-                return {
-                    ...s,
-                    flood_level: Number(reading.flood_level ?? 0),
-                    raw_distance: Number(reading.raw_distance ?? 0),
-                    reading_status: reading.status || s.reading_status,
-                    is_live: true,
-                    enabled: reading.enabled ?? true,
-                    is_offline: false,
-                    last_seen: new Date().toISOString(),
-                };
-            });
-        });
-    } catch (error) {
-        console.error("Error processing WebSocket update:", error);
-    }
-});
+
 
     return (
         <View style={styles.dashboardRoot}>
@@ -536,12 +513,7 @@ useSensorSocket((reading) => {
                         <Text style={styles.dashboardTopSubtitle}>Register, monitor, and manage your sensor network</Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={styles.dashboardStatusPill}>
-                            <View style={styles.dashboardStatusDot} />
-                            <Text style={styles.dashboardStatusText}>
-                                {onlineSensors}/{totalSensors} Live
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <RealTimeClock style={styles.dashboardTopDate} />
                     </View>
                 </View>
@@ -707,6 +679,7 @@ useSensorSocket((reading) => {
                                 {[
                                     { icon: "check-circle", label: "Live", value: onlineSensors, color: "#16a34a", bg: "rgba(22, 163, 74, 0.1)" },
                                     { icon: "x-circle", label: "Disconnected", value: offlineSensors, color: "#64748b", bg: "rgba(100, 116, 139, 0.1)" },
+                                    { icon: "info", label: "Advisory", value: advisorySensors, color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)" },
                                     { icon: "alert-triangle", label: "Warning", value: warningSensors, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" },
                                     { icon: "alert-octagon", label: "Critical", value: criticalSensors, color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)" },
                                 ].map((card) => (
@@ -742,7 +715,7 @@ useSensorSocket((reading) => {
                                         </TouchableOpacity>
                                         {showStatusDropdown && (
                                             <View style={pg.dropdown}>
-                                                {["All Status", "Live", "Disconnected", "Warning", "Critical"].map(s => (
+                                                {["All Status", "Live", "Disconnected", "Advisory", "Warning", "Critical"].map(s => (
                                                     <TouchableOpacity key={s} style={pg.dropdownItem} onPress={() => { setStatusFilter(s); setShowStatusDropdown(false); }}>
                                                         <Text style={pg.dropdownItemText}>{s}</Text>
                                                     </TouchableOpacity>
@@ -1026,7 +999,7 @@ useSensorSocket((reading) => {
                                         </View>
 
                                          {/* Alert level badge */}
-                                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingHorizontal: 4 }}>
+                                        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginBottom: 16, paddingHorizontal: 4 }}>
                                             <View style={{ backgroundColor: st.bg, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: st.border }}>
                                                 <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: st.text }}>{reading_st}</Text>
                                             </View>

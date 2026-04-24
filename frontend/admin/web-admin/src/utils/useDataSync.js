@@ -22,10 +22,9 @@ export default function useDataSync(callbacks = {}) {
     if (typeof window === "undefined") return;
 
     const socket = io(API_BASE_URL, {
-      transports: ["polling"],
-      timeout: 10000,
-      forceNew: true,
-      reconnectionAttempts: 5
+      transports: ["websocket", "polling"],
+      timeout: 20000,
+      reconnectionAttempts: 10
     });
     socketRef.current = socket;
 

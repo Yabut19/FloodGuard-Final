@@ -295,7 +295,7 @@ def latest_sensor():
         last_update_dt = get_pst_now()
 
     age_seconds = (get_pst_now() - last_update_dt).total_seconds()
-    is_live = age_seconds <= 30
+    is_live = age_seconds <= 30.0
     enabled = row.get("sensor_status") != "inactive"
     
     row["is_live"] = is_live
@@ -362,7 +362,7 @@ def sensor_status():
         last_update_dt = get_pst_now()
 
     age_seconds = (get_pst_now() - last_update_dt).total_seconds()
-    is_live = age_seconds <= 30
+    is_live = age_seconds <= 30.0
     enabled = row.get("sensor_status") != "inactive"
 
     flood_level = float(row.get("flood_level") or 0) if (is_live and enabled) else 0.0
@@ -425,7 +425,7 @@ def sensor_by_location():
 
         # Consistent 30s threshold for offline status
         age_seconds = (get_pst_now() - created_at_dt).total_seconds()
-        is_offline = age_seconds > 30
+        is_offline = age_seconds > 30.0
 
         row["is_offline"] = is_offline
         row["status"] = calculate_status(row.get("flood_level") or 0, is_offline)
@@ -529,7 +529,7 @@ def get_all_sensors_status(current_user):
                 liveness_dt = get_pst_now()
             
             age_seconds = (get_pst_now() - liveness_dt).total_seconds()
-            s['is_live'] = age_seconds <= 30
+            s['is_live'] = age_seconds <= 30.0
             s['enabled'] = s.get('status') != 'inactive'
             s['is_offline'] = not s['is_live'] # strictly hardware status for blinking dot
 

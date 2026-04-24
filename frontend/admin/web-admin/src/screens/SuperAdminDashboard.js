@@ -6,6 +6,7 @@ import AdminSidebar from "../components/AdminSidebar";
 import RealTimeClock from "../components/RealTimeClock";
 import LiveSensorStatus from "../components/LiveSensorStatus";
 import WelcomeBanner from "../components/WelcomeBanner";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 import { API_BASE_URL } from "../config/api";
 import useDataSync from "../utils/useDataSync";
 import { formatPST, getSystemStatus, getSystemStatusColor } from "../utils/dateUtils";
@@ -14,10 +15,27 @@ import { authFetch } from "../utils/helpers";
 const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) => {
     const [stats, setStats] = useState({ active_sensors: 0, active_alerts: 0, registered_users: 0, avg_water_level: 0 });
     const [recentAlerts, setRecentAlerts] = useState([]);
-    const [liveSensors, setLiveSensors] = useState([]);
+    const [liveSensors, setLiveSensors] = useState(() => {
+        if (typeof window !== "undefined") {
+            const cached = localStorage.getItem("floodguard_super_sensors");
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                const now = new Date();
+                // Validate cache immediately to prevent reload glitch
+                return parsed.map(s => {
+                    const isTimedOut = s.is_live && s.lastSeen && (now - new Date(s.lastSeen) > 30000);
+                    if (isTimedOut) {
+                        return { ...s, is_live: false, status: s.enabled === false ? "OFF" : "DISCONNECTED", waterLevel: 0, rawDistance: 0 };
+                    }
+                    return s;
+                });
+            }
+        }
+        return [];
+    });
     const [thresholds, setThresholds] = useState({ advisory_level: 15, warning_level: 30, critical_level: 50 });
     const [loading, setLoading] = useState(true);
-    const [userName, setUserName] = useState("Super Admin");
+    const [userName, setUserName] = useState("Admin");
     const refreshRef = useRef(null);
     
 
@@ -27,8 +45,6 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
             if (name) setUserName(name);
         }
         fetchAll();
-        refreshRef.current = setInterval(fetchAll, 15000);
-        return () => { clearInterval(refreshRef.current); };
     }, []);
 
     // ── Real-time Data Synchronization ──
@@ -43,7 +59,8 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                             rawDistance: reading.raw_distance || 0,
                             is_live:     reading.is_live ?? true,
                             enabled:     reading.enabled ?? true,
-                            status:      !(reading.is_live ?? true) ? "DISCONNECTED" : (!(reading.enabled ?? true) ? "OFF" : (reading.status || "NORMAL")),
+                            status:      !(reading.enabled ?? true) ? "OFF" : (!(reading.is_live ?? true) ? "DISCONNECTED" : (reading.status || "NORMAL")),
+                            lastSeen:    new Date().toISOString(),
                           }
                         : s
                 );
@@ -54,28 +71,72 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                         ? updated.reduce((a, s) => a + (s.waterLevel || 0), 0) / updated.length
                         : prevStats.avg_water_level,
                 }));
+                if (typeof window !== "undefined") {
+                    localStorage.setItem("floodguard_super_sensors", JSON.stringify(updated));
+                }
                 return updated;
             });
         },
         onThresholdUpdate: (newThresholds) => {
-            console.log("[SuperAdmin] Thresholds updated:", newThresholds);
+            console.log("[Admin] Thresholds updated:", newThresholds);
             setThresholds(newThresholds);
         },
         onUserUpdate: () => {
-            console.log("[SuperAdmin] User list changed, refreshing...");
+            console.log("[Admin] User list changed, refreshing...");
             fetchStats();
         },
         onAlertUpdate: () => {
-            console.log("[SuperAdmin] Alerts changed, refreshing...");
+            console.log("[Admin] Alerts changed, refreshing...");
             fetchStats();
             fetchAlerts();
         },
         onSensorListUpdate: () => {
-            console.log("[SuperAdmin] Sensor registry changed, refreshing...");
+            console.log("[Admin] Sensor registry changed, refreshing...");
             fetchSensors();
             fetchStats();
         }
     });
+
+    // ── Liveness Timeout: Reset gauge if sensor stops transmitting ──
+    useEffect(() => {
+        const checkTimeouts = () => {
+            setLiveSensors(prev => {
+                const now = new Date();
+                let changed = false;
+                const updated = prev.map(s => {
+                    // Priority logic: Software OFF wins for display if signal is lost
+                    if (s.is_live && s.enabled !== false && s.lastSeen) {
+                        const lastSeenTime = new Date(s.lastSeen);
+                        if (now - lastSeenTime > 30000) {
+                            changed = true;
+                            // Priority: manually off stays 'OFF', otherwise 'DISCONNECTED'
+                            const nextStatus = s.enabled === false ? "OFF" : "DISCONNECTED";
+                            return {
+                                ...s,
+                                is_live: false,
+                                status: nextStatus,
+                                waterLevel: 0,
+                                rawDistance: 0
+                            };
+                        }
+                    }
+                    return s;
+                });
+
+                if (changed) {
+                    const onlineCount = updated.filter(s => s.is_live && s.enabled).length;
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        active_sensors: onlineCount
+                    }));
+                }
+
+                return changed ? updated : prev;
+            });
+        };
+        const timer = setInterval(checkTimeouts, 500);
+        return () => clearInterval(timer);
+    }, []);
 
     const fetchAll = async () => {
         await Promise.all([fetchStats(), fetchAlerts(), fetchSensors(), fetchThresholds()]);
@@ -111,15 +172,25 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                 console.error("[SuperDashboard] Sensors data is not an array:", data);
                 return;
             }
-            setLiveSensors(data.map(s => ({
-                id: s.id, name: s.name, location: s.barangay,
-                waterLevel: s.flood_level,
-                rawDistance: s.raw_distance || 0,
-                is_live: s.is_live,
-                enabled: s.enabled,
-                status: !s.is_live ? "DISCONNECTED" : (!s.enabled ? "OFF" : (s.reading_status || "NORMAL")),
-                battery: s.battery_level, signal: s.signal_strength,
-            })));
+            const now = new Date();
+            const transformed = data.map(s => {
+                const serverLastSeen = s.last_update ? new Date(s.last_update) : null;
+                const isTrulyLive = s.is_live && serverLastSeen && (now - serverLastSeen < 30000);
+                return {
+                    id: s.id, name: s.name, location: s.barangay,
+                    waterLevel: s.flood_level,
+                    rawDistance: s.raw_distance || 0,
+                    is_live: isTrulyLive,
+                    enabled: s.enabled,
+                    status: !s.enabled ? "OFF" : (!isTrulyLive ? "DISCONNECTED" : (s.reading_status || "NORMAL")),
+                    battery: s.battery_level, signal: s.signal_strength,
+                    lastSeen: s.last_update || (isTrulyLive ? now.toISOString() : null),
+                };
+            });
+            setLiveSensors(transformed);
+            if (typeof window !== "undefined") {
+                localStorage.setItem("floodguard_super_sensors", JSON.stringify(transformed));
+            }
         } catch (e) {
             console.error("[SuperDashboard] fetchSensors error:", e);
         }
@@ -170,12 +241,7 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                         <Text style={styles.dashboardTopSubtitle}>Real-time monitoring and system status</Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={[styles.dashboardStatusPill, { backgroundColor: onlineSensors >= 1 ? "rgba(22, 163, 74, 0.1)" : "rgba(100, 116, 139, 0.1)" }]}>
-                            <View style={[styles.dashboardStatusDot, { backgroundColor: getSystemStatusColor(onlineSensors) }]} />
-                            <Text style={[styles.dashboardStatusText, { color: getSystemStatusColor(onlineSensors) }]}>
-                                {getSystemStatus(onlineSensors)}
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <RealTimeClock style={styles.dashboardTopDate} />
                     </View>
                 </View>
@@ -258,7 +324,19 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                                     liveSensors.map(sensor => {
                                         const isOffline = sensor.status === "DISCONNECTED";
                                         const isOff = sensor.status === "OFF";
-                                        const isWarn = sensor.status === "WARNING" || sensor.status === "CRITICAL";
+                                        
+                                        const getLiveStatus = () => {
+                                            if (isOff) return "OFF";
+                                            if (isOffline) return "Disconnected";
+                                            const lvl = Number(sensor.waterLevel || 0);
+                                            if (lvl >= thresholds.critical_level) return "CRITICAL";
+                                            if (lvl >= thresholds.warning_level) return "WARNING";
+                                            if (lvl >= thresholds.advisory_level) return "ADVISORY";
+                                            return "NORMAL";
+                                        };
+                                        const liveStatus = getLiveStatus();
+                                        const isWarn = liveStatus === "WARNING" || liveStatus === "CRITICAL";
+
                                         const pillStyle = (isOffline || isOff) ? sd.pillGray : isWarn ? styles.dashboardAlertBadgeWarning : styles.dashboardSensorStatusPill;
                                         const pillTextStyle = (isOffline || isOff) ? sd.pillGrayText : isWarn ? styles.dashboardAlertBadgeText : styles.dashboardSensorStatusText;
                                         return (
@@ -268,16 +346,15 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                                                     <Text style={styles.dashboardSensorMeta}>
                                                         Brgy. {sensor.location || "—"} ·{" "}
                                                         <Text style={styles.dashboardSensorMetaStrong}>
-                                                            {(isOffline || isOff) ? sensor.status : `Flood: ${Number(sensor.waterLevel || 0).toFixed(1)} cm`}
+                                                            {(isOffline || isOff) ? "0.0 cm" : `Flood: ${Number(sensor.waterLevel || 0).toFixed(1)} cm`}
                                                         </Text>
                                                         {(!isOffline && !isOff) && (
                                                             <Text> · Raw: <Text style={styles.dashboardSensorMetaStrong}>{Number(sensor.rawDistance || 0).toFixed(1)} cm</Text></Text>
                                                         )}
-                                                        {" "}· Batt: <Text style={styles.dashboardSensorMetaStrong}>{sensor.battery ?? "—"}%</Text>
                                                     </Text>
                                                 </View>
                                                 <View style={pillStyle}>
-                                                    <Text style={pillTextStyle}>{sensor.status}</Text>
+                                                    <Text style={pillTextStyle}>{liveStatus}</Text>
                                                 </View>
                                             </View>
                                         );

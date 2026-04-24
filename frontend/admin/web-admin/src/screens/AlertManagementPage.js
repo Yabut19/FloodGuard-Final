@@ -9,6 +9,7 @@ import { formatPST, getSystemStatus, getSystemStatusColor } from "../utils/dateU
 import { authFetch } from "../utils/helpers";
 import useDataSync from "../utils/useDataSync";
 import dialogs from "../utils/dialogs";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [alertType, setAlertType] = useState("advisory");
@@ -285,18 +286,18 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const getSensorConsistency = (reportedLevel, sensorLevel) => {
         if (!reportedLevel || !sensorLevel) return "UNKNOWN";
         
-        const reportLow = ["ankle-high", "low", "light"].includes(reportedLevel?.toLowerCase());
-        const reportMed = ["waist-high", "medium"].includes(reportedLevel?.toLowerCase());
-        const reportHigh = ["chest-high", "high"].includes(reportedLevel?.toLowerCase());
+        const reportAdv = ["ankle-high", "low", "light", "advisory"].includes(reportedLevel?.toLowerCase());
+        const reportWarn = ["waist-high", "medium", "warning"].includes(reportedLevel?.toLowerCase());
+        const reportCrit = ["chest-high", "high", "critical", "alarm"].includes(reportedLevel?.toLowerCase());
         
         const sensorNum = parseInt(sensorLevel);
-        const sensorLow = sensorNum < 20;
-        const sensorMed = sensorNum >= 20 && sensorNum < 50;
-        const sensorHigh = sensorNum >= 50;
+        const sensorAdv = sensorNum < 20;
+        const sensorWarn = sensorNum >= 20 && sensorNum < 50;
+        const sensorCrit = sensorNum >= 50;
 
-        if ((reportLow && sensorLow) || (reportMed && sensorMed) || (reportHigh && sensorHigh)) {
+        if ((reportAdv && sensorAdv) || (reportWarn && sensorWarn) || (reportCrit && sensorCrit)) {
             return { status: "MATCHING", color: "#16a34a", icon: "✓" };
-        } else if (Math.abs((reportLow ? 15 : reportMed ? 35 : 70) - sensorNum) <= 20) {
+        } else if (Math.abs((reportAdv ? 15 : reportWarn ? 35 : 70) - sensorNum) <= 20) {
             return { status: "SIMILAR", color: "#f59e0b", icon: "≈" };
         } else {
             return { status: "DIFFERENT", color: "#ef4444", icon: "✕" };
@@ -900,12 +901,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         <Text style={styles.dashboardTopTitle}>Command Center</Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={[styles.dashboardStatusPill, { backgroundColor: onlineSensors >= 1 ? "rgba(22, 163, 74, 0.1)" : "rgba(100, 116, 139, 0.1)" }]}>
-                            <View style={[styles.dashboardStatusDot, { backgroundColor: getSystemStatusColor(onlineSensors) }]} />
-                            <Text style={[styles.dashboardStatusText, { color: getSystemStatusColor(onlineSensors) }]}>
-                                {getSystemStatus(onlineSensors)}
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <RealTimeClock style={styles.dashboardTopDate} />
                     </View>
                 </View>
@@ -1078,9 +1074,9 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                 <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#374151', marginBottom: 10 }}>Official Flood Level</Text>
                                                 <View style={{ flexDirection: 'row', gap: 8 }}>
                                                     {[
-                                                        { level: "low",    label: "Low",    color: "#16a34a", bg: "#f0fdf4", dot: "#16a34a" },
-                                                        { level: "medium", label: "Medium", color: "#d97706", bg: "#fffbeb", dot: "#d97706" },
-                                                        { level: "high",   label: "High",   color: "#dc2626", bg: "#fef2f2", dot: "#dc2626" },
+                                                        { level: "advisory", label: "Advisory", color: "#3b82f6", bg: "#eff6ff", dot: "#3b82f6" },
+                                                        { level: "warning",  label: "Warning",  color: "#f97316", bg: "#fff7ed", dot: "#f97316" },
+                                                        { level: "critical", label: "Critical", color: "#dc2626", bg: "#fef2f2", dot: "#dc2626" },
                                                     ].map(({ level, label, color, bg }) => (
                                                         <TouchableOpacity
                                                             key={level}

@@ -448,7 +448,7 @@ const LandingPage = ({ onLoginSuccess, onNavigatePublic, initialLoginOpen, reset
                             </View>
                             <Text style={localStyles.cardTitle}>For System Administrators</Text>
                             <Text style={localStyles.cardText}>
-                                As a Super Admin, your role ensures the underlying machinery of FloodGuard is perfectly tuned and accessible.
+                                As an Admin, your role ensures the underlying machinery of FloodGuard is perfectly tuned and accessible.
                             </Text>
                             <Text style={localStyles.cardBullet}>• Manage physical sensor deployments and monitor their connectivity.</Text>
                             <Text style={localStyles.cardBullet}>• Configure system-wide alert thresholds tailored to specific geographic zones.</Text>

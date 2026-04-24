@@ -34,9 +34,13 @@ def update_thresholds():
         cur.execute("INSERT INTO system_config (config_key, config_value) VALUES ('critical_level', %s) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value)", (str(crit),))
         db.commit()
         
+        # Force refresh in-memory thresholds immediately
+        from utils.thresholds import sync_thresholds_from_db
+        sync_thresholds_from_db(force=True)
+        
         # Broadcast threshold update to all WebSocket clients
         try:
-            from app import socketio
+            from socket_instance import socketio
             socketio.emit("threshold_update", {
                 "advisory_level": adv,
                 "warning_level": warn,

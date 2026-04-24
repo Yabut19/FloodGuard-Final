@@ -10,6 +10,7 @@ import { formatPST, getSystemStatus, getSystemStatusColor } from "../utils/dateU
 import { authFetch } from "../utils/helpers";
 import useDataSync from "../utils/useDataSync";
 import dialogs from "../utils/dialogs";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) => {
     const [searchQuery, setSearchQuery] = useState("");
@@ -40,13 +41,21 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
             const data = await response.json();
             if (response.ok) {
                 // Map backend roles to frontend display roles
-                const mappedUsers = data.users.map(u => ({
-                    ...u,
-                    role: (u.role === 'lgu_admin' || u.role === 'lgu') ? 'LGU Moderator' :
-                        (u.role === 'super_admin' || u.role === 'admin') ? 'Super Admin' :
-                            (u.role === 'user') ? 'User' : u.role,
-                    status: (u.status || 'Active').charAt(0).toUpperCase() + (u.status || 'Active').slice(1)
-                }));
+                const mappedUsers = data.users.map(u => {
+                    const rawRole = u.role?.toLowerCase();
+                    const rawStatus = (u.status || 'active').toLowerCase();
+                    return {
+                        ...u,
+                        role: (rawRole === 'lgu_admin' || rawRole === 'lgu') ? 'LGU Moderator' :
+                            (rawRole === 'super_admin' || rawRole === 'admin') ? 'Admin' :
+                                (rawRole === 'user') ? 'User' : u.role,
+                        status: rawStatus === 'active' ? 'Active' : 'Inactive'
+                    };
+                });
+
+                // Sort alphabetically by name (A-Z)
+                mappedUsers.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
                 setUsers(mappedUsers);
                 setStats(data.stats);
             }
@@ -71,10 +80,32 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
 
         const fetchLocations = async () => {
             try {
-                const res = await authFetch(`${API_BASE_URL}/api/admin/locations`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setAvailableLocations(data);
+                // Fetch both locations and sensors to filter out sensor names from the dropdown
+                const [locRes, sensorRes] = await Promise.all([
+                    authFetch(`${API_BASE_URL}/api/admin/locations`),
+                    authFetch(`${API_BASE_URL}/api/iot/sensors`)
+                ]);
+                
+                if (locRes.ok) {
+                    let locations = await locRes.json();
+                    
+                    if (sensorRes.ok) {
+                        const sensorData = await sensorRes.json();
+                        const sensorsList = sensorData.sensors || [];
+                        const sensorNames = sensorsList.map(s => s.name?.toLowerCase());
+                        const sensorIds = sensorsList.map(s => s.id?.toLowerCase());
+                        
+                        // Filter out any locations that match sensor names, IDs, or contain "Sensor"
+                        locations = locations.filter(loc => {
+                            if (!loc) return false;
+                            const lowLoc = loc.toLowerCase();
+                            return !sensorNames.includes(lowLoc) && 
+                                   !sensorIds.includes(lowLoc) && 
+                                   !lowLoc.includes("sensor");
+                        });
+                    }
+                    
+                    setAvailableLocations(locations);
                 }
             } catch (e) {
                 console.error("Failed to fetch locations:", e);
@@ -108,7 +139,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
 
     const getRoleBadgeStyle = (role) => {
         switch (role) {
-            case "Super Admin": return { backgroundColor: "#fee2e2", color: "#b91c1c" }; // Reddish
+            case "Admin": return { backgroundColor: "#fee2e2", color: "#b91c1c" }; // Reddish
             case "LGU Moderator": return { backgroundColor: "#f3e8ff", color: "#7e22ce" }; // Purple
             case "User": return { backgroundColor: "#dbeafe", color: "#2563eb" }; // Blue
             default: return { backgroundColor: "#f1f5f9", color: "#64748b" };
@@ -154,23 +185,29 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
     const [showEditUserModal, setShowEditUserModal] = useState(false);
     const [onlineSensors, setOnlineSensors] = useState(0);
     const [editingUser, setEditingUser] = useState(null);
+    const [showEditSitioDropdown, setShowEditSitioDropdown] = useState(false);
     const [editForm, setEditForm] = useState({
+        full_name: "",
+        barangay: "",
         status: "",
-        role: ""
+        role: "",
+        password: ""
     });
+    const [showEditPassword, setShowEditPassword] = useState(false);
 
     const handleEditUserClick = (user) => {
-        // Enforce Admin Restriction: Admin account must not be editable
-        if (user.role === 'Super Admin') {
-            dialogs.alert("Restricted", "Super Admin accounts cannot be modified for security reasons.", 'info');
-            return;
-        }
         setEditingUser(user);
+        const currentStatus = user.status?.toLowerCase() === 'active' ? 'active' : 'inactive';
+        const currentRole = user.role === 'LGU Moderator' ? 'lgu_admin' :
+                           user.role === 'Admin' ? 'super_admin' :
+                           user.role === 'User' ? 'user' : 'user';
+        
         setEditForm({
-            status: user.status === 'Active' ? 'active' : 'inactive', // backend expects lowercase
-            role: user.role === 'LGU Moderator' ? 'lgu_admin' :
-                user.role === 'Super Admin' ? 'super_admin' :
-                    user.role === 'User' ? 'user' : 'user'
+            full_name: user.name || "",
+            barangay: user.location || "",
+            status: currentStatus,
+            role: currentRole,
+            password: ""
         });
         setShowEditUserModal(true);
     };
@@ -179,26 +216,37 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
         if (!editingUser) return;
         setIsSubmitting(true);
         try {
-            // Update Status
+            // 1. Update Name, Barangay, and Password
+            const detailRes = await authFetch(`${API_BASE_URL}/api/admin/users/${editingUser.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    full_name: editForm.full_name,
+                    barangay: editForm.barangay,
+                    password: editForm.password
+                })
+            });
+
+            // 2. Update Status
             const statusRes = await authFetch(`${API_BASE_URL}/api/admin/users/${editingUser.id}/status`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: editForm.status })
             });
 
-            // Update Role
+            // 3. Update Role
             const roleRes = await authFetch(`${API_BASE_URL}/api/admin/users/${editingUser.id}/role`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ role: editForm.role })
             });
 
-            if (statusRes.ok && roleRes.ok) {
+            if (detailRes.ok && statusRes.ok && roleRes.ok) {
                 dialogs.success("Updated", "User updated successfully");
                 setShowEditUserModal(false);
                 fetchUsers();
             } else {
-                dialogs.error("Error", "Failed to update user. Please try again.");
+                dialogs.error("Error", "Failed to update user. Some fields may not have saved.");
             }
         } catch (error) {
             dialogs.error("Error", "Network error updating user");
@@ -208,12 +256,6 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
     };
 
     const handleDeleteUser = async (userId) => {
-        const userToDelete = users.find(u => u.id === userId);
-        if (userToDelete && userToDelete.role === 'Super Admin') {
-            dialogs.alert("Restricted", "Super Admin accounts cannot be deleted.", 'warning');
-            return;
-        }
-
         const result = await dialogs.confirm("Delete User", "Are you sure you want to delete this user? This action cannot be undone.");
         if (result.isConfirmed) {
             try {
@@ -221,8 +263,10 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                     method: "DELETE"
                 });
                 if (response.ok) {
+                    // Optimistically update the UI by removing the user from the local state
+                    setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
                     dialogs.success("Deleted", "User deleted successfully");
-                    fetchUsers();
+                    fetchUsers(); // Refresh for full data consistency and stats update
                 } else {
                     const data = await response.json();
                     dialogs.error("Error", "Failed to delete user: " + (data.error || "Unknown error"));
@@ -234,19 +278,23 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
     };
 
     const handleAddUserClick = () => {
-        // As requested: "when the admin clicks ‘Add User,’ it will ask to add an LGU"
-        // We simulate this by opening the LGU creation modal directly or asking first.
-        // For better UX, we'll open the LGU creation modal directly with a clear title.
         setShowAddLGUModal(true);
     };
 
     const handleCreateUser = async () => {
-        if (!lguForm.email || (!lguForm.password && lguForm.role !== 'lgu_admin')) {
-            dialogs.alert("Validation", "Please fill in the required fields.", 'warning');
+        // Enforce required validation on all form fields except password
+        if (!lguForm.full_name || !lguForm.email || !lguForm.role) {
+            dialogs.alert("Validation", "Please fill in all required fields: Full Name, Email, and Role.", 'warning');
             return;
         }
 
-        // Auto-generate password if empty (like for LGU creation)
+        // Location is required for all roles except super_admin
+        if (lguForm.role !== 'super_admin' && !lguForm.barangay) {
+            dialogs.alert("Validation", "Please select a Location (Sitio) for this account.", 'warning');
+            return;
+        }
+
+        // Automatic temporary password generation if empty
         let finalPassword = lguForm.password;
         if (!finalPassword) {
             finalPassword = "FloodGuard" + Math.floor(1000 + Math.random() * 9000);
@@ -255,7 +303,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
         const payload = {
             ...lguForm,
             password: finalPassword,
-            phone: "" // Optional
+            phone: ""
         };
 
         setIsSubmitting(true);
@@ -298,12 +346,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                         </Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={[styles.dashboardStatusPill, { backgroundColor: onlineSensors >= 1 ? "rgba(22, 163, 74, 0.1)" : "rgba(100, 116, 139, 0.1)" }]}>
-                            <View style={[styles.dashboardStatusDot, { backgroundColor: getSystemStatusColor(onlineSensors) }]} />
-                            <Text style={[styles.dashboardStatusText, { color: getSystemStatusColor(onlineSensors) }]}>
-                                {getSystemStatus(onlineSensors)}
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <RealTimeClock style={styles.dashboardTopDate} />
                     </View>
                 </View>
@@ -319,7 +362,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                             { icon: "users", label: "Total Users", value: stats.total_users, color: "#2563eb", bg: "#eff6ff", filter: { r: "All Roles", s: "All Status" } },
                             { icon: "user-check", label: "Active Users", value: stats.active_users, color: "#16a34a", bg: "#dcfce7", filter: { r: "All Roles", s: "Active" } },
                             { icon: "shield", label: "LGU Moderators", value: stats.lgu_moderators, color: "#7c3aed", bg: "#f3e8ff", filter: { r: "LGU Moderator", s: "All Status" } },
-                            { icon: "lock", label: "Super Admins", value: stats.super_admins, color: "#dc2626", bg: "#fee2e2", filter: { r: "Super Admin", s: "All Status" } },
+                            { icon: "lock", label: "Admins", value: stats.super_admins, color: "#dc2626", bg: "#fee2e2", filter: { r: "Admin", s: "All Status" } },
                         ].map((card) => (
                             <TouchableOpacity 
                                 key={card.label} 
@@ -364,7 +407,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 
                                 {showRoleDropdown && (
                                     <View style={pg.dropdown}>
-                                        {["All Roles", "Super Admin", "LGU Moderator", "User"].map((role) => (
+                                        {["All Roles", "Admin", "LGU Moderator", "User"].map((role) => (
                                             <TouchableOpacity 
                                                 key={role} 
                                                 style={pg.dropdownItem}
@@ -477,20 +520,34 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
 
                                     <View style={styles.userColActions}>
                                         <View style={styles.userActionButtons}>
-                                            <TouchableOpacity
-                                                style={[styles.userActionButton, user.role === 'Super Admin' && { opacity: 0.6, cursor: 'not-allowed' }]}
-                                                onPress={() => handleEditUserClick(user)}
-                                                disabled={user.role === 'Super Admin'}
-                                            >
-                                                <Feather name={user.role === 'Super Admin' ? "lock" : "edit-2"} size={16} color={user.role === 'Super Admin' ? "#64748b" : "#2563eb"} />
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={[styles.userActionButton, { backgroundColor: '#ffffff', borderColor: '#e2e8f0' }, user.role === 'Super Admin' && { opacity: 0.6, cursor: 'not-allowed' }]}
-                                                onPress={() => handleDeleteUser(user.id)}
-                                                disabled={user.role === 'Super Admin'}
-                                            >
-                                                <Feather name={user.role === 'Super Admin' ? "lock" : "trash-2"} size={16} color={user.role === 'Super Admin' ? "#94a3b8" : "#dc2626"} />
-                                            </TouchableOpacity>
+                                            {user.role === 'Admin' ? (
+                                                <>
+                                                    <View style={[styles.userActionButton, { opacity: 0.6 }]}>
+                                                        <Feather name="lock" size={16} color="#64748b" />
+                                                    </View>
+                                                    <TouchableOpacity
+                                                        style={[styles.userActionButton, { backgroundColor: '#ffffff', borderColor: '#e2e8f0' }]}
+                                                        onPress={() => handleDeleteUser(user.id)}
+                                                    >
+                                                        <Feather name="trash-2" size={16} color="#dc2626" />
+                                                    </TouchableOpacity>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <TouchableOpacity
+                                                        style={styles.userActionButton}
+                                                        onPress={() => handleEditUserClick(user)}
+                                                    >
+                                                        <Feather name="edit-2" size={16} color="#2563eb" />
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        style={[styles.userActionButton, { backgroundColor: '#ffffff', borderColor: '#e2e8f0' }]}
+                                                        onPress={() => handleDeleteUser(user.id)}
+                                                    >
+                                                        <Feather name="trash-2" size={16} color="#dc2626" />
+                                                    </TouchableOpacity>
+                                                </>
+                                            )}
                                         </View>
                                     </View>
                                 </View>
@@ -506,7 +563,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                         <View style={{ width: 500, backgroundColor: "#fff", borderRadius: 16, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 10, elevation: 10 }}>
                             {/* Gradient Header */}
                             <LinearGradient
-                                colors={["#4c669f", "#3b5998", "#192f6a"]} // Using a blue-ish gradient similar to design, or maybe purple-blue
+                                colors={["#4c669f", "#3b5998", "#192f6a"]} 
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={{
@@ -535,7 +592,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                             {/* Modal Body */}
                             <View style={{ padding: 24 }}>
                                 {/* Full Name */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Full Name</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Full Name <Text style={{ color: "#dc2626" }}>*</Text></Text>
                                 <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, height: 44 }}>
                                     <Feather name="user" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
                                     <TextInput
@@ -548,7 +605,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 </View>
 
                                 {/* Email Address */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Email Address</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Email Address <Text style={{ color: "#dc2626" }}>*</Text></Text>
                                 <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, height: 44 }}>
                                     <Feather name="mail" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
                                     <TextInput
@@ -561,7 +618,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 </View>
 
                                 {/* Role Selection */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Account Role</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Account Role <Text style={{ color: "#dc2626" }}>*</Text></Text>
                                 <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
                                     <TouchableOpacity
                                         style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 8, borderWidth: 1, borderColor: lguForm.role === 'user' ? "#2563eb" : "#e2e8f0", borderRadius: 8, backgroundColor: lguForm.role === 'user' ? "#eff6ff" : "#fff" }}
@@ -585,8 +642,8 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
 
                                 {/* Location (Sitio) - Only for LGUs/Users */}
                                 {lguForm.role !== 'super_admin' && (
-                                    <View style={{ marginBottom: 16 }}>
-                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Location (Sitio)</Text>
+                                    <View style={{ marginBottom: 16, zIndex: 100 }}>
+                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Location (Sitio) <Text style={{ color: "#dc2626" }}>*</Text></Text>
                                         <TouchableOpacity
                                             style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44, backgroundColor: "#fff" }}
                                             onPress={() => setShowSitioDropdown(!showSitioDropdown)}
@@ -621,13 +678,13 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
 
                                 {/* Password */}
                                 <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
-                                    {lguForm.role === 'lgu_admin' ? "Password (Optional - will be auto-generated if empty)" : "Account Password"}
+                                    Password (Optional - auto-generated if empty)
                                 </Text>
                                 <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 24, height: 44 }}>
                                     <Feather name="lock" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
                                     <TextInput
                                         style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
-                                        placeholder={lguForm.role === 'lgu_admin' ? "Auto-generated if empty" : "Enter password"}
+                                        placeholder="Leave blank to auto-generate"
                                         placeholderTextColor="#94a3b8"
                                         secureTextEntry={true}
                                         value={lguForm.password}
@@ -693,8 +750,60 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                     </View>
                                 </View>
 
+                                {/* Full Name */}
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Full Name <Text style={{ color: "#dc2626" }}>*</Text></Text>
+                                <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, height: 44 }}>
+                                    <Feather name="user" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+                                    <TextInput
+                                        style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
+                                        placeholder="Enter full name"
+                                        value={editForm.full_name}
+                                        onChangeText={(text) => setEditForm({ ...editForm, full_name: text })}
+                                    />
+                                </View>
+
+                                 {/* Location Dropdown (Available for LGUs and Mobile Users) */}
+                                 {editingUser?.id?.startsWith('u-') && (
+                                    <View style={{ marginBottom: 16, zIndex: 2000 }}>
+                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
+                                            Location (Sitio) <Text style={{ color: "#dc2626" }}>*</Text>
+                                        </Text>
+                                        <TouchableOpacity
+                                            style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44, backgroundColor: "#fff" }}
+                                            onPress={() => setShowEditSitioDropdown(!showEditSitioDropdown)}
+                                        >
+                                            <Feather name="map-pin" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+                                            <Text style={{ flex: 1, fontSize: 14, color: editForm.barangay ? "#0f172a" : "#94a3b8" }}>
+                                                {editForm.barangay || "Select Sitio"}
+                                            </Text>
+                                            <Feather name={showEditSitioDropdown ? "chevron-up" : "chevron-down"} size={18} color="#94a3b8" />
+                                        </TouchableOpacity>
+
+                                        {showEditSitioDropdown && (
+                                            <View style={{ position: "absolute", top: 50, left: 0, right: 0, backgroundColor: "#fff", borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 5, maxHeight: 150, zIndex: 5001 }}>
+                                                <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
+                                                    {availableLocations.map((sitio, index) => (
+                                                        <TouchableOpacity
+                                                            key={index}
+                                                            style={{ paddingVertical: 8, paddingHorizontal: 12, borderBottomWidth: index === availableLocations.length - 1 ? 0 : 1, borderBottomColor: "#f1f5f9" }}
+                                                            onPress={() => {
+                                                                setEditForm({ ...editForm, barangay: sitio });
+                                                                setShowEditSitioDropdown(false);
+                                                            }}
+                                                        >
+                                                            <Text style={{ fontSize: 14, color: "#0f172a" }}>{sitio}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+
                                 {/* Status Toggle */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Account Status</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
+                                    Account Status <Text style={{ color: "#dc2626" }}>*</Text>
+                                </Text>
                                 <View style={{ flexDirection: "row", marginBottom: 24, backgroundColor: "#f1f5f9", borderRadius: 8, padding: 4 }}>
                                     <TouchableOpacity
                                         style={{ flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 6, backgroundColor: editForm.status === 'active' ? "#fff" : "transparent", shadowColor: editForm.status === 'active' ? "#000" : "transparent", shadowOpacity: 0.1, shadowRadius: 2 }}
@@ -711,7 +820,9 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                 </View>
 
                                 {/* Role Selection */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>User Role</Text>
+                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
+                                    User Role <Text style={{ color: "#dc2626" }}>*</Text>
+                                </Text>
                                 <View style={{ gap: 8 }}>
                                     <TouchableOpacity
                                         style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'user' ? "#2563eb" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'user' ? "#eff6ff" : "#fff" }}
@@ -736,10 +847,31 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                                         onPress={() => setEditForm({ ...editForm, role: 'super_admin' })}
                                     >
                                         <Feather name="lock" size={18} color={editForm.role === 'super_admin' ? "#dc2626" : "#94a3b8"} style={{ marginRight: 12 }} />
-                                        <Text style={{ fontSize: 14, color: editForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'super_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Super Admin</Text>
+                                        <Text style={{ fontSize: 14, color: editForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'super_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Admin</Text>
                                         {editForm.role === 'super_admin' && <Feather name="check" size={18} color="#dc2626" style={{ marginLeft: "auto" }} />}
                                     </TouchableOpacity>
                                 </View>
+
+                                 {/* Password Change (Only for LGUs) */}
+                                 {editForm.role === 'lgu_admin' && (
+                                     <View style={{ marginTop: 16, marginBottom: 16 }}>
+                                         <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Change Password</Text>
+                                         <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44 }}>
+                                             <Feather name="key" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+                                             <TextInput
+                                                 style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
+                                                 placeholder="Enter new password"
+                                                 secureTextEntry={!showEditPassword}
+                                                 value={editForm.password}
+                                                 onChangeText={(text) => setEditForm({ ...editForm, password: text })}
+                                             />
+                                             <TouchableOpacity onPress={() => setShowEditPassword(!showEditPassword)}>
+                                                 <Feather name={showEditPassword ? "eye-off" : "eye"} size={18} color="#94a3b8" />
+                                             </TouchableOpacity>
+                                         </View>
+                                         <Text style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Leave blank to keep current password</Text>
+                                     </View>
+                                 )}
 
                                 {/* Save Button */}
                                 <TouchableOpacity

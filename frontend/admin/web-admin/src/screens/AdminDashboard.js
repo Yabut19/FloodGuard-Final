@@ -6,6 +6,7 @@ import AdminSidebar from "../components/AdminSidebar";
 import RealTimeClock from "../components/RealTimeClock";
 import LiveSensorStatus from "../components/LiveSensorStatus";
 import WelcomeBanner from "../components/WelcomeBanner";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 import { API_BASE_URL } from "../config/api";
 import { formatPST, getSystemStatus, getSystemStatusColor } from "../utils/dateUtils";
 import { authFetch } from "../utils/helpers";
@@ -14,7 +15,24 @@ import useDataSync from "../utils/useDataSync";
 const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
     const [stats, setStats] = useState({ active_sensors: 0, active_alerts: 0, registered_users: 0, avg_water_level: 0 });
     const [recentAlerts, setRecentAlerts] = useState([]);
-    const [liveSensors, setLiveSensors] = useState([]);
+    const [liveSensors, setLiveSensors] = useState(() => {
+        if (typeof window !== "undefined") {
+            const cached = localStorage.getItem("floodguard_dashboard_sensors");
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                const now = new Date();
+                // Validate cache: sensors older than 1s are not live
+                return parsed.map(s => {
+                    const isTimedOut = s.is_live && s.lastSeen && (now - new Date(s.lastSeen) > 30000);
+                    if (isTimedOut) {
+                        return { ...s, is_live: false, status: s.enabled === false ? "OFF" : "DISCONNECTED", waterLevel: 0, rawDistance: 0 };
+                    }
+                    return s;
+                });
+            }
+        }
+        return [];
+    });
     const [thresholds, setThresholds] = useState({ advisory_level: 15, warning_level: 30, critical_level: 50 });
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState("Admin User");
@@ -28,8 +46,6 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
             if (name) setUserName(name);
         }
         fetchAll();
-        refreshRef.current = setInterval(fetchAll, 15000);
-        return () => { clearInterval(refreshRef.current); };
     }, []);
 
     // ── Real-time Data Synchronization ──
@@ -40,26 +56,28 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
             setLiveSensors(prev => {
                 const updated = prev.map(s => {
                     if (s.id !== reading.sensor_id) return s;
-                    // Only update data if sensor is enabled
-                    if (!s.enabled) return s;
-                    
                     return {
                         ...s,
                         waterLevel:  reading.flood_level,
                         rawDistance: reading.raw_distance || 0,
                         is_live:     reading.is_live ?? true,
                         enabled:     reading.enabled ?? true,
-                        status:      !(reading.is_live ?? true) ? "DISCONNECTED" : (!(reading.enabled ?? true) ? "OFF" : (reading.status || "NORMAL")),
+                        status:      !(reading.enabled ?? true) ? "OFF" : (!(reading.is_live ?? true) ? "DISCONNECTED" : (reading.status || "NORMAL")),
+                        lastSeen:    new Date().toISOString(),
                     };
                 });
                 // Recompute stats from updated list
+                const onlineCount = updated.filter(s => s.is_live && s.enabled).length;
                 setStats(prevStats => ({
                     ...prevStats,
-                    active_sensors: updated.filter(s => s.is_live && s.enabled).length,
+                    active_sensors: onlineCount,
                     avg_water_level: updated.length
                         ? updated.reduce((a, s) => a + (s.waterLevel || 0), 0) / updated.length
                         : prevStats.avg_water_level,
                 }));
+                if (typeof window !== "undefined") {
+                    localStorage.setItem("floodguard_dashboard_sensors", JSON.stringify(updated));
+                }
                 return updated;
             });
         },
@@ -86,6 +104,50 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
             fetchStats();
         }
     });
+
+    // ── Liveness Timeout: Reset gauge if sensor stops transmitting ──
+    useEffect(() => {
+        const checkTimeouts = () => {
+            setLiveSensors(prev => {
+                const now = new Date();
+                let changed = false;
+                const updated = prev.map(s => {
+                    if (s.is_live && s.enabled !== false && s.lastSeen) {
+                        const lastSeenTime = new Date(s.lastSeen);
+                        if (now - lastSeenTime > 30000) {
+                            changed = true;
+                            // Priority: manually off stays 'OFF', otherwise 'DISCONNECTED'
+                            const nextStatus = s.enabled === false ? "OFF" : "DISCONNECTED";
+                            return {
+                                ...s,
+                                is_live: false,
+                                status: nextStatus,
+                                waterLevel: 0,
+                                rawDistance: 0
+                            };
+                        }
+                    }
+                    return s;
+                });
+
+                if (changed) {
+                    // Update stats to reflect the loss of a live sensor
+                    const onlineCount = updated.filter(s => s.is_live && s.enabled).length;
+                    setStats(prevStats => ({
+                        ...prevStats,
+                        active_sensors: onlineCount
+                    }));
+                    if (typeof window !== "undefined") {
+                        localStorage.setItem("floodguard_dashboard_sensors", JSON.stringify(updated));
+                    }
+                }
+
+                return changed ? updated : prev;
+            });
+        };
+        const timer = setInterval(checkTimeouts, 500);
+        return () => clearInterval(timer);
+    }, []);
 
     const wsConnected = !!socket;
 
@@ -143,15 +205,39 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
                 console.error("[Dashboard] Sensors data is not an array:", data);
                 return;
             }
-            setLiveSensors(data.map(s => ({
-                id: s.id, name: s.name, location: s.barangay,
-                waterLevel: s.flood_level,
-                rawDistance: s.raw_distance || 0,
-                is_live: s.is_live,
-                enabled: s.enabled,
-                status: !s.is_live ? "DISCONNECTED" : (!s.enabled ? "OFF" : (s.reading_status || "NORMAL")),
-                battery: s.battery_level, signal: s.signal_strength,
-            })));
+            const now = new Date();
+            setLiveSensors(data.map(s => {
+                const serverLastSeen = s.last_update ? new Date(s.last_update) : null;
+                const isTrulyLive = s.is_live && serverLastSeen && (now - serverLastSeen < 30000);
+                return {
+                    id: s.id, name: s.name, location: s.barangay,
+                    waterLevel: s.flood_level,
+                    rawDistance: s.raw_distance || 0,
+                    is_live: isTrulyLive,
+                    enabled: s.enabled,
+                    status: !s.enabled ? "OFF" : (!isTrulyLive ? "DISCONNECTED" : (s.reading_status || "NORMAL")),
+                    battery: s.battery_level, signal: s.signal_strength,
+                    lastSeen: s.last_update || (isTrulyLive ? now.toISOString() : null),
+                };
+            }));
+            // Update cache after transformation
+            if (typeof window !== "undefined") {
+                const transformed = data.map(s => {
+                    const serverLastSeen = s.last_update ? new Date(s.last_update) : null;
+                    const isTrulyLive = s.is_live && serverLastSeen && (now - serverLastSeen < 30000);
+                    return {
+                        id: s.id, name: s.name, location: s.barangay,
+                        waterLevel: s.flood_level,
+                        rawDistance: s.raw_distance || 0,
+                        is_live: isTrulyLive,
+                        enabled: s.enabled,
+                        status: !s.enabled ? "OFF" : (!isTrulyLive ? "DISCONNECTED" : (s.reading_status || "NORMAL")),
+                        battery: s.battery_level, signal: s.signal_strength,
+                        lastSeen: s.last_update || (isTrulyLive ? now.toISOString() : null),
+                    };
+                });
+                localStorage.setItem("floodguard_dashboard_sensors", JSON.stringify(transformed));
+            }
         } catch (e) {
             console.error("[Dashboard] fetchSensors error:", e);
         }
@@ -193,12 +279,7 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
                         <Text style={styles.dashboardTopSubtitle}>Real-time monitoring and system status</Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={[styles.dashboardStatusPill, { backgroundColor: onlineSensors >= 1 ? "rgba(34, 197, 94, 0.1)" : "rgba(100, 116, 139, 0.1)" }]}>
-                            <View style={[styles.dashboardStatusDot, { backgroundColor: getSystemStatusColor(onlineSensors) }]} />
-                            <Text style={[styles.dashboardStatusText, { color: getSystemStatusColor(onlineSensors) }]}>
-                                {getSystemStatus(onlineSensors)}
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <RealTimeClock style={styles.dashboardTopDate} />
                     </View>
                 </View>
@@ -283,8 +364,8 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
                                         const isOff = sensor.status === "OFF";
                                         
                                         const getLiveStatus = () => {
-                                            if (isOffline) return "Disconnected";
                                             if (isOff) return "OFF";
+                                            if (isOffline) return "Disconnected";
                                             const lvl = Number(sensor.waterLevel || 0);
                                             if (lvl >= thresholds.critical_level) return "CRITICAL";
                                             if (lvl >= thresholds.warning_level) return "WARNING";
@@ -307,7 +388,6 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
                                                         {(!isOffline && !isOff) && (
                                                             <Text> · Raw: <Text style={styles.dashboardSensorMetaStrong}>{Number(sensor.rawDistance || 0).toFixed(1)} cm</Text></Text>
                                                         )}
-                                                        {" "}· Batt: <Text style={styles.dashboardSensorMetaStrong}>{sensor.battery ?? "—"}%</Text>
                                                     </Text>
                                                 </View>
                                                 <View style={pillStyle}>

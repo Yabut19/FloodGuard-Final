@@ -94,7 +94,7 @@ class User:
                 "role": u.get('role', 'user'),
                 "location": u.get('barangay', 'N/A'),
                 "status": u.get('status', 'active'),
-                "joined": (u['created_at'].strftime('%Y-%m-%d') if hasattr(u.get('created_at'), 'strftime') else str(u.get('created_at'))) if u.get('created_at') else 'N/A',
+                "joined": (u['created_at'].isoformat() if hasattr(u.get('created_at'), 'isoformat') else str(u.get('created_at'))) if u.get('created_at') else 'N/A',
                 "avatar_url": u.get('avatar_url'),
                 "type": "user"
             })
@@ -106,6 +106,7 @@ class User:
         # Build safe query for admins
         a_select = ["id", "username", "role"]
         if "full_name" in a_cols: a_select.append("full_name")
+        if "status" in a_cols: a_select.append("status")
         if "created_at" in a_cols: a_select.append("created_at")
         if "avatar_url" in a_cols: a_select.append("avatar_url")
         
@@ -119,8 +120,8 @@ class User:
                 "email": a['username'],
                 "role": a.get('role', 'admin'),
                 "location": "All Locations",
-                "status": "active",
-                "joined": (a['created_at'].strftime('%Y-%m-%d') if hasattr(a.get('created_at'), 'strftime') else str(a.get('created_at'))) if a.get('created_at') else 'N/A',
+                "status": a.get('status', 'active'),
+                "joined": (a['created_at'].isoformat() if hasattr(a.get('created_at'), 'isoformat') else str(a.get('created_at'))) if a.get('created_at') else 'N/A',
                 "avatar_url": a.get('avatar_url'),
                 "type": "admin"
             })

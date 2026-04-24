@@ -47,7 +47,7 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout, variant = "lgu" }) => 
             { id: "data-reports", label: "Data & Reports", icon: "file-text" },
         ];
 
-    const roleLabel = isSuperAdmin ? "Super Admin" : "LGU Moderator";
+    const roleLabel = isSuperAdmin ? "Admin" : "LGU Moderator";
 
     const [userName, setUserName] = React.useState("Admin User");
     const [avatarUrl, setAvatarUrl] = React.useState(null);

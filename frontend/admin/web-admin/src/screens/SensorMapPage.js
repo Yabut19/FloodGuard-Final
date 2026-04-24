@@ -9,6 +9,7 @@ import { MABOLO_REGION } from "../config/constants";
 import { API_BASE_URL } from "../config/api";
 import { authFetch } from "../utils/helpers";
 import useDataSync from "../utils/useDataSync";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [selectedSensor, setSelectedSensor] = useState(null);
@@ -39,13 +40,14 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 longitude: s.lng || MABOLO_REGION.longitude,
                 is_live: s.is_live,
                 enabled: s.enabled,
-                status: s.is_live ? (s.enabled ? (s.reading_status?.toLowerCase() || "normal") : "off") : "disconnected",
+                // Priority: 1. Manual OFF, 2. Hardware DISCONNECTED, 3. LIVE (reading status)
+                status: s.enabled === false ? "off" : (s.is_live ? (s.reading_status?.toLowerCase() || "normal") : "disconnected"),
                 risk_level: (!s.is_live || !s.enabled) ? "none" : 
-                    (s.reading_status || "").toLowerCase() === "normal" ? "low" :
-                    (s.reading_status || "").toLowerCase() === "warning" ? "elevated" : "high",
+                    (s.reading_status || "NORMAL").toUpperCase(),
                 flood_level: Number(s.flood_level || 0),
                 raw_distance: Number(s.raw_distance || 0),
                 last_updated: s.last_seen ? formatPST(s.last_seen) : "No data",
+                last_seen_raw: s.last_seen || null,
                 is_offline: !s.is_live
             }));
 
@@ -71,7 +73,8 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 if (s.sensor_id !== reading.sensor_id) return s;
                 const isLive = reading.is_live ?? true;
                 const isEnabled = reading.enabled ?? true;
-                const status = isLive ? (isEnabled ? (reading.status?.toLowerCase() || "normal") : "off") : "disconnected";
+                // Priority: 1. Manual OFF, 2. Hardware DISCONNECTED, 3. LIVE
+                const status = isEnabled === false ? "off" : (isLive ? (reading.status?.toLowerCase() || "normal") : "disconnected");
                 return {
                     ...s,
                     flood_level:  Number(reading.flood_level || 0),
@@ -81,11 +84,16 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     enabled:      isEnabled,
                     is_offline:   !isLive,
                     last_updated: formatPST(new Date()),
+                    last_seen_raw: new Date().toISOString(),
                 };
             }));
         },
         onSensorListUpdate: () => {
             console.log("[SensorMap] Sensor registry changed, refreshing map...");
+            fetchSensorData();
+        },
+        onThresholdUpdate: () => {
+            console.log("[SensorMap] Thresholds changed, refreshing map status...");
             fetchSensorData();
         }
     });
@@ -101,6 +109,38 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
         );
         animation.start();
         return () => animation.stop();
+    }, []);
+
+    // ── Liveness Timeout: Reset status if sensor stops transmitting ──
+    useEffect(() => {
+        const checkTimeouts = () => {
+            setSensorData(prev => {
+                const now = new Date();
+                let changed = false;
+                const updated = prev.map(s => {
+                    // Only check if it's currently live and not explicitly off
+                    if (s.is_live && s.enabled !== false && s.last_seen_raw) {
+                        if (now - new Date(s.last_seen_raw) > 30000) {
+                            changed = true;
+                            // Priority check: if manually off, keep as 'off', otherwise 'disconnected'
+                            const nextStatus = s.enabled === false ? "off" : "disconnected";
+                            return {
+                                ...s,
+                                is_live: false,
+                                status: nextStatus,
+                                is_offline: true,
+                                flood_level: 0,
+                                raw_distance: 0
+                            };
+                        }
+                    }
+                    return s;
+                });
+                return changed ? updated : prev;
+            });
+        };
+        const timer = setInterval(checkTimeouts, 500);
+        return () => clearInterval(timer);
     }, []);
 
     // Setup Leaflet.js for fully interactive map with anchored markers (free, no API key needed)
@@ -251,6 +291,9 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
         };
     }, []);
 
+    // Use a ref to track existing markers to prevent flickering
+    const markersRef = React.useRef({});
+
     // Update markers when sensor data changes
     useEffect(() => {
         if (Platform.OS !== "web" || typeof document === "undefined" || typeof window === "undefined") {
@@ -264,61 +307,72 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
         const getStatusColorLocal = (status) => {
             switch (status?.toLowerCase()) {
-                case "normal":
-                    return "#16a34a";
-                case "warning":
-                    return "#f97316";
+                case "normal": return "#16a34a";
+                case "advisory": return "#3b82f6";
+                case "warning": return "#f97316";
                 case "alarm":
-                case "critical":
-                    return "#dc2626";
-                case "off":
-                    return "#64748b";
-                case "disconnected":
-                    return "#94a3b8";
-                default:
-                    return "#64748b";
+                case "critical": return "#dc2626";
+                case "off": return "#64748b";
+                case "disconnected": return "#94a3b8";
+                default: return "#64748b";
             }
         };
 
-        // Remove all existing layers that are circles or popups
-        mapInstance.eachLayer((layer) => {
-            if (layer instanceof window.L.CircleMarker || layer instanceof window.L.Marker) {
-                mapInstance.removeLayer(layer);
+        const currentMarkers = markersRef.current;
+        const seenIds = new Set();
+
+        sensorData.forEach((sensor) => {
+            const sid = sensor.sensor_id;
+            seenIds.add(sid);
+            const color = getStatusColorLocal(sensor.status);
+            const isLiveAndEnabled = sensor.is_live && sensor.enabled;
+            const popupContent = `
+                <div style="font-family: sans-serif; padding: 4px;">
+                    <b style="font-size: 14px;">Sensor ${sensor.name}</b><br>
+                    <span style="color: #64748b; font-size: 12px;">Brgy. ${sensor.barangay}</span><hr style="border:0; border-top:1px solid #eee; margin: 8px 0;">
+                    <div style="margin-bottom: 4px;">Status: <span style="font-weight: 600; color: ${color};">${sensor.status.toUpperCase()}</span></div>
+                    <div style="margin-bottom: 4px;">Flood Level: <b>${isLiveAndEnabled ? sensor.flood_level.toFixed(1) : "0.0"} cm</b></div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Last Updated: ${sensor.last_updated}</div>
+                    ${sensor.is_live ? '<span style="color: #16a34a;">● Live</span>' : '<span style="color: #94a3b8;">🔘 Disconnected</span>'}
+                </div>
+            `;
+
+            if (currentMarkers[sid]) {
+                // Update existing marker
+                const marker = currentMarkers[sid];
+                marker.setStyle({ fillColor: color });
+                marker.setPopupContent(popupContent);
+                // Optionally update position if it changed
+                marker.setLatLng([sensor.latitude, sensor.longitude]);
+            } else {
+                // Create new marker
+                try {
+                    const marker = window.L.circleMarker([sensor.latitude, sensor.longitude], {
+                        radius: 12,
+                        fillColor: color,
+                        color: "#ffffff",
+                        weight: 3,
+                        opacity: 1,
+                        fillOpacity: 1,
+                    }).addTo(mapInstance);
+
+                    marker.bindPopup(popupContent);
+                    marker.on('click', () => {
+                        setSelectedSensor(sensor.sensor_id);
+                        mapInstance.setView([sensor.latitude, sensor.longitude], 17);
+                    });
+                    currentMarkers[sid] = marker;
+                } catch (e) {
+                    console.error("Error creating marker:", e);
+                }
             }
         });
 
-        // Add new markers from sensorData
-        sensorData.forEach((sensor) => {
-            try {
-                const color = getStatusColorLocal(sensor.status);
-                const marker = window.L.circleMarker([sensor.latitude, sensor.longitude], {
-                    radius: 12,
-                    fillColor: color,
-                    color: "#ffffff",
-                    weight: 3,
-                    opacity: 1,
-                    fillOpacity: 1,
-                }).addTo(mapInstance);
-
-                const popupContent = `
-                    <div style="font-family: sans-serif; padding: 4px;">
-                        <b style="font-size: 14px;">Sensor ${sensor.name}</b><br>
-                        <span style="color: #64748b; font-size: 12px;">Brgy. ${sensor.barangay}</span><hr style="border:0; border-top:1px solid #eee; margin: 8px 0;">
-                        <div style="margin-bottom: 4px;">Status: <span style="font-weight: 600; color: ${color};">${sensor.status.toUpperCase()}</span></div>
-                        <div style="margin-bottom: 4px;">Flood Level: <b>${(sensor.is_live && sensor.enabled) ? sensor.flood_level.toFixed(1) : "0.0"} cm</b></div>
-                        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Last Updated: ${sensor.last_updated}</div>
-                        ${sensor.is_live ? '<span style="color: #16a34a;">● Live</span>' : '<span style="color: #94a3b8;">🔘 Disconnected</span>'}
-                    </div>
-                `;
-
-                marker.bindPopup(popupContent);
-
-                marker.on('click', () => {
-                    setSelectedSensor(sensor.sensor_id);
-                    mapInstance.setView([sensor.latitude, sensor.longitude], 17);
-                });
-            } catch (markerError) {
-                console.error("Error creating marker:", markerError);
+        // Remove markers for sensors no longer in data
+        Object.keys(currentMarkers).forEach(sid => {
+            if (!seenIds.has(sid)) {
+                mapInstance.removeLayer(currentMarkers[sid]);
+                delete currentMarkers[sid];
             }
         });
     }, [sensorData]);
@@ -330,15 +384,19 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
         switch (status?.toLowerCase()) {
             case "normal":
                 return "#16a34a"; // Green
+            case "advisory":
+                return "#3b82f6"; // Blue
             case "warning":
                 return "#f97316"; // Orange
             case "alarm":
             case "critical":
                 return "#dc2626"; // Red
-            case "error":
+            case "off":
                 return "#64748b"; // Gray
+            case "disconnected":
+                return "#94a3b8"; // Light Gray
             default:
-                return "#64748b"; // Gray
+                return "#64748b"; 
         }
     };
 
@@ -388,12 +446,7 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             </Text>
                         </View>
                         <View style={styles.dashboardTopRight}>
-                            <View style={[styles.dashboardStatusPill, { backgroundColor: sensorData.filter(s => s.is_live).length >= 1 ? "rgba(22, 163, 74, 0.1)" : "rgba(100, 116, 139, 0.1)" }]}>
-                                <View style={[styles.dashboardStatusDot, { backgroundColor: sensorData.filter(s => s.is_live).length >= 1 ? "#16a34a" : "#64748b" }]} />
-                                <Text style={[styles.dashboardStatusText, { color: sensorData.filter(s => s.is_live).length >= 1 ? "#16a34a" : "#64748b" }]}>
-                                    {sensorData.filter(s => s.is_live).length >= 1 ? "Live" : "Disconnected"}
-                                </Text>
-                            </View>
+                            <TopRightStatusIndicator />
                             <RealTimeClock style={styles.dashboardTopDate} />
                         </View>
                     </View>

@@ -5,9 +5,18 @@ _thresholds = {
     "warning_cm": 15.0,
     "critical_cm": 25.0,
 }
+_last_sync_time = 0
 
-def sync_thresholds_from_db():
+def sync_thresholds_from_db(force=False):
     """Read admin-saved thresholds from system_config and update _thresholds in memory."""
+    global _last_sync_time
+    import time
+    
+    # Only sync if forced or if it's been more than 60 seconds since last sync
+    now = time.time()
+    if not force and (now - _last_sync_time < 60):
+        return
+
     try:
         db = get_db()
         cur = db.cursor(dictionary=True)
@@ -24,6 +33,7 @@ def sync_thresholds_from_db():
             _thresholds["warning_cm"] = mapping["warning_level"]
         if "critical_level" in mapping:
             _thresholds["critical_cm"] = mapping["critical_level"]
+        _last_sync_time = now
     except Exception:
         pass  # fall back to in-memory defaults
 
@@ -32,6 +42,7 @@ def calculate_status(level, is_offline=False):
     if is_offline:
         return "OFFLINE"
     
+    # Use cached thresholds
     sync_thresholds_from_db()
     lvl = float(level)
     if lvl >= _thresholds.get("critical_cm", 25.0):
@@ -43,5 +54,5 @@ def calculate_status(level, is_offline=False):
     return "NORMAL"
 
 def get_current_thresholds():
-    sync_thresholds_from_db()
+    sync_thresholds_from_db(force=True)
     return dict(_thresholds)

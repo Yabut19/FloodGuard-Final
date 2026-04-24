@@ -103,12 +103,9 @@ def create_user(current_user):
         import threading
 
         def _send_bg():
-            if role in ['lgu_admin', 'lgu']:
-                ok, msg = send_credentials_email(email, full_name or email, password, is_admin=True)
-            elif role == 'user':
-                ok, msg = send_credentials_email(email, full_name or email, password, is_admin=False)
-            else:
-                return  # No email for super_admin
+            # Send email for all roles including super_admin and admin
+            is_admin_flag = role in ['lgu_admin', 'lgu', 'super_admin', 'admin']
+            ok, msg = send_credentials_email(email, full_name or email, password, is_admin=is_admin_flag)
             level = logger.info if ok else logger.warning
             level("[create-user] Email to %s: %s", email, msg)
 
@@ -153,7 +150,8 @@ def get_users(current_user):
                 "total_users": total_users,
                 "active_users": active_users,
                 "lgu_moderators": lgu_moderators,
-                "super_admins": super_admins
+                "super_admins": super_admins,
+                "regular_users": regular_users
             }
         }), 200
     except Exception as e:
@@ -172,11 +170,9 @@ def delete_user(current_user, user_id):
             table = 'admins'
             db_id = user_id[2:]
             
-            # Prevent deletion of Super Admin accounts
-            cursor.execute("SELECT role FROM admins WHERE id = %s", (db_id,))
-            a_user = cursor.fetchone()
-            if a_user and a_user[0] == 'super_admin':
-                return jsonify({"error": "Super Admin accounts cannot be deleted for security reasons"}), 403
+            # Prevent self-deletion
+            if str(db_id) == str(current_user.get('user_id')):
+                return jsonify({"error": "You cannot delete your own account"}), 403
         else:
             return jsonify({"error": "Invalid user ID format"}), 400
 
@@ -217,6 +213,43 @@ def get_locations(current_user):
     finally:
         cursor.close()
 
+@admin_bp.route('/users/<string:user_id>', methods=['PUT'])
+@lgu_or_admin_required
+def update_user_details(current_user, user_id):
+    data = request.get_json()
+    full_name = data.get('full_name')
+    barangay = data.get('barangay')
+    password = data.get('password')
+    
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        if user_id.startswith('u-'):
+            db_id = user_id[2:]
+            cursor.execute("UPDATE users SET full_name = %s, barangay = %s WHERE id = %s", (full_name, barangay, db_id))
+            
+            # Allow password change for LGUs only
+            if password:
+                cursor.execute("SELECT role FROM users WHERE id = %s", (db_id,))
+                user_role = cursor.fetchone()
+                if user_role and user_role[0] in ['lgu_admin', 'lgu']:
+                    from werkzeug.security import generate_password_hash
+                    cursor.execute("UPDATE users SET password = %s WHERE id = %s", (generate_password_hash(password), db_id))
+        elif user_id.startswith('a-'):
+            db_id = user_id[2:]
+            # admins table usually doesn't have barangay
+            cursor.execute("UPDATE admins SET full_name = %s WHERE id = %s", (full_name, db_id))
+        else:
+            return jsonify({"error": "Invalid user ID format"}), 400
+            
+        db.commit()
+        _emit_user_update()
+        return jsonify({"message": "User details updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
 @admin_bp.route('/users/<string:user_id>/status', methods=['PUT'])
 @lgu_or_admin_required
 def update_user_status(current_user, user_id):
@@ -232,12 +265,16 @@ def update_user_status(current_user, user_id):
         if user_id.startswith('u-'):
             table = 'users'
             db_id = user_id[2:]
-            cursor.execute(f"UPDATE {table} SET status = %s WHERE id = %s", (new_status, db_id))
-            db.commit()
-            _emit_user_update()
-            return jsonify({"message": "Status updated successfully"}), 200
+        elif user_id.startswith('a-'):
+            table = 'admins'
+            db_id = user_id[2:]
         else:
-             return jsonify({"error": "Cannot update status for this user type"}), 400
+             return jsonify({"error": "Invalid user ID format"}), 400
+
+        cursor.execute(f"UPDATE {table} SET status = %s WHERE id = %s", (new_status, db_id))
+        db.commit()
+        _emit_user_update()
+        return jsonify({"message": "Status updated successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -256,17 +293,22 @@ def update_user_role(current_user, user_id):
     cursor = db.cursor()
     try:
         if user_id.startswith('u-'):
+            table = 'users'
             db_id = user_id[2:]
-            # valid roles: 'user', 'lgu_admin', 'super_admin'
-            if new_role in ['user', 'lgu_admin', 'super_admin']:
-                cursor.execute("UPDATE users SET role = %s WHERE id = %s", (new_role, db_id))
-                db.commit()
-                _emit_user_update()
-                return jsonify({"message": "Role updated successfully"}), 200
-            else:
-                return jsonify({"error": "Invalid role specified"}), 400
+        elif user_id.startswith('a-'):
+            table = 'admins'
+            db_id = user_id[2:]
         else:
-            return jsonify({"error": "Cannot update role for this user type"}), 400
+            return jsonify({"error": "Invalid user ID format"}), 400
+
+        # valid roles: 'user', 'lgu_admin', 'super_admin', 'admin'
+        if new_role in ['user', 'lgu_admin', 'super_admin', 'admin']:
+            cursor.execute(f"UPDATE {table} SET role = %s WHERE id = %s", (new_role, db_id))
+            db.commit()
+            _emit_user_update()
+            return jsonify({"message": "Role updated successfully"}), 200
+        else:
+            return jsonify({"error": "Invalid role specified"}), 400
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

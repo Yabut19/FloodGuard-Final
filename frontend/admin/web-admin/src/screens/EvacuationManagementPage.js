@@ -10,6 +10,7 @@ import { authFetch } from "../utils/helpers";
 import { API_BASE_URL } from "../config/api";
 import useDataSync from "../utils/useDataSync";
 import dialogs from "../utils/dialogs";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [centers, setCenters] = useState([]);
@@ -317,12 +318,7 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
                         </Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={[styles.dashboardStatusPill, { backgroundColor: onlineSensors >= 1 ? "rgba(22, 163, 74, 0.1)" : "rgba(100, 116, 139, 0.1)" }]}>
-                            <View style={[styles.dashboardStatusDot, { backgroundColor: getSystemStatusColor(onlineSensors) }]} />
-                            <Text style={[styles.dashboardStatusText, { color: getSystemStatusColor(onlineSensors) }]}>
-                                {getSystemStatus(onlineSensors)}
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <RealTimeClock style={styles.dashboardTopDate} />
                     </View>
                 </View>

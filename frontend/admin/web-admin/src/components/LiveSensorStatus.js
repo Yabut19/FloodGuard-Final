@@ -7,14 +7,13 @@ import { styles } from '../styles/globalStyles';
 const getStatusColor = (status) => {
     switch ((status || '').toUpperCase()) {
         case 'NORMAL':
-        case 'SAFE':
             return '#22c55e'; // Green
         case 'ADVISORY':
             return '#3b82f6'; // Blue
         case 'WARNING':
             return '#f97316'; // Orange
-        case 'ALARM':
         case 'CRITICAL':
+        case 'ALARM':
             return '#dc2626'; // Red
         case 'OFFLINE':
         case 'DISCONNECTED':
@@ -29,14 +28,13 @@ const getStatusColor = (status) => {
 const getStatusBgColor = (status) => {
     switch ((status || '').toUpperCase()) {
         case 'NORMAL':
-        case 'SAFE':
             return 'rgba(34, 197, 94, 0.15)';
         case 'ADVISORY':
             return 'rgba(59, 130, 246, 0.15)';
         case 'WARNING':
             return 'rgba(249, 115, 22, 0.15)';
-        case 'ALARM':
         case 'CRITICAL':
+        case 'ALARM':
             return 'rgba(220, 38, 38, 0.15)';
         case 'OFFLINE':
         case 'DISCONNECTED':
@@ -277,18 +275,6 @@ const SensorCard = ({ sensor, isLast, thresholds }) => {
                 </View>
             </View>
 
-            {/* Footer */}
-            <View style={styles.sensorCardFooter}>
-                <View style={styles.sensorCardFooterStat}>
-                    <Feather name="battery" size={12} color="#64748b" style={{ marginRight: 4 }} />
-                    <Text style={styles.sensorCardFooterText}>{sensor.battery}%</Text>
-                </View>
-                <Text style={styles.sensorCardFooterTime}>Updated: {sensor.updatedAgo}</Text>
-                <View style={styles.sensorCardFooterStat}>
-                    <Feather name="bar-chart-2" size={12} color="#64748b" style={{ marginRight: 4 }} />
-                    <Text style={styles.sensorCardFooterText}>{sensor.signal}%</Text>
-                </View>
-            </View>
         </View>
     );
 };

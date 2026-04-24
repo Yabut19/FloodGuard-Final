@@ -9,6 +9,7 @@ import { API_BASE_URL } from "../config/api";
 import { formatPST, getSystemStatus, getSystemStatusColor } from "../utils/dateUtils";
 import { authFetch } from "../utils/helpers";
 import useDataSync from "../utils/useDataSync";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const isSuperAdmin = userRole === "superadmin";
@@ -38,16 +39,60 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
 
+    // ── Thresholds & Classification ──────────────────────────
+    const [thresholds, setThresholds] = useState({ advisory: 15, warning: 30, critical: 50 });
+    const thresholdsRef = useRef(thresholds);
+
+    const calculateStatus = (level, activeThresholds = null) => {
+        const thresh = activeThresholds || thresholdsRef.current;
+        let val = 0;
+        if (typeof level === 'string') {
+            // Strip "cm" and any non-numeric chars except decimal
+            val = parseFloat(level.replace(/[^\d.]/g, '')) || 0;
+        } else {
+            val = parseFloat(level) || 0;
+        }
+        
+        if (val >= thresh.critical) return "Critical";
+        if (val >= thresh.warning) return "Warning";
+        if (val >= thresh.advisory) return "Advisory";
+        return "Normal";
+    };
+
+    // Effect to recalculate all visible historical data when thresholds change
+    useEffect(() => {
+        thresholdsRef.current = thresholds;
+        if (floodHistory.length > 0) {
+            setFloodHistory(prev => prev.map(row => ({
+                ...row,
+                status: calculateStatus(row.level)
+            })));
+        }
+    }, [thresholds.advisory, thresholds.warning, thresholds.critical]);
+
     // Fetch Data
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [summaryRes, historyRes, sensorsRes, reportsRes] = await Promise.all([
+            const [summaryRes, historyRes, sensorsRes, reportsRes, configRes] = await Promise.all([
                 authFetch(`${API_BASE_URL}/api/reports/summary`),
                 authFetch(`${API_BASE_URL}/api/reports/history?sensor_id=${selectedSensor.id}`),
                 authFetch(`${API_BASE_URL}/api/iot/sensors/status-all`),
-                authFetch(`${API_BASE_URL}/api/reports/`)
+                authFetch(`${API_BASE_URL}/api/reports/`),
+                authFetch(`${API_BASE_URL}/api/config/thresholds`)
             ]);
+            
+            let activeThresh = thresholds;
+            if (configRes.ok) {
+                const config = await configRes.json();
+                activeThresh = {
+                    advisory: config.advisory_level,
+                    warning: config.warning_level,
+                    critical: config.critical_level
+                };
+                thresholdsRef.current = activeThresh;
+                setThresholds(activeThresh);
+            }
 
             const summary = await summaryRes.json();
             const history = await historyRes.json();
@@ -60,17 +105,32 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 { label: "Reports", value: reportsData.length ?? 0, icon: "file-text", color: "#06b6d4", bg: "#ecfeff" },
                 { label: "Active Sensors", value: summary.active_sensors ?? 0, icon: "cpu", color: "#10b981", bg: "#ecfdf5" },
             ]);
-            setFloodHistory(history);
             setCommunityReports(reportsData);
-
             if (Array.isArray(sensorsData)) {
                 const dynamicSensors = sensorsData.map(s => ({
                     id: s.id,
                     name: s.name || s.id,
+                    barangay: s.barangay || s.location || "",
                     status: s.status,
-                    is_offline: s.is_offline
+                    is_live: s.is_live,
+                    is_offline: !s.is_live,
+                    last_seen: s.last_seen || null
                 }));
-                setSensorsList([{ id: "All Sensors", name: "All Sensors" }, ...dynamicSensors]);
+                setSensorsList([{ id: "All Sensors", name: "All Sensors", barangay: "" }, ...dynamicSensors]);
+
+                // Clean up history locations - replace "General Area" with actual sensor barangay
+                const mappedHistory = history.map(h => {
+                    const sensor = dynamicSensors.find(s => s.id === h.sensor_id || s.name === h.sensor);
+                    const actualLoc = sensor?.barangay || h.location;
+                    return {
+                        ...h,
+                        location: (actualLoc === "General Area") ? "" : actualLoc,
+                        status: calculateStatus(h.flood_level || h.level, activeThresh)
+                    };
+                });
+                setFloodHistory(mappedHistory);
+            } else {
+                setFloodHistory(history);
             }
         } catch (error) {
             console.error("Failed to fetch reports data:", error);
@@ -80,31 +140,52 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     };
 
     useEffect(() => {
-        const fetchSystemStatus = async () => {
-            try {
-                const res = await authFetch(`${API_BASE_URL}/api/iot/sensors/status-all`);
-                if (res.ok) {
-                    const data = await res.json();
-                    // Only count sensors that are both physically Live and software Enabled
-                    const live = data.filter(s => s.is_live && s.enabled !== false).length;
-                    setOnlineSensors(live);
-                }
-            } catch (e) {
-                console.error("Status fetch error:", e);
-            }
-        };
-
-        fetchSystemStatus();
-        const interval = setInterval(fetchSystemStatus, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
         fetchData();
     }, [selectedSensor.id]);
 
+    // ── Liveness Timeout for Analytics & Registry ──
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setSensorsList(prev => {
+                const now = new Date();
+                let changed = false;
+                const updated = prev.map(s => {
+                    if (s.id !== "All Sensors" && s.is_live && s.last_seen) {
+                        if (now - new Date(s.last_seen) > 30000) {
+                            changed = true;
+                            return { ...s, is_live: false, is_offline: true };
+                        }
+                    }
+                    return s;
+                });
+                
+                if (changed) {
+                    // Update the "Active Sensors" analytics card locally
+                    // Match the global source of truth: Software ON AND Hardware LIVE
+                    const onlineCount = updated.filter(s => s.id !== "All Sensors" && s.is_live && s.enabled !== false).length;
+                    setAnalytics(a => a.map(item => 
+                        item.label === "Active Sensors" ? { ...item, value: onlineCount } : item
+                    ));
+                }
+                
+                return changed ? updated : prev;
+            });
+        }, 500);
+        return () => clearInterval(timer);
+    }, []);
+
     // ── Real-time Data Synchronization ──
     useDataSync({
+        onThresholdUpdate: (data) => {
+            console.log("[DataReports] Thresholds updated, recalculating...");
+            const newThresh = {
+                advisory: data.advisory_level,
+                warning: data.warning_level,
+                critical: data.critical_level
+            };
+            thresholdsRef.current = newThresh;
+            setThresholds(newThresh);
+        },
         onSensorUpdate: (reading) => {
             // Only process if sensor is LIVE and ENABLED per requirement
             const isLive = reading.is_live ?? true;
@@ -122,19 +203,44 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 return item;
             }));
 
-            // 2. Prepend to history table if matches filter
+            // 2. Update sensor list liveness & enablement
+            setSensorsList(prev => {
+                const updated = prev.map(s => {
+                    if (s.id === reading.sensor_id) {
+                        return { 
+                            ...s, 
+                            is_live: isLive, 
+                            is_offline: !isLive, 
+                            enabled: isEnabled,
+                            last_seen: isLive ? new Date().toISOString() : s.last_seen 
+                        };
+                    }
+                    return s;
+                });
+                
+                // Also update Active Sensors count immediately if list changed
+                const activeCount = updated.filter(s => s.id !== "All Sensors" && s.is_live && s.enabled !== false).length;
+                setAnalytics(a => a.map(item => 
+                    item.label === "Active Sensors" ? { ...item, value: activeCount } : item
+                ));
+                
+                return updated;
+            });
+
+            // 3. Prepend to history table if matches filter
             if (selectedSensor.id === "All Sensors" || selectedSensor.id === reading.sensor_id) {
-                const sensorObj = sensorsList.find(s => s.id === reading.sensor_id) || { name: reading.sensor_id, location: "General Area" };
+                const sensorObj = sensorsList.find(s => s.id === reading.sensor_id) || { name: reading.sensor_id, barangay: "" };
                 const formatted = formatPST(reading.timestamp || Date.now());
                 const [datePart, timePart] = formatted.split(' • ');
+                
                 const newRow = {
                     id: Date.now(), // temporary ID
                     time: timePart,
                     date: datePart,
                     level: `${reading.flood_level} cm`,
                     sensor: sensorObj.name,
-                    location: sensorObj.barangay || "General Area",
-                    status: (reading.status || "Normal").toUpperCase()
+                    location: sensorObj.barangay || "",
+                    status: calculateStatus(reading.flood_level)
                 };
                 setFloodHistory(prev => [newRow, ...prev].slice(0, 50));
             }
@@ -316,12 +422,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         <Text style={styles.dashboardTopSubtitle}>Archive, analysis, and historical flood records</Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={[styles.dashboardStatusPill, { backgroundColor: onlineSensors >= 1 ? "rgba(22, 163, 74, 0.1)" : "rgba(100, 116, 139, 0.1)" }]}>
-                            <View style={[styles.dashboardStatusDot, { backgroundColor: getSystemStatusColor(onlineSensors) }]} />
-                            <Text style={[styles.dashboardStatusText, { color: getSystemStatusColor(onlineSensors) }]}>
-                                {getSystemStatus(onlineSensors)}
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <RealTimeClock style={styles.dashboardTopDate} />
                     </View>
                 </View>
@@ -431,16 +532,20 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                             <Text style={{ color: "#94a3b8" }}>No flood data available</Text>
                                         </View>
                                     ) : floodHistory.map((row, idx) => {
-                                        const isCritical = row.status?.toLowerCase() === "critical" || row.status?.toLowerCase() === "alarm";
+                                         const rawStatus = (row.status || "").toUpperCase();
+                                         const isCritical = rawStatus === "CRITICAL" || rawStatus === "ALARM";
+                                         const isWarning = rawStatus === "WARNING";
+                                         const isAdvisory = rawStatus === "ADVISORY";
+                                         const displayStatus = isCritical ? "Critical" : (isWarning ? "Warning" : (isAdvisory ? "Advisory" : "Normal"));
                                         return (
                                             <View key={row.id} style={[pg.tableRow, idx === floodHistory.length - 1 && { borderBottomWidth: 0 }]}>
                                                 <Text style={[pg.tableCellBold, { flex: 1.5 }]}>{row.time} • {row.date}</Text>
                                                 <Text style={[pg.tableCell, { flex: 1 }]}>{row.sensor}</Text>
                                                 <Text style={[pg.tableCell, { flex: 1 }]}>{row.location}</Text>
-                                                <Text style={[pg.tableCellBold, { flex: 0.8, color: isCritical ? "#dc2626" : "#0f172a" }]}>{row.level}</Text>
+                                                <Text style={[pg.tableCellBold, { flex: 0.8, color: isCritical ? "#dc2626" : (isWarning ? "#f97316" : (isAdvisory ? "#3b82f6" : "#0f172a")) }]}>{row.level}</Text>
                                                 <View style={{ flex: 0.8 }}>
-                                                    <View style={[pg.statusBadge, { backgroundColor: isCritical ? "#fee2e2" : "#f1f5f9" }]}>
-                                                        <Text style={[pg.statusBadgeText, { color: isCritical ? "#dc2626" : "#64748b" }]}>{row.status}</Text>
+                                                    <View style={[pg.statusBadge, { backgroundColor: isCritical ? "#fee2e2" : (isWarning ? "#fff7ed" : (isAdvisory ? "#eff6ff" : "#f1f5f9")) }]}>
+                                                        <Text style={[pg.statusBadgeText, { color: isCritical ? "#dc2626" : (isWarning ? "#f97316" : (isAdvisory ? "#3b82f6" : "#64748b")) }]}>{displayStatus}</Text>
                                                     </View>
                                                 </View>
                                             </View>

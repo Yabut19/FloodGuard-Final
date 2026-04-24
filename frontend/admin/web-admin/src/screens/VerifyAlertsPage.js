@@ -9,6 +9,7 @@ import { formatPST, getSystemStatus, getSystemStatusColor } from "../utils/dateU
 import useDataSync from "../utils/useDataSync";
 import dialogs from "../utils/dialogs";
 import { authFetch } from "../utils/helpers";
+import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const { width } = Dimensions.get("window");
 const SIDEBAR_WIDTH = width > 1024 ? 360 : 300;
@@ -61,9 +62,27 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
         },
         onSensorUpdate: (reading) => {
             console.log("[VerifyAlerts] Sensor reading updated:", reading);
-            setSensorData(prev => prev ? { ...prev, ...reading } : reading);
+            setSensorData(prev => {
+                const newData = prev ? { ...prev, ...reading } : reading;
+                return { ...newData, last_seen: new Date().toISOString(), is_live: true };
+            });
         }
     });
+
+    // ── Liveness Timeout ──
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setSensorData(prev => {
+                if (prev && prev.is_live && prev.last_seen) {
+                    if (new Date() - new Date(prev.last_seen) > 30000) {
+                        return { ...prev, is_live: false, flood_level: 0, raw_distance: 0 };
+                    }
+                }
+                return prev;
+            });
+        }, 500);
+        return () => clearInterval(timer);
+    }, []);
 
     const handleVerify = async () => {
         if (!selectedReport) return;
@@ -140,14 +159,11 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
 
     const getFloodLevelColor = (level) => {
         switch (level?.toLowerCase()) {
-            case "ankle-high":
-            case "low":
+            case "advisory":
                 return "#3b82f6"; // Blue
-            case "waist-high":
-            case "medium":
+            case "warning":
                 return "#f97316"; // Orange
-            case "chest-high":
-            case "high":
+            case "critical":
                 return "#dc2626"; // Red
             default:
                 return "#64748b";
@@ -158,6 +174,8 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
         switch (status?.toUpperCase()) {
             case "NORMAL":
                 return "#16a34a";
+            case "ADVISORY":
+                return "#3b82f6";
             case "WARNING":
                 return "#f97316"; // Orange
             case "ALARM":
@@ -198,12 +216,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                         </Text>
                     </View>
                     <View style={styles.dashboardTopRight}>
-                        <View style={[styles.dashboardStatusPill, { backgroundColor: sensorData && sensorData.is_live ? "rgba(22, 163, 74, 0.1)" : "rgba(100, 116, 139, 0.1)", marginRight: 8 }]}>
-                            <View style={[styles.dashboardStatusDot, { backgroundColor: sensorData && sensorData.is_live ? "#16a34a" : "#64748b" }]} />
-                            <Text style={[styles.dashboardStatusText, { color: sensorData && sensorData.is_live ? "#16a34a" : "#64748b" }]}>
-                                {sensorData && sensorData.is_live ? "LIVE" : "DISCONNECTED"}
-                            </Text>
-                        </View>
+                        <TopRightStatusIndicator />
                         <View style={[styles.dashboardStatusPill, { backgroundColor: "rgba(249, 115, 22, 0.15)" }]}>
                             <View style={[styles.dashboardStatusDot, { backgroundColor: "#f97316" }]} />
                             <Text style={[styles.dashboardStatusText, { color: "#ea580c" }]}>
@@ -663,9 +676,9 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                                             </Text>
                                             <View style={{ flexDirection: "row", gap: 8 }}>
                                                 {[
-                                                    { level: "low", label: "Low", color: "#3b82f6" },
-                                                    { level: "medium", label: "Medium", color: "#f97316" },
-                                                    { level: "high", label: "High", color: "#dc2626" },
+                                                    { level: "advisory", label: "Advisory", color: "#3b82f6" },
+                                                    { level: "warning", label: "Warning", color: "#f97316" },
+                                                    { level: "critical", label: "Critical", color: "#dc2626" },
                                                 ].map(({ level, label, color }) => (
                                                     <TouchableOpacity
                                                         key={level}
