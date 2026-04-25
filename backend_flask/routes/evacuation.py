@@ -7,7 +7,7 @@ evacuation_bp = Blueprint('evacuation', __name__)
 def _emit_evacuation_update():
     """Broadcast evacuation center changes to all WebSocket clients."""
     try:
-        from app import socketio
+        from socket_instance import socketio
         socketio.emit("evacuation_update", {"message": "refresh"}, namespace="/")
     except Exception:
         pass
@@ -55,20 +55,25 @@ def create_evacuation_center():
         """, (alert_title, alert_description, 'evacuation', 'All', 'active', 'open', location, capacity, format_pst(get_pst_now())))
 
         db.commit()
-        center_id = cursor.lastrowid
-        alert_id = cursor.lastrowid # Note: alerts table id
+        alert_id = cursor.lastrowid
+        
+        # Correctly capture the center_id which was inserted first
+        cursor.execute("SELECT id FROM evacuation_centers WHERE name = %s AND location = %s ORDER BY id DESC LIMIT 1", (name, location))
+        row = cursor.fetchone()
+        center_id = row[0] if row else alert_id
 
         # ── REAL-TIME BROADCAST: Instant delivery to mobile apps ──
         try:
-            from app import socketio
+            from socket_instance import socketio
             # Notify about new evacuation center
             socketio.emit("new_notification", {
-                "type": "evacuation_center",
-                "id": center_id,
+                "type": "alert", # Treat as alert for instant popup
+                "id": alert_id,
                 "title": alert_title,
                 "description": alert_description,
                 "location": location,
-                "capacity": capacity
+                "capacity": capacity,
+                "timestamp": get_pst_now().isoformat()
             }, namespace="/")
         except: pass
 
@@ -129,10 +134,21 @@ def update_evacuation_center(center_id):
 
         db.commit()
 
+        # Fetch the ID of the alert we just created
+        cursor.execute("SELECT LAST_INSERT_ID()")
+        alert_id = cursor.fetchone()[0]
+
         # Broadcast the alert via WebSocket
         try:
-            from app import socketio
-            socketio.emit("new_notification", {"type": "alert", "level": "evacuation"}, namespace="/")
+            from socket_instance import socketio
+            socketio.emit("new_notification", {
+                "type": "alert",
+                "id": alert_id,
+                "level": "evacuation",
+                "title": alert_title,
+                "description": alert_description,
+                "timestamp": get_pst_now().isoformat()
+            }, namespace="/")
         except: pass
 
         _emit_evacuation_update()

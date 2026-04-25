@@ -26,6 +26,7 @@ import {
   TouchableWithoutFeedback,
   Switch,
   BackHandler,
+  InteractionManager,
 } from "react-native";
 import { NavigationContainer, useFocusEffect, createNavigationContainerRef } from "@react-navigation/native";
 
@@ -4983,57 +4984,57 @@ function NotificationProvider({ children }) {
 
     socket.on("new_notification", (data) => {
       console.log("[WS] Instant alert received:", data);
-
+      
       const normalizedId = data.type === 'alert' || data.type === 'auto_alert' ? `alert-${data.id || 'new'}` :
         data.type === 'evacuation_center' ? `evac-${data.id || 'new'}` : `id-${data.id || Date.now()}`;
 
-      // 1. EXACTLY-ONCE CHECK: Check if we've already shown this in the current session
-      if (shownIds.current.has(normalizedId)) {
-        console.log("[WS] Notification already shown/handled in this session:", normalizedId);
-        return;
-      }
+      // 1. EXACTLY-ONCE CHECK
+      if (shownIds.current.has(normalizedId)) return;
+      if (readIdsRef.current.includes(normalizedId)) return;
 
-      // 2. DISMISSAL CHECK: Check if this item is already marked as read/dismissed in storage
-      if (readIdsRef.current.includes(normalizedId)) {
-        console.log("[WS] Suppressing pop-up for already dismissed item:", normalizedId);
-        return;
-      }
-
-      // Mark as shown immediately to prevent race conditions from concurrent polling
       shownIds.current.add(normalizedId);
 
-      // Refresh notification list instantly
-      fetchNotifications(true);
-
-      // System-wide popup for high priority alerts
-      const isActiveBroadcast = data.status ? data.status === 'active' : true;
-      if (isActiveBroadcast && (data.level === 'critical' || data.level === 'warning' || data.type === 'alert' || data.type === 'auto_alert')) {
-        Alert.alert(
-          "📢 BROADCAST ALERT",
-          `${data.title}\n\n${data.description}`,
-          [
-            {
-              text: "Dismiss",
-              style: "cancel",
-              onPress: () => markAsRead(normalizedId)
-            },
-            {
-              text: "View Details",
-              style: "default",
-              onPress: () => {
-                markAsRead(normalizedId);
-                // Construct alert object for the detail screen
-                const alertObj = {
-                  ...data,
-                  id: normalizedId,
-                  // Ensure any other required fields for AlertDetailScreen are present
-                };
-                globalNavigate("AlertDetail", { alert: alertObj });
+      // ── PRIORITY 1: SHOW DIALOG IMMEDIATELY ──
+      // Using InteractionManager ensures this system call isn't blocked by background tasks
+      InteractionManager.runAfterInteractions(() => {
+        const isActiveBroadcast = data.status ? data.status === 'active' : true;
+        // Include 'evacuation' in the immediate priority list to eliminate delay
+        if (isActiveBroadcast && (
+          data.level === 'critical' || 
+          data.level === 'warning' || 
+          data.level === 'evacuation' || 
+          data.type === 'alert' || 
+          data.type === 'auto_alert' ||
+          data.type === 'evacuation_center'
+        )) {
+          Alert.alert(
+            "📢 BROADCAST ALERT",
+            `${data.title}\n\n${data.description}`,
+            [
+              {
+                text: "Dismiss",
+                style: "cancel",
+                onPress: () => markAsRead(normalizedId)
+              },
+              {
+                text: "View Details",
+                style: "default",
+                onPress: () => {
+                  markAsRead(normalizedId);
+                  const alertObj = { ...data, id: normalizedId };
+                  globalNavigate("AlertDetail", { alert: alertObj });
+                }
               }
-            }
-          ]
-        );
-      }
+            ]
+          );
+        }
+      });
+
+      // ── PRIORITY 2: REFRESH LIST IN BACKGROUND ──
+      // Delay this slightly so it doesn't compete with the system alert's appearance
+      setTimeout(() => {
+        fetchNotifications(true);
+      }, 800);
     });
 
     return () => {
