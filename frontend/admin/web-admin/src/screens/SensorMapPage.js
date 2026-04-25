@@ -431,228 +431,223 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
     try {
         return (
-            <View style={styles.dashboardRoot}>
-                {/* Sidebar */}
-                <AdminSidebar variant={userRole} activePage="sensor-map" onNavigate={onNavigate} onLogout={onLogout} />
-
-                {/* Main content */}
-                <View style={styles.dashboardMain}>
-                    {/* Top bar */}
-                    <View style={styles.dashboardTopBar}>
-                        <View>
-                            <Text style={styles.dashboardTopTitle}>Real-Time Sensor Map</Text>
-                            <Text style={styles.dashboardTopSubtitle}>
-                                Interactive map showing LGU-monitored sensors with live status
-                            </Text>
-                        </View>
-                        <View style={styles.dashboardTopRight}>
-                            <TopRightStatusIndicator />
-                            <RealTimeClock style={styles.dashboardTopDate} />
-                        </View>
+            <View style={styles.dashboardMain}>
+                {/* Top bar */}
+                <View style={styles.dashboardTopBar}>
+                    <View>
+                        <Text style={styles.dashboardTopTitle}>Real-Time Sensor Map</Text>
+                        <Text style={styles.dashboardTopSubtitle}>
+                            Interactive map showing LGU-monitored sensors with live status
+                        </Text>
                     </View>
+                    <View style={styles.dashboardTopRight}>
+                        <TopRightStatusIndicator />
+                        <RealTimeClock style={styles.dashboardTopDate} />
+                    </View>
+                </View>
 
-                    {/* Map and Sensor List Container */}
-                    <View style={styles.sensorMapContainer}>
-                        {/* Interactive Map Panel */}
-                        <View style={styles.mapPanel}>
-                            {Platform.OS === "web" ? (
-                                // Fully interactive Leaflet map with real markers
-                                <View style={styles.mapView}>
-                                    <View
-                                        nativeID="google-map-container"
-                                        style={styles.googleMapContainer}
-                                    />
-                                </View>
-                            ) : (
-                                // Placeholder map (react-native-maps is native-only, not supported on web)
-                                <View style={styles.mapView}>
-                                    <View style={styles.mapPlaceholder}>
-                                        <Text style={styles.mapPlaceholderTitle}>Interactive Map</Text>
-                                        <Text style={styles.mapPlaceholderSubtitle}>Barangay Mabolo, Cebu City</Text>
-                                        <Text style={styles.mapPlaceholderSubtitle}>Real-time sensor locations</Text>
-                                        <View style={styles.mapMarkersContainer}>
-                                            {sensors.map((sensor, index) => (
-                                                <TouchableOpacity
-                                                    key={sensor.sensor_id}
-                                                    style={[
-                                                        styles.sensorMarker,
-                                                        {
-                                                            backgroundColor: getStatusColor(sensor.status),
-                                                            left: `${20 + index * 25}%`,
-                                                            top: `${30 + index * 20}%`,
-                                                        },
-                                                        selectedSensor === sensor.sensor_id && styles.sensorMarkerSelected,
-                                                    ]}
-                                                    onPress={() => setSelectedSensor(sensor.sensor_id)}
-                                                >
-                                                    <Feather name="activity" size={16} color="#ffffff" />
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
-
-                            {/* Selected Sensor Info Overlay */}
-                            {selectedSensor && (
-                                <View style={styles.sensorInfoOverlay}>
-                                    <TouchableOpacity
-                                        style={styles.sensorInfoClose}
-                                        onPress={() => setSelectedSensor(null)}
-                                    >
-                                        <Feather name="x" size={16} color="#64748b" />
-                                    </TouchableOpacity>
-                                    <View style={{ gap: 12 }}>
-                                        <View>
-                                            <Text style={styles.sensorInfoTitle}>Sensor {selectedSensor}</Text>
-                                            <Text style={styles.sensorInfoText}>Barangay Mabolo, Cebu City</Text>
-                                        </View>
-
-                                        {/* Status Badge */}
-                                        <View style={styles.sensorInfoStatusRow}>
-                                            <View
-                                                style={[
-                                                    styles.sensorInfoStatusDot,
-                                                    {
-                                                        backgroundColor: getStatusColor(
-                                                            sensors.find((s) => s.sensor_id === selectedSensor)?.status
-                                                        ),
-                                                    },
-                                                ]}
-                                            />
-                                            <Text style={styles.sensorInfoStatusText}>
-                                                {sensors.find((s) => s.sensor_id === selectedSensor)?.is_live ? "Live" : "Disconnected"}
-                                            </Text>
-                                        </View>
-
-                                        {/* Flood Level */}
-                                        {sensors.find((s) => s.sensor_id === selectedSensor) && (
-                                            <View style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 8 }}>
-                                                <Text style={{ color: '#64748b', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
-                                                    Flood Level
-                                                </Text>
-                                                <Text style={{ color: '#0f172a', fontSize: 18, fontFamily: "Poppins_700Bold", marginTop: 4 }}>
-                                                    {(sensors.find((s) => s.sensor_id === selectedSensor).is_live && sensors.find((s) => s.sensor_id === selectedSensor).enabled)
-                                                        ? `${sensors.find((s) => s.sensor_id === selectedSensor).flood_level.toFixed(1)} cm`
-                                                        : "0.0 cm"
-                                                    }
-                                                </Text>
-                                                <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>
-                                                    Raw Distance: {(sensors.find((s) => s.sensor_id === selectedSensor).is_live && sensors.find((s) => s.sensor_id === selectedSensor).enabled)
-                                                        ? `${sensors.find((s) => s.sensor_id === selectedSensor).raw_distance.toFixed(1)} cm`
-                                                        : "0.0 cm"
-                                                    }
-                                                </Text>
-                                            </View>
-                                        )}
-
-                                        {/* GPS Coordinates */}
-                                        {sensors.find((s) => s.sensor_id === selectedSensor)?.latitude !== undefined && (
-                                            <View style={{ backgroundColor: '#eff6ff', padding: 8, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#3b82f6' }}>
-                                                <Text style={{ color: '#1e40af', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
-                                                    📍 GPS Coordinates
-                                                </Text>
-                                                <Text style={{ color: '#0f172a', fontSize: 13, marginTop: 4, fontFamily: 'monospace' }}>
-                                                    Latitude: {sensors.find((s) => s.sensor_id === selectedSensor)?.latitude.toFixed(6)}°
-                                                </Text>
-                                                <Text style={{ color: '#0f172a', fontSize: 13, marginTop: 2, fontFamily: 'monospace' }}>
-                                                    Longitude: {sensors.find((s) => s.sensor_id === selectedSensor)?.longitude.toFixed(6)}°
-                                                </Text>
-                                                {sensors.find((s) => s.sensor_id === selectedSensor)?.maps_url && (
-                                                    <TouchableOpacity
-                                                        onPress={() => {
-                                                            const mapsUrl = sensors.find((s) => s.sensor_id === selectedSensor)?.maps_url;
-                                                            if (mapsUrl) {
-                                                                window.open(mapsUrl, '_blank');
-                                                            }
-                                                        }}
-                                                        style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#bfdbfe' }}
-                                                    >
-                                                        <Text style={{ color: '#2563eb', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
-                                                            🗺️ View on Google Maps →
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        )}
-
-                                        {/* Timestamp */}
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.sensorInfoTime}>
-                                                🕐 {sensors.find((s) => s.sensor_id === selectedSensor)?.last_updated}
-                                            </Text>
-                                        </View>
-
-                                        {/* Status */}
-                                        {sensors.find((s) => s.sensor_id === selectedSensor)?.is_live ? (
-                                            <Text style={[styles.sensorInfoTime, { color: '#16a34a', fontFamily: "Poppins_600SemiBold" }]}>
-                                                ✓ Sensor is Live
-                                            </Text>
-                                        ) : (
-                                            <Text style={[styles.sensorInfoTime, { color: '#94a3b8', fontFamily: "Poppins_600SemiBold" }]}>
-                                                🔘 Sensor is Disconnected
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Sensor List Sidebar */}
-                        <View style={styles.sensorListPanel}>
-                            <Text style={styles.sensorListTitle}>Monitored Sensors</Text>
-                            <View style={styles.sensorListScroll}>
-                                <View style={styles.sensorListContent}>
-                                    {loading ? (
-                                        <View style={{ padding: 16, alignItems: 'center' }}>
-                                            <Text style={{ color: '#64748b' }}>Loading sensor data...</Text>
-                                        </View>
-                                    ) : sensors.length === 0 ? (
-                                        <View style={{ padding: 16, alignItems: 'center' }}>
-                                            <Text style={{ color: '#64748b' }}>No sensor data available</Text>
-                                        </View>
-                                    ) : (
-                                        sensors.map((sensor) => (
+                {/* Map and Sensor List Container */}
+                <View style={styles.sensorMapContainer}>
+                    {/* Interactive Map Panel */}
+                    <View style={styles.mapPanel}>
+                        {Platform.OS === "web" ? (
+                            // Fully interactive Leaflet map with real markers
+                            <View style={styles.mapView}>
+                                <View
+                                    nativeID="google-map-container"
+                                    style={styles.googleMapContainer}
+                                />
+                            </View>
+                        ) : (
+                            // Placeholder map (react-native-maps is supported natively)
+                            <View style={styles.mapView}>
+                                <View style={styles.mapPlaceholder}>
+                                    <Text style={styles.mapPlaceholderTitle}>Interactive Map</Text>
+                                    <Text style={styles.mapPlaceholderSubtitle}>Barangay Mabolo, Cebu City</Text>
+                                    <Text style={styles.mapPlaceholderSubtitle}>Real-time sensor locations</Text>
+                                    <View style={styles.mapMarkersContainer}>
+                                        {sensors.map((sensor, index) => (
                                             <TouchableOpacity
                                                 key={sensor.sensor_id}
                                                 style={[
-                                                    styles.sensorListItem,
-                                                    selectedSensor === sensor.sensor_id && styles.sensorListItemSelected,
+                                                    styles.sensorMarker,
+                                                    {
+                                                        backgroundColor: getStatusColor(sensor.status),
+                                                        left: `${20 + index * 25}%`,
+                                                        top: `${30 + index * 20}%`,
+                                                    },
+                                                    selectedSensor === sensor.sensor_id && styles.sensorMarkerSelected,
                                                 ]}
-                                                onPress={() => {
-                                                    setSelectedSensor(sensor.sensor_id);
-                                                    const map = window.sensorMapInstance;
-                                                    if (map && sensor.latitude && sensor.longitude) {
-                                                        map.setView([sensor.latitude, sensor.longitude], 17);
-                                                    }
-                                                }}
+                                                onPress={() => setSelectedSensor(sensor.sensor_id)}
                                             >
-                                                <View style={styles.sensorListItemContent}>
-                                                    <Text style={styles.sensorListItemName}>
-                                                        {sensor.name || `Sensor ${sensor.sensor_id}`}
-                                                    </Text>
-                                                    <Text style={styles.sensorListItemBarangay}>
-                                                        {sensor.barangay}
-                                                    </Text>
-                                                    <Text style={styles.sensorListItemStatus}>
-                                                        Flood: {(sensor.is_live && sensor.enabled) ? sensor.flood_level.toFixed(1) : "0.0"} cm • {sensor.is_live ? "Live" : "Disconnected"}
-                                                    </Text>
-                                                </View>
-                                                {!sensor.is_live ? (
-                                                    <View style={[styles.sensorListItemDot, { backgroundColor: getStatusDotColor(sensor.status) }]} />
-                                                ) : (
-                                                    <Animated.View style={[styles.sensorListItemDot, { backgroundColor: getStatusDotColor(sensor.status), opacity: blinkAnim }]} />
-                                                )}
+                                                <Feather name="activity" size={16} color="#ffffff" />
                                             </TouchableOpacity>
-                                        ))
+                                        ))}
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Selected Sensor Info Overlay */}
+                        {selectedSensor && (
+                            <View style={styles.sensorInfoOverlay}>
+                                <TouchableOpacity
+                                    style={styles.sensorInfoClose}
+                                    onPress={() => setSelectedSensor(null)}
+                                >
+                                    <Feather name="x" size={16} color="#64748b" />
+                                </TouchableOpacity>
+                                <View style={{ gap: 12 }}>
+                                    <View>
+                                        <Text style={styles.sensorInfoTitle}>Sensor {selectedSensor}</Text>
+                                        <Text style={styles.sensorInfoText}>Barangay Mabolo, Cebu City</Text>
+                                    </View>
+
+                                    {/* Status Badge */}
+                                    <View style={styles.sensorInfoStatusRow}>
+                                        <View
+                                            style={[
+                                                styles.sensorInfoStatusDot,
+                                                {
+                                                    backgroundColor: getStatusColor(
+                                                        sensors.find((s) => s.sensor_id === selectedSensor)?.status
+                                                    ),
+                                                },
+                                            ]}
+                                        />
+                                        <Text style={styles.sensorInfoStatusText}>
+                                            {sensors.find((s) => s.sensor_id === selectedSensor)?.is_live ? "Live" : "Disconnected"}
+                                        </Text>
+                                    </View>
+
+                                    {/* Flood Level */}
+                                    {sensors.find((s) => s.sensor_id === selectedSensor) && (
+                                        <View style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 8 }}>
+                                            <Text style={{ color: '#64748b', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
+                                                Flood Level
+                                            </Text>
+                                            <Text style={{ color: '#0f172a', fontSize: 18, fontFamily: "Poppins_700Bold", marginTop: 4 }}>
+                                                {(sensors.find((s) => s.sensor_id === selectedSensor).is_live && sensors.find((s) => s.sensor_id === selectedSensor).enabled)
+                                                    ? `${sensors.find((s) => s.sensor_id === selectedSensor).flood_level.toFixed(1)} cm`
+                                                    : "0.0 cm"
+                                                }
+                                            </Text>
+                                            <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>
+                                                Raw Distance: {(sensors.find((s) => s.sensor_id === selectedSensor).is_live && sensors.find((s) => s.sensor_id === selectedSensor).enabled)
+                                                    ? `${sensors.find((s) => s.sensor_id === selectedSensor).raw_distance.toFixed(1)} cm`
+                                                    : "0.0 cm"
+                                                }
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    {/* GPS Coordinates */}
+                                    {sensors.find((s) => s.sensor_id === selectedSensor)?.latitude !== undefined && (
+                                        <View style={{ backgroundColor: '#eff6ff', padding: 8, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: '#3b82f6' }}>
+                                            <Text style={{ color: '#1e40af', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
+                                                📍 GPS Coordinates
+                                            </Text>
+                                            <Text style={{ color: '#0f172a', fontSize: 13, marginTop: 4, fontFamily: 'monospace' }}>
+                                                Latitude: {sensors.find((s) => s.sensor_id === selectedSensor)?.latitude.toFixed(6)}°
+                                            </Text>
+                                            <Text style={{ color: '#0f172a', fontSize: 13, marginTop: 2, fontFamily: 'monospace' }}>
+                                                Longitude: {sensors.find((s) => s.sensor_id === selectedSensor)?.longitude.toFixed(6)}°
+                                            </Text>
+                                            {sensors.find((s) => s.sensor_id === selectedSensor)?.maps_url && (
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        const mapsUrl = sensors.find((s) => s.sensor_id === selectedSensor)?.maps_url;
+                                                        if (mapsUrl) {
+                                                            window.open(mapsUrl, '_blank');
+                                                        }
+                                                    }}
+                                                    style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#bfdbfe' }}
+                                                >
+                                                    <Text style={{ color: '#2563eb', fontSize: 12, fontFamily: "Poppins_600SemiBold" }}>
+                                                        🗺️ View on Google Maps →
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    {/* Timestamp */}
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.sensorInfoTime}>
+                                            🕐 {sensors.find((s) => s.sensor_id === selectedSensor)?.last_updated}
+                                        </Text>
+                                    </View>
+
+                                    {/* Status */}
+                                    {sensors.find((s) => s.sensor_id === selectedSensor)?.is_live ? (
+                                        <Text style={[styles.sensorInfoTime, { color: '#16a34a', fontFamily: "Poppins_600SemiBold" }]}>
+                                            ✓ Sensor is Live
+                                        </Text>
+                                    ) : (
+                                        <Text style={[styles.sensorInfoTime, { color: '#94a3b8', fontFamily: "Poppins_600SemiBold" }]}>
+                                            🔘 Sensor is Disconnected
+                                        </Text>
                                     )}
                                 </View>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Sensor List Sidebar */}
+                    <View style={styles.sensorListPanel}>
+                        <Text style={styles.sensorListTitle}>Monitored Sensors</Text>
+                        <View style={styles.sensorListScroll}>
+                            <View style={styles.sensorListContent}>
+                                {loading ? (
+                                    <View style={{ padding: 16, alignItems: 'center' }}>
+                                        <Text style={{ color: '#64748b' }}>Loading sensor data...</Text>
+                                    </View>
+                                ) : sensors.length === 0 ? (
+                                    <View style={{ padding: 16, alignItems: 'center' }}>
+                                        <Text style={{ color: '#64748b' }}>No sensor data available</Text>
+                                    </View>
+                                ) : (
+                                    sensors.map((sensor) => (
+                                        <TouchableOpacity
+                                            key={sensor.sensor_id}
+                                            style={[
+                                                styles.sensorListItem,
+                                                selectedSensor === sensor.sensor_id && styles.sensorListItemSelected,
+                                            ]}
+                                            onPress={() => {
+                                                setSelectedSensor(sensor.sensor_id);
+                                                const map = window.sensorMapInstance;
+                                                if (map && sensor.latitude && sensor.longitude) {
+                                                    map.setView([sensor.latitude, sensor.longitude], 17);
+                                                }
+                                            }}
+                                        >
+                                            <View style={styles.sensorListItemContent}>
+                                                <Text style={styles.sensorListItemName}>
+                                                    {sensor.name || `Sensor ${sensor.sensor_id}`}
+                                                </Text>
+                                                <Text style={styles.sensorListItemBarangay}>
+                                                    {sensor.barangay}
+                                                </Text>
+                                                <Text style={styles.sensorListItemStatus}>
+                                                    Flood: {(sensor.is_live && sensor.enabled) ? sensor.flood_level.toFixed(1) : "0.0"} cm • {sensor.is_live ? "Live" : "Disconnected"}
+                                                </Text>
+                                            </View>
+                                            {!sensor.is_live ? (
+                                                <View style={[styles.sensorListItemDot, { backgroundColor: getStatusDotColor(sensor.status) }]} />
+                                            ) : (
+                                                <Animated.View style={[styles.sensorListItemDot, { backgroundColor: getStatusDotColor(sensor.status), opacity: blinkAnim }]} />
+                                            )}
+                                        </TouchableOpacity>
+                                    ))
+                                )}
                             </View>
                         </View>
                     </View>
                 </View>
             </View>
         );
+
     } catch (error) {
         console.error("Error rendering SensorMapPage:", error);
         return (

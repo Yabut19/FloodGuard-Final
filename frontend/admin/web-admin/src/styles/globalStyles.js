@@ -2101,7 +2101,8 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#DDF6D2",
         flexDirection: "column",
-        justifyContent: "space-between",
+        justifyContent: "center",
+        alignItems: "center",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
@@ -2123,11 +2124,13 @@ export const styles = StyleSheet.create({
         color: "#0f172a",
         marginBottom: 4,
         letterSpacing: -0.5,
+        textAlign: "center",
     },
     userStatsLabel: {
         fontSize: 14,
         fontFamily: "Poppins_500Medium",
         color: "#64748b",
+        textAlign: "center",
     },
     filterBar: {
         flexDirection: width > 1024 ? "row" : "column",

@@ -19,9 +19,13 @@ import UserManagementPage from "./src/screens/UserManagementPage";
 import EvacuationManagementPage from "./src/screens/EvacuationManagementPage";
 import ThresholdConfigPage from "./src/screens/ThresholdConfigPage";
 import ManageSensorsPage from "./src/screens/SensorRegistrationPage";
+import AdminSidebar from "./src/components/AdminSidebar";
 import LoadingOverlay from "./src/components/LoadingOverlay";
 
+import { disconnectSocket } from "./src/utils/socketManager";
+
 export default function App() {
+
   const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
@@ -113,7 +117,10 @@ export default function App() {
           if (document && document.body) {
             document.body.style.backgroundColor = "#001D39";
           }
+          // Reset real-time socket connection to prevent delays on next login
+          disconnectSocket();
         } catch (error) {
+
           console.warn("Error clearing localStorage on logout:", error);
         }
       }
@@ -235,7 +242,16 @@ export default function App() {
   try {
     return (
       <View style={styles.root}>
-        {renderPage()}
+        <View style={styles.dashboardRoot}>
+          {/* Persistent Sidebar for improved navigation liveliness */}
+          <AdminSidebar 
+            activePage={activePage} 
+            onNavigate={handleNavigate} 
+            onLogout={handleLogout} 
+            variant={userRole} 
+          />
+          {renderPage()}
+        </View>
         {isLoading && <LoadingOverlay message="Logging Out..." accentColor="#ef4444" />}
       </View>
     );
@@ -243,4 +259,4 @@ export default function App() {
     handleError(error);
     return null;
   }
-}
+}

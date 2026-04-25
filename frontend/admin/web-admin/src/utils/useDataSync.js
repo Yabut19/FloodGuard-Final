@@ -1,86 +1,60 @@
 import { useEffect, useRef } from "react";
-import { API_BASE_URL } from "../config/api";
-import { io } from "socket.io-client";
+import { getSocket } from "./socketManager";
 
 /**
  * useDataSync Hook
  * Unified hook to listen for various real-time update events from the backend.
+ * Uses a singleton WebSocket connection to prevent flickering/glitching during page navigation.
  * 
  * @param {Object} callbacks - Map of event names to callback functions
- * Example: { onSensorUpdate: (data) => {}, onUserUpdate: () => {}, ... }
  */
 export default function useDataSync(callbacks = {}) {
-  const socketRef = useRef(null);
+  // Get or initialize the singleton socket
+  const globalSocket = getSocket();
 
-  // Keep callback refs stable to avoid re-initializing socket on every render
+  // Keep callback refs stable to avoid re-initializing listeners on every render
   const handlers = useRef(callbacks);
   useEffect(() => {
     handlers.current = callbacks;
   }, [callbacks]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!globalSocket) return;
 
-    const socket = io(API_BASE_URL, {
-      transports: ["websocket", "polling"],
-      timeout: 20000,
-      reconnectionAttempts: 10
-    });
-    socketRef.current = socket;
+    // Define wrapper functions that call the current handlers from refs
+    // This allows handlers to change without re-binding listeners
+    const onSensorUpdate = (data) => handlers.current.onSensorUpdate?.(data);
+    const onUserUpdate = (data) => handlers.current.onUserUpdate?.(data);
+    const onReportUpdate = (data) => handlers.current.onReportUpdate?.(data);
+    const onAlertUpdate = (data) => handlers.current.onAlertUpdate?.(data);
+    const onEvacuationUpdate = (data) => handlers.current.onEvacuationUpdate?.(data);
+    const onThresholdUpdate = (data) => handlers.current.onThresholdUpdate?.(data);
+    const onNewNotification = (data) => handlers.current.onNewNotification?.(data);
+    const onSensorListUpdate = (data) => handlers.current.onSensorListUpdate?.(data);
 
-    socket.on("connect", () => {
-      console.log("[DataSync] Connected to WebSocket");
-    });
-    socket.on("connect_error", (err) => {
-      console.error("[DataSync] Connection error:", err.message);
-    });
-
-    // 🌡️ Live Sensor Reading Updates
-    socket.on("sensor_update", (data) => {
-      if (handlers.current.onSensorUpdate) handlers.current.onSensorUpdate(data);
-    });
-
-    // 👥 User Management Updates
-    socket.on("user_update", (data) => {
-      if (handlers.current.onUserUpdate) handlers.current.onUserUpdate(data);
-    });
-
-    // 📋 Community Report Updates
-    socket.on("report_update", (data) => {
-      if (handlers.current.onReportUpdate) handlers.current.onReportUpdate(data);
-    });
-
-    // 🚨 Official Alert Updates
-    socket.on("alert_update", (data) => {
-      if (handlers.current.onAlertUpdate) handlers.current.onAlertUpdate(data);
-    });
-
-    // 🏠 Evacuation Center Updates
-    socket.on("evacuation_update", (data) => {
-      if (handlers.current.onEvacuationUpdate) handlers.current.onEvacuationUpdate(data);
-    });
-
-    // ⚙️ Threshold Configuration Updates
-    socket.on("threshold_update", (data) => {
-      if (handlers.current.onThresholdUpdate) handlers.current.onThresholdUpdate(data);
-    });
-
-    // 🔔 Generic Notifications
-    socket.on("new_notification", (data) => {
-      if (handlers.current.onNewNotification) handlers.current.onNewNotification(data);
-    });
-
-    socket.on("disconnect", () => {
-      console.log("[DataSync] Disconnected from WebSocket");
-    });
+    // Attach listeners
+    globalSocket.on("sensor_update", onSensorUpdate);
+    globalSocket.on("user_update", onUserUpdate);
+    globalSocket.on("report_update", onReportUpdate);
+    globalSocket.on("alert_update", onAlertUpdate);
+    globalSocket.on("evacuation_update", onEvacuationUpdate);
+    globalSocket.on("threshold_update", onThresholdUpdate);
+    globalSocket.on("new_notification", onNewNotification);
+    globalSocket.on("sensor_list_update", onSensorListUpdate);
 
     return () => {
-      if (socket) {
-        socket.disconnect();
-        socketRef.current = null;
-      }
+      // Detach listeners on unmount to prevent memory leaks and multiple triggers
+      globalSocket.off("sensor_update", onSensorUpdate);
+      globalSocket.off("user_update", onUserUpdate);
+      globalSocket.off("report_update", onReportUpdate);
+      globalSocket.off("alert_update", onAlertUpdate);
+      globalSocket.off("evacuation_update", onEvacuationUpdate);
+      globalSocket.off("threshold_update", onThresholdUpdate);
+      globalSocket.off("new_notification", onNewNotification);
+      globalSocket.off("sensor_list_update", onSensorListUpdate);
     };
   }, []);
 
-  return socketRef.current;
+  return globalSocket;
 }
+

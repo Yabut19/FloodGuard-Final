@@ -363,10 +363,8 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
     };
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar variant={userRole} activePage="evacuation-management" onNavigate={onNavigate} onLogout={onLogout} />
+        <View style={styles.dashboardMain}>
 
-            <View style={styles.dashboardMain}>
                 <View style={styles.dashboardTopBar}>
                     <View>
                         <Text style={styles.dashboardTopTitle}>Evacuation Management</Text>
@@ -458,7 +456,7 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
                                             <Text style={styles.userCellText}>{center.location}</Text>
                                         </View>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.userCellText}>{center.slots_filled} / {center.capacity}</Text>
+                                            <Text style={styles.userCellText}>{center.capacity}</Text>
                                         </View>
                                         <View style={{ flex: 1 }}>
                                             <View style={[styles.userStatusBadge, { backgroundColor: statusStyle.bg }]}>
@@ -485,11 +483,10 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
                         )}
                     </View>
                 </ScrollView>
-            </View>
 
             {(showAddModal || showEditModal) && (
                 <Modal visible={true} transparent animationType="fade">
-                    <View style={pg.modalOverlay}>
+                    <View style={[pg.modalOverlay, { zIndex: 10 }]}>
                         <View style={[pg.modalBox, { maxWidth: currentStep === 1 ? 800 : 680 }]}>
                             <LinearGradient colors={["#001D39", "#0A4174"]} style={pg.modalHeader}>
                                 <View>
@@ -617,8 +614,8 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
                                                         }}
                                                         onPress={() => setForm({ ...form, status: s })}
                                                     >
-                                                        <Text style={{ 
-                                                            color: form.status === s ? "#1e293b" : "#64748b", 
+                                                        <Text style={{
+                                                            color: form.status === s ? "#1e293b" : "#64748b",
                                                             fontFamily: form.status === s ? "Poppins_600SemiBold" : "Poppins_400Regular",
                                                             textTransform: "capitalize",
                                                             fontSize: 13
@@ -658,68 +655,75 @@ const EvacuationManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) =>
             )}
 
             {/* Success Modal */}
-            <Modal visible={showSuccessModal} transparent animationType="fade">
-                <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
-                    <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
-                        <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#dcfce7", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                            <Feather name="check-circle" size={32} color="#16a34a" />
+            {showSuccessModal && (
+                <Modal visible={true} transparent animationType="fade">
+                    <View style={[pg.modalOverlay, { zIndex: 99999, backgroundColor: "rgba(0,0,0,0.5)" }]}>
+                        <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center", zIndex: 100000, elevation: 20 }]}>
+                            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#dcfce7", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                                <Feather name="check-circle" size={32} color="#16a34a" />
+                            </View>
+                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Success!</Text>
+                            <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{successMessage}</Text>
+                            <TouchableOpacity style={pg.submitBtn} onPress={() => setShowSuccessModal(false)}>
+                                <Text style={pg.submitBtnText}>Done</Text>
+                            </TouchableOpacity>
                         </View>
-                        <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Success!</Text>
-                        <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{successMessage}</Text>
-                        <TouchableOpacity style={pg.submitBtn} onPress={() => setShowSuccessModal(false)}>
-                            <Text style={pg.submitBtnText}>Done</Text>
-                        </TouchableOpacity>
                     </View>
-                </View>
-            </Modal>
+                </Modal>
+            )}
 
             {/* Delete Confirmation Modal */}
-            <Modal visible={showDeleteModal} transparent animationType="fade">
-                <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
-                    <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
-                        <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                            <Feather name="trash-2" size={32} color="#dc2626" />
-                        </View>
-                        <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Delete Center?</Text>
-                        <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>
-                            Are you sure you want to delete <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#0f172a" }}>{centerToDelete?.name}</Text>? This action cannot be undone.
-                        </Text>
-                        <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
-                            <TouchableOpacity style={[pg.cancelBtn, { flex: 1 }]} onPress={cancelDeleteCenter}>
-                                <Text style={pg.cancelBtnText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[pg.submitBtn, { flex: 1, backgroundColor: "#dc2626" }]} 
-                                onPress={confirmDeleteCenter}
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
-                                    <Text style={pg.submitBtnText}>Delete</Text>
-                                )}
-                            </TouchableOpacity>
+            {showDeleteModal && (
+                <Modal visible={true} transparent animationType="fade">
+                    <View style={[pg.modalOverlay, { zIndex: 99999 }]}>
+                        <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center", zIndex: 100000, elevation: 20 }]}>
+                            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                                <Feather name="trash-2" size={32} color="#dc2626" />
+                            </View>
+                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Delete Center?</Text>
+                            <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>
+                                Are you sure you want to delete <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#0f172a" }}>{centerToDelete?.name}</Text>? This action cannot be undone.
+                            </Text>
+                            <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+                                <TouchableOpacity style={[pg.cancelBtn, { flex: 1 }]} onPress={cancelDeleteCenter}>
+                                    <Text style={pg.cancelBtnText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[pg.submitBtn, { flex: 1, backgroundColor: "#dc2626" }]}
+                                    onPress={confirmDeleteCenter}
+                                    disabled={isSubmitting}
+                                >
+                                    {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
+                                        <Text style={pg.submitBtnText}>Delete</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
+                </Modal>
+            )}
 
             {/* Error Modal */}
-            <Modal visible={showErrorModal} transparent animationType="fade">
-                <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
-                    <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
-                        <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                            <Feather name="alert-circle" size={32} color="#dc2626" />
+            {showErrorModal && (
+                <Modal visible={true} transparent animationType="fade">
+                    <View style={[pg.modalOverlay, { zIndex: 99999, backgroundColor: "rgba(0,0,0,0.5)" }]}>
+                        <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center", zIndex: 100000, elevation: 20 }]}>
+                            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                                <Feather name="alert-circle" size={32} color="#dc2626" />
+                            </View>
+                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8 }}>Error</Text>
+                            <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{errorMessage}</Text>
+                            <TouchableOpacity style={[pg.submitBtn, { backgroundColor: "#dc2626" }]} onPress={() => setShowErrorModal(false)}>
+                                <Text style={pg.submitBtnText}>Close</Text>
+                            </TouchableOpacity>
                         </View>
-                        <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8 }}>Error</Text>
-                        <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{errorMessage}</Text>
-                        <TouchableOpacity style={[pg.submitBtn, { backgroundColor: "#dc2626" }]} onPress={() => setShowErrorModal(false)}>
-                            <Text style={pg.submitBtnText}>Close</Text>
-                        </TouchableOpacity>
                     </View>
-                </View>
-            </Modal>
-        </View>
-    );
-};
+                </Modal>
+
+            )}
+            </View>
+        );
+    };
 
 const modalStyles = {
     label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8, marginTop: 12 },

@@ -269,142 +269,140 @@ const AdminDashboard = ({ onNavigate, onLogout, userRole }) => {
     ];
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar activePage="overview" onNavigate={onNavigate} onLogout={onLogout} variant={userRole} />
-            <View style={styles.dashboardMain}>
-                <WelcomeBanner userName={userName} />
-                <View style={styles.dashboardTopBar}>
-                    <View>
-                        <Text style={styles.dashboardTopTitle}>Dashboard Overview</Text>
-                        <Text style={styles.dashboardTopSubtitle}>Real-time monitoring and system status</Text>
-                    </View>
-                    <View style={styles.dashboardTopRight}>
-                        <TopRightStatusIndicator />
-                        <RealTimeClock style={styles.dashboardTopDate} />
-                    </View>
+        <View style={styles.dashboardMain}>
+            <WelcomeBanner userName={userName} />
+            <View style={styles.dashboardTopBar}>
+                <View>
+                    <Text style={styles.dashboardTopTitle}>Dashboard Overview</Text>
+                    <Text style={styles.dashboardTopSubtitle}>Real-time monitoring and system status</Text>
                 </View>
+                <View style={styles.dashboardTopRight}>
+                    <TopRightStatusIndicator />
+                    <RealTimeClock style={styles.dashboardTopDate} />
+                </View>
+            </View>
 
-                {loading ? (
-                    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <ActivityIndicator size="large" color="#2563eb" />
-                        <Text style={{ marginTop: 12, color: "#64748b", fontFamily: "Poppins_400Regular" }}>Loading dashboard...</Text>
-                    </View>
-                ) : (
-                    <ScrollView style={styles.dashboardScroll} contentContainerStyle={styles.dashboardScrollContent} showsVerticalScrollIndicator={false}>
+            {loading ? (
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                    <ActivityIndicator size="large" color="#2563eb" />
+                    <Text style={{ marginTop: 12, color: "#64748b", fontFamily: "Poppins_400Regular" }}>Loading dashboard...</Text>
+                </View>
+            ) : (
+                <ScrollView style={styles.dashboardScroll} contentContainerStyle={styles.dashboardScrollContent} showsVerticalScrollIndicator={false}>
 
-                        {/* Stat Cards */}
-                        <View style={styles.dashboardStatsRow}>
-                            {statCards.map((card) => (
-                                <View key={card.label} style={styles.dashboardStatCard}>
-                                    <View style={[styles.dashboardStatIconWrapper, { backgroundColor: card.iconBg }]}>
-                                        <Feather name={card.icon} size={20} color={card.iconColor} />
-                                    </View>
-                                    <View style={styles.dashboardStatContent}>
-                                        <Text style={styles.dashboardStatValue}>{card.value}</Text>
-                                        <Text style={styles.dashboardStatLabel}>{card.label}</Text>
-                                    </View>
+                    {/* Stat Cards */}
+                    <View style={styles.dashboardStatsRow}>
+                        {statCards.map((card) => (
+                            <View key={card.label} style={styles.dashboardStatCard}>
+                                <View style={[styles.dashboardStatIconWrapper, { backgroundColor: card.iconBg }]}>
+                                    <Feather name={card.icon} size={20} color={card.iconColor} />
                                 </View>
-                            ))}
+                                <View style={styles.dashboardStatContent}>
+                                    <Text style={styles.dashboardStatValue}>{card.value}</Text>
+                                    <Text style={styles.dashboardStatLabel}>{card.label}</Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+
+                    {/* Live Sensor Gauges */}
+                    <LiveSensorStatus sensors={liveSensors} thresholds={thresholds} />
+
+                    {/* Two-column */}
+                    <View style={styles.dashboardTwoColumn}>
+                        {/* Recent Alerts */}
+                        <View style={styles.dashboardPanel}>
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <Text style={styles.dashboardPanelTitle}>Recent Alerts</Text>
+                                <TouchableOpacity onPress={() => onNavigate("alert-management")}>
+                                    <Text style={{ fontSize: 12, color: "#3b82f6", fontFamily: "Poppins_500Medium" }}>View all →</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {recentAlerts.length === 0 ? (
+                                <View style={db.emptyPanel}>
+                                    <Feather name="check-circle" size={28} color="#16a34a" />
+                                    <Text style={db.emptyPanelText}>No active alerts</Text>
+                                    <Text style={db.emptyPanelSub}>System is clear</Text>
+                                </View>
+                            ) : (
+                                recentAlerts.map(alert => (
+                                    <View key={alert.id} style={styles.dashboardAlertItem}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.dashboardAlertTitle}>{alert.title || "Alert"}</Text>
+                                            <Text style={styles.dashboardAlertSubtitle}>{alert.description || `Barangay ${alert.barangay || "—"}`}</Text>
+                                            <Text style={styles.dashboardAlertMeta}>{formatPST(alert.timestamp)}</Text>
+                                        </View>
+                                        <View style={getAlertBadge(alert.level)}>
+                                            <Text style={styles.dashboardAlertBadgeText}>{(alert.level || "ADVISORY").toUpperCase()}</Text>
+                                        </View>
+                                    </View>
+                                ))
+                            )}
                         </View>
 
-                        {/* Live Sensor Gauges */}
-                        <LiveSensorStatus sensors={liveSensors} thresholds={thresholds} />
-
-                        {/* Two-column */}
-                        <View style={styles.dashboardTwoColumn}>
-                            {/* Recent Alerts */}
-                            <View style={styles.dashboardPanel}>
-                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                                    <Text style={styles.dashboardPanelTitle}>Recent Alerts</Text>
-                                    <TouchableOpacity onPress={() => onNavigate("alert-management")}>
-                                        <Text style={{ fontSize: 12, color: "#3b82f6", fontFamily: "Poppins_500Medium" }}>View all →</Text>
+                        {/* Sensor Status */}
+                        <View style={styles.dashboardPanel}>
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <Text style={styles.dashboardPanelTitle}>Sensor Status</Text>
+                                <TouchableOpacity onPress={() => onNavigate("sensor-registration")}>
+                                    <Text style={{ fontSize: 12, color: "#3b82f6", fontFamily: "Poppins_500Medium" }}>Manage →</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {liveSensors.length === 0 ? (
+                                <View style={db.emptyPanel}>
+                                    <Feather name="cpu" size={28} color="#cbd5e1" />
+                                    <Text style={db.emptyPanelText}>No sensors registered</Text>
+                                    <TouchableOpacity onPress={() => onNavigate("sensor-registration")}>
+                                        <Text style={{ color: "#3b82f6", fontFamily: "Poppins_500Medium", fontSize: 13, marginTop: 4 }}>Register sensors →</Text>
                                     </TouchableOpacity>
                                 </View>
-                                {recentAlerts.length === 0 ? (
-                                    <View style={db.emptyPanel}>
-                                        <Feather name="check-circle" size={28} color="#16a34a" />
-                                        <Text style={db.emptyPanelText}>No active alerts</Text>
-                                        <Text style={db.emptyPanelSub}>System is clear</Text>
-                                    </View>
-                                ) : (
-                                    recentAlerts.map(alert => (
-                                        <View key={alert.id} style={styles.dashboardAlertItem}>
+                            ) : (
+                                liveSensors.map(sensor => {
+                                    const isOffline = sensor.status === "DISCONNECTED";
+                                    const isOff = sensor.status === "OFF";
+                                    
+                                    const getLiveStatus = () => {
+                                        if (isOff) return "OFF";
+                                        if (isOffline) return "Disconnected";
+                                        const lvl = Number(sensor.waterLevel || 0);
+                                        if (lvl >= thresholds.critical_level) return "CRITICAL";
+                                        if (lvl >= thresholds.warning_level) return "WARNING";
+                                        if (lvl >= thresholds.advisory_level) return "ADVISORY";
+                                        return "NORMAL";
+                                    };
+                                    const liveStatus = getLiveStatus();
+                                    const isWarn = liveStatus === "WARNING" || liveStatus === "CRITICAL";
+                                    const pillStyle = (isOffline || isOff) ? db.pillGray : isWarn ? styles.dashboardAlertBadgeWarning : styles.dashboardSensorStatusPill;
+                                    const pillTextStyle = (isOffline || isOff) ? db.pillGrayText : isWarn ? styles.dashboardAlertBadgeText : styles.dashboardSensorStatusText;
+                                    return (
+                                        <View key={sensor.id} style={styles.dashboardSensorItem}>
                                             <View style={{ flex: 1 }}>
-                                                <Text style={styles.dashboardAlertTitle}>{alert.title || "Alert"}</Text>
-                                                <Text style={styles.dashboardAlertSubtitle}>{alert.description || `Barangay ${alert.barangay || "—"}`}</Text>
-                                                <Text style={styles.dashboardAlertMeta}>{formatPST(alert.timestamp)}</Text>
+                                                <Text style={styles.dashboardSensorTitle}>{sensor.name}</Text>
+                                                <Text style={styles.dashboardSensorMeta}>
+                                                    Brgy. {sensor.location || "—"} ·{" "}
+                                                    <Text style={styles.dashboardSensorMetaStrong}>
+                                                        {(isOffline || isOff) ? "0.0 cm" : `Flood: ${Number(sensor.waterLevel || 0).toFixed(1)} cm`}
+                                                    </Text>
+                                                    {(!isOffline && !isOff) && (
+                                                        <Text> · Raw: <Text style={styles.dashboardSensorMetaStrong}>{Number(sensor.rawDistance || 0).toFixed(1)} cm</Text></Text>
+                                                    )}
+                                                </Text>
                                             </View>
-                                            <View style={getAlertBadge(alert.level)}>
-                                                <Text style={styles.dashboardAlertBadgeText}>{(alert.level || "ADVISORY").toUpperCase()}</Text>
+                                            <View style={pillStyle}>
+                                                <Text style={pillTextStyle}>{liveStatus}</Text>
                                             </View>
                                         </View>
-                                    ))
-                                )}
-                            </View>
-
-                            {/* Sensor Status */}
-                            <View style={styles.dashboardPanel}>
-                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                                    <Text style={styles.dashboardPanelTitle}>Sensor Status</Text>
-                                    <TouchableOpacity onPress={() => onNavigate("sensor-registration")}>
-                                        <Text style={{ fontSize: 12, color: "#3b82f6", fontFamily: "Poppins_500Medium" }}>Manage →</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                {liveSensors.length === 0 ? (
-                                    <View style={db.emptyPanel}>
-                                        <Feather name="cpu" size={28} color="#cbd5e1" />
-                                        <Text style={db.emptyPanelText}>No sensors registered</Text>
-                                        <TouchableOpacity onPress={() => onNavigate("sensor-registration")}>
-                                            <Text style={{ color: "#3b82f6", fontFamily: "Poppins_500Medium", fontSize: 13, marginTop: 4 }}>Register sensors →</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : (
-                                    liveSensors.map(sensor => {
-                                        const isOffline = sensor.status === "DISCONNECTED";
-                                        const isOff = sensor.status === "OFF";
-                                        
-                                        const getLiveStatus = () => {
-                                            if (isOff) return "OFF";
-                                            if (isOffline) return "Disconnected";
-                                            const lvl = Number(sensor.waterLevel || 0);
-                                            if (lvl >= thresholds.critical_level) return "CRITICAL";
-                                            if (lvl >= thresholds.warning_level) return "WARNING";
-                                            if (lvl >= thresholds.advisory_level) return "ADVISORY";
-                                            return "NORMAL";
-                                        };
-                                        const liveStatus = getLiveStatus();
-                                        const isWarn = liveStatus === "WARNING" || liveStatus === "CRITICAL";
-                                        const pillStyle = (isOffline || isOff) ? db.pillGray : isWarn ? styles.dashboardAlertBadgeWarning : styles.dashboardSensorStatusPill;
-                                        const pillTextStyle = (isOffline || isOff) ? db.pillGrayText : isWarn ? styles.dashboardAlertBadgeText : styles.dashboardSensorStatusText;
-                                        return (
-                                            <View key={sensor.id} style={styles.dashboardSensorItem}>
-                                                <View style={{ flex: 1 }}>
-                                                    <Text style={styles.dashboardSensorTitle}>{sensor.name}</Text>
-                                                    <Text style={styles.dashboardSensorMeta}>
-                                                        Brgy. {sensor.location || "—"} ·{" "}
-                                                        <Text style={styles.dashboardSensorMetaStrong}>
-                                                            {(isOffline || isOff) ? "0.0 cm" : `Flood: ${Number(sensor.waterLevel || 0).toFixed(1)} cm`}
-                                                        </Text>
-                                                        {(!isOffline && !isOff) && (
-                                                            <Text> · Raw: <Text style={styles.dashboardSensorMetaStrong}>{Number(sensor.rawDistance || 0).toFixed(1)} cm</Text></Text>
-                                                        )}
-                                                    </Text>
-                                                </View>
-                                                <View style={pillStyle}>
-                                                    <Text style={pillTextStyle}>{liveStatus}</Text>
-                                                </View>
-                                            </View>
-                                        );
-                                    })
-                                )}
-                            </View>
+                                    );
+                                })
+                            )}
                         </View>
+                    </View>
 
-                        <View style={{ height: 80 }} />
-                    </ScrollView>
-                )}
-            </View>
+                    <View style={{ height: 80 }} />
+                </ScrollView>
+            )}
         </View>
+
     );
 };
 

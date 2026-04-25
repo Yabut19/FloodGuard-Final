@@ -59,7 +59,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
         } else {
             val = parseFloat(level) || 0;
         }
-        
+
         if (val >= thresh.critical) return "Critical";
         if (val >= thresh.warning) return "Warning";
         if (val >= thresh.advisory) return "Advisory";
@@ -88,7 +88,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 authFetch(`${API_BASE_URL}/api/reports/`),
                 authFetch(`${API_BASE_URL}/api/config/thresholds`)
             ]);
-            
+
             let activeThresh = thresholds;
             if (configRes.ok) {
                 const config = await configRes.json();
@@ -165,16 +165,16 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     }
                     return s;
                 });
-                
+
                 if (changed) {
                     // Update the "Active Sensors" analytics card locally
                     // Match the global source of truth: Software ON AND Hardware LIVE
                     const onlineCount = updated.filter(s => s.id !== "All Sensors" && s.is_live && s.enabled !== false).length;
-                    setAnalytics(a => a.map(item => 
+                    setAnalytics(a => a.map(item =>
                         item.label === "Active Sensors" ? { ...item, value: onlineCount } : item
                     ));
                 }
-                
+
                 return changed ? updated : prev;
             });
         }, 500);
@@ -214,23 +214,23 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
             setSensorsList(prev => {
                 const updated = prev.map(s => {
                     if (s.id === reading.sensor_id) {
-                        return { 
-                            ...s, 
-                            is_live: isLive, 
-                            is_offline: !isLive, 
+                        return {
+                            ...s,
+                            is_live: isLive,
+                            is_offline: !isLive,
                             enabled: isEnabled,
-                            last_seen: isLive ? new Date().toISOString() : s.last_seen 
+                            last_seen: isLive ? new Date().toISOString() : s.last_seen
                         };
                     }
                     return s;
                 });
-                
+
                 // Also update Active Sensors count immediately if list changed
                 const activeCount = updated.filter(s => s.id !== "All Sensors" && s.is_live && s.enabled !== false).length;
-                setAnalytics(a => a.map(item => 
+                setAnalytics(a => a.map(item =>
                     item.label === "Active Sensors" ? { ...item, value: activeCount } : item
                 ));
-                
+
                 return updated;
             });
 
@@ -239,7 +239,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 const sensorObj = sensorsList.find(s => s.id === reading.sensor_id) || { name: reading.sensor_id, barangay: "" };
                 const formatted = formatPST(reading.timestamp || Date.now());
                 const [datePart, timePart] = formatted.split(' • ');
-                
+
                 const newRow = {
                     id: Date.now(), // temporary ID
                     time: timePart,
@@ -421,11 +421,11 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
             const response = await authFetch(`${API_BASE_URL}/api/reports/${reportToDelete.id}`, {
                 method: "DELETE"
             });
-            
+
             if (response.ok) {
                 // First, close the confirmation modal to ensure it's gone before the success modal appears
                 setShowDeleteModal(false);
-                
+
                 // Wait for the confirmation modal to finish its fade-out animation 
                 // before triggering the success modal to prevent UI overlap/shadowing.
                 // Increased to 500ms to ensure full unmounting in all environments.
@@ -433,13 +433,13 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     setSuccessMessage(`Successfully deleted report from: ${reportName}`);
                     setShowSuccessModal(true);
                     setReportToDelete(null); // Clear reference after sequence completes
-                }, 500); 
-                
+                }, 500);
+
                 fetchData(); // Refresh list
             } else {
                 const err = await response.json();
                 setErrorMessage(err.error || "Failed to delete report");
-                
+
                 // Close confirmation modal before showing error to prevent overlap
                 setShowDeleteModal(false);
                 setTimeout(() => {
@@ -467,187 +467,102 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     });
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar variant={userRole} activePage="data-reports" onNavigate={onNavigate} onLogout={onLogout} />
+        <View style={styles.dashboardMain}>
 
-            <View style={styles.dashboardMain}>
-                {/* Top Bar */}
-                <View style={styles.dashboardTopBar}>
-                    <View>
-                        <Text style={styles.dashboardTopTitle}>Data & Reports</Text>
-                        <Text style={styles.dashboardTopSubtitle}>Archive, analysis, and historical flood records</Text>
-                    </View>
-                    <View style={styles.dashboardTopRight}>
-                        <TopRightStatusIndicator />
-                        <RealTimeClock style={styles.dashboardTopDate} />
-                    </View>
+            {/* Top Bar */}
+            <View style={styles.dashboardTopBar}>
+                <View>
+                    <Text style={styles.dashboardTopTitle}>Data & Reports</Text>
+                    <Text style={styles.dashboardTopSubtitle}>Archive, analysis, and historical flood records</Text>
+                </View>
+                <View style={styles.dashboardTopRight}>
+                    <TopRightStatusIndicator />
+                    <RealTimeClock style={styles.dashboardTopDate} />
+                </View>
+            </View>
+
+            <ScrollView
+                style={styles.dashboardScroll}
+                contentContainerStyle={[styles.dashboardScrollContent, { paddingHorizontal: 24, paddingTop: 16 }]}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* ── Analytics Summary Row ─────────────────────────────────── */}
+                <View style={pg.analyticsRow}>
+                    {analytics.map((item, idx) => (
+                        <View key={idx} style={pg.analyticsCard}>
+                            <View style={[pg.analyticsIcon, { backgroundColor: item.bg }]}>
+                                <Feather name={item.icon} size={22} color={item.color} />
+                            </View>
+                            <Text style={pg.analyticsValue}>{item.value}</Text>
+                            <Text style={pg.analyticsLabel}>{item.label}</Text>
+                        </View>
+                    ))}
                 </View>
 
-                <ScrollView
-                    style={styles.dashboardScroll}
-                    contentContainerStyle={[styles.dashboardScrollContent, { paddingHorizontal: 24, paddingTop: 16 }]}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* ── Analytics Summary Row ─────────────────────────────────── */}
-                    <View style={pg.analyticsRow}>
-                        {analytics.map((item, idx) => (
-                            <View key={idx} style={pg.analyticsCard}>
-                                <View style={[pg.analyticsIcon, { backgroundColor: item.bg }]}>
-                                    <Feather name={item.icon} size={22} color={item.color} />
-                                </View>
-                                <Text style={pg.analyticsValue}>{item.value}</Text>
-                                <Text style={pg.analyticsLabel}>{item.label}</Text>
-                            </View>
-                        ))}
-                    </View>
+                {/* ── Category Menu ────────────────────────────────────────────── */}
+                <View style={pg.tabBar}>
+                    <TouchableOpacity
+                        style={[
+                            pg.tabItem,
+                            activeCategory === "flood" && pg.tabItemActive,
+                            (hoveredTab === "flood" && activeCategory !== "flood") && pg.tabItemHover
+                        ]}
+                        onMouseEnter={() => setHoveredTab("flood")}
+                        onMouseLeave={() => setHoveredTab(null)}
+                        onPress={() => setActiveCategory("flood")}
+                    >
+                        <Feather name="droplet" size={16} color={activeCategory === "flood" || hoveredTab === "flood" ? "#3b82f6" : "#64748b"} />
+                        <Text style={[pg.tabText, (activeCategory === "flood" || hoveredTab === "flood") && pg.tabTextActive]}>Flood Data</Text>
+                    </TouchableOpacity>
 
-                    {/* ── Category Menu ────────────────────────────────────────────── */}
-                    <View style={pg.tabBar}>
-                        <TouchableOpacity
-                            style={[
-                                pg.tabItem,
-                                activeCategory === "flood" && pg.tabItemActive,
-                                (hoveredTab === "flood" && activeCategory !== "flood") && pg.tabItemHover
-                            ]}
-                            onMouseEnter={() => setHoveredTab("flood")}
-                            onMouseLeave={() => setHoveredTab(null)}
-                            onPress={() => setActiveCategory("flood")}
-                        >
-                            <Feather name="droplet" size={16} color={activeCategory === "flood" || hoveredTab === "flood" ? "#3b82f6" : "#64748b"} />
-                            <Text style={[pg.tabText, (activeCategory === "flood" || hoveredTab === "flood") && pg.tabTextActive]}>Flood Data</Text>
-                        </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            pg.tabItem,
+                            activeCategory === "reports" && pg.tabItemActive,
+                            (hoveredTab === "reports" && activeCategory !== "reports") && pg.tabItemHover
+                        ]}
+                        onMouseEnter={() => setHoveredTab("reports")}
+                        onMouseLeave={() => setHoveredTab(null)}
+                        onPress={() => setActiveCategory("reports")}
+                    >
+                        <Feather name="file-text" size={16} color={activeCategory === "reports" || hoveredTab === "reports" ? "#3b82f6" : "#64748b"} />
+                        <Text style={[pg.tabText, (activeCategory === "reports" || hoveredTab === "reports") && pg.tabTextActive]}>Reports Data</Text>
+                    </TouchableOpacity>
+                </View>
 
-                        <TouchableOpacity
-                            style={[
-                                pg.tabItem,
-                                activeCategory === "reports" && pg.tabItemActive,
-                                (hoveredTab === "reports" && activeCategory !== "reports") && pg.tabItemHover
-                            ]}
-                            onMouseEnter={() => setHoveredTab("reports")}
-                            onMouseLeave={() => setHoveredTab(null)}
-                            onPress={() => setActiveCategory("reports")}
-                        >
-                            <Feather name="file-text" size={16} color={activeCategory === "reports" || hoveredTab === "reports" ? "#3b82f6" : "#64748b"} />
-                            <Text style={[pg.tabText, (activeCategory === "reports" || hoveredTab === "reports") && pg.tabTextActive]}>Reports Data</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* ── Section 1: Flood Data ─────────────────────────────────────── */}
-                    {activeCategory === "flood" && (
-                        <View style={{ marginBottom: 32 }}>
-                            <View style={pg.sectionCard}>
-                                <View style={pg.sectionHeader}>
-                                    <View>
-                                        <Text style={pg.sectionTitle}>Historical Flood Data</Text>
-                                        <Text style={pg.sectionSubtitle}>Browse sensor readings and flood depth history</Text>
-                                    </View>
-
-                                    <View style={{ position: "relative", zIndex: 500 }}>
-                                        <TouchableOpacity
-                                            style={pg.filterSelect}
-                                            onPress={() => {
-                                                setShowSensorDropdown(!showSensorDropdown);
-                                                setShowStatusFilter(false);
-                                            }}
-                                        >
-                                            <Text style={pg.filterSelectText}>{selectedSensor.name}</Text>
-                                            <Feather name={showSensorDropdown ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
-                                        </TouchableOpacity>
-
-                                        {showSensorDropdown && (
-                                            <View style={pg.dropdown}>
-                                                {sensorsList.map(s => (
-                                                    <TouchableOpacity
-                                                        key={s.id}
-                                                        style={[pg.dropdownItem, hoveredItem === s.id && { backgroundColor: '#eff6ff' }]}
-                                                        onMouseEnter={() => setHoveredItem(s.id)}
-                                                        onMouseLeave={() => setHoveredItem(null)}
-                                                        onPress={() => { setSelectedSensor(s); setShowSensorDropdown(false); }}
-                                                    >
-                                                        <Text style={[pg.dropdownItemText, (selectedSensor.id === s.id || hoveredItem === s.id) && { color: '#3b82f6', fontFamily: "Poppins_600SemiBold" }]}>{s.name}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
-                                        )}
-                                    </View>
-                                </View>
-
-                                <View style={pg.tableWrapper}>
-                                    <View style={[pg.tableHeader, { backgroundColor: "#f1f5f9" }]}>
-                                        <Text style={[pg.tableHeadText, { flex: 1.5 }]}>TIME & DATE</Text>
-                                        <Text style={[pg.tableHeadText, { flex: 1 }]}>SENSOR</Text>
-                                        <Text style={[pg.tableHeadText, { flex: 1 }]}>LOCATION</Text>
-                                        <Text style={[pg.tableHeadText, { flex: 0.8 }]}>LEVEL</Text>
-                                        <Text style={[pg.tableHeadText, { flex: 0.8 }]}>STATUS</Text>
-                                    </View>
-
-                                    {isLoading ? (
-                                        <ActivityIndicator size="small" color="#3b82f6" style={{ margin: 32 }} />
-                                    ) : floodHistory.length === 0 ? (
-                                        <View style={{ padding: 32, alignItems: "center" }}>
-                                            <Text style={{ color: "#94a3b8" }}>No flood data available</Text>
-                                        </View>
-                                    ) : floodHistory.map((row, idx) => {
-                                         const rawStatus = (row.status || "").toUpperCase();
-                                         const isCritical = rawStatus === "CRITICAL" || rawStatus === "ALARM";
-                                         const isWarning = rawStatus === "WARNING";
-                                         const isAdvisory = rawStatus === "ADVISORY";
-                                         const displayStatus = isCritical ? "Critical" : (isWarning ? "Warning" : (isAdvisory ? "Advisory" : "Normal"));
-                                        return (
-                                            <View key={row.id} style={[pg.tableRow, idx === floodHistory.length - 1 && { borderBottomWidth: 0 }]}>
-                                                <Text style={[pg.tableCellBold, { flex: 1.5 }]}>{row.time} • {row.date}</Text>
-                                                <Text style={[pg.tableCell, { flex: 1 }]}>{row.sensor}</Text>
-                                                <Text style={[pg.tableCell, { flex: 1 }]}>{row.location}</Text>
-                                                <Text style={[pg.tableCellBold, { flex: 0.8, color: isCritical ? "#dc2626" : (isWarning ? "#f97316" : (isAdvisory ? "#3b82f6" : "#0f172a")) }]}>{row.level}</Text>
-                                                <View style={{ flex: 0.8 }}>
-                                                    <View style={[pg.statusBadge, { backgroundColor: isCritical ? "#fee2e2" : (isWarning ? "#fff7ed" : (isAdvisory ? "#eff6ff" : "#f1f5f9")) }]}>
-                                                        <Text style={[pg.statusBadgeText, { color: isCritical ? "#dc2626" : (isWarning ? "#f97316" : (isAdvisory ? "#3b82f6" : "#64748b")) }]}>{displayStatus}</Text>
-                                                    </View>
-                                                </View>
-                                            </View>
-                                        );
-                                    })}
-                                </View>
-                            </View>
-                        </View>
-                    )}
-
-                    {/* ── Section 2: Reports Data ────────────────────────────────────── */}
-                    {activeCategory === "reports" && (
-                        <View style={{ marginBottom: 32 }}>
-                            {/* Filter Bar */}
-                            <View style={pg.filterBar}>
-                                <View style={pg.searchBox}>
-                                    <Feather name="search" size={16} color="#94a3b8" />
-                                    <TextInput
-                                        style={pg.searchInput}
-                                        placeholder="Search by reporter or location..."
-                                        placeholderTextColor="#94a3b8"
-                                        value={searchQuery}
-                                        onChangeText={setSearchQuery}
-                                    />
+                {/* ── Section 1: Flood Data ─────────────────────────────────────── */}
+                {activeCategory === "flood" && (
+                    <View style={{ marginBottom: 32 }}>
+                        <View style={pg.sectionCard}>
+                            <View style={pg.sectionHeader}>
+                                <View>
+                                    <Text style={pg.sectionTitle}>Historical Flood Data</Text>
+                                    <Text style={pg.sectionSubtitle}>Browse sensor readings and flood depth history</Text>
                                 </View>
 
                                 <View style={{ position: "relative", zIndex: 500 }}>
-                                    <TouchableOpacity style={pg.filterSelect} onPress={() => {
-                                        setShowStatusFilter(!showStatusFilter);
-                                        setShowSensorDropdown(false);
-                                    }}>
-                                        <Text style={pg.filterSelectText}>{statusFilter}</Text>
-                                        <Feather name={showStatusFilter ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
+                                    <TouchableOpacity
+                                        style={pg.filterSelect}
+                                        onPress={() => {
+                                            setShowSensorDropdown(!showSensorDropdown);
+                                            setShowStatusFilter(false);
+                                        }}
+                                    >
+                                        <Text style={pg.filterSelectText}>{selectedSensor.name}</Text>
+                                        <Feather name={showSensorDropdown ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
                                     </TouchableOpacity>
 
-                                    {showStatusFilter && (
+                                    {showSensorDropdown && (
                                         <View style={pg.dropdown}>
-                                            {["All Status", "Verified", "Pending", "Dismissed"].map(s => (
+                                            {sensorsList.map(s => (
                                                 <TouchableOpacity
-                                                    key={s}
-                                                    style={[pg.dropdownItem, hoveredItem === s && { backgroundColor: '#eff6ff' }]}
-                                                    onMouseEnter={() => setHoveredItem(s)}
+                                                    key={s.id}
+                                                    style={[pg.dropdownItem, hoveredItem === s.id && { backgroundColor: '#eff6ff' }]}
+                                                    onMouseEnter={() => setHoveredItem(s.id)}
                                                     onMouseLeave={() => setHoveredItem(null)}
-                                                    onPress={() => { setStatusFilter(s); setShowStatusFilter(false); }}
+                                                    onPress={() => { setSelectedSensor(s); setShowSensorDropdown(false); }}
                                                 >
-                                                    <Text style={[pg.dropdownItemText, (statusFilter === s || hoveredItem === s) && { color: '#3b82f6', fontFamily: "Poppins_600SemiBold" }]}>{s}</Text>
+                                                    <Text style={[pg.dropdownItemText, (selectedSensor.id === s.id || hoveredItem === s.id) && { color: '#3b82f6', fontFamily: "Poppins_600SemiBold" }]}>{s.name}</Text>
                                                 </TouchableOpacity>
                                             ))}
                                         </View>
@@ -655,116 +570,189 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                 </View>
                             </View>
 
-                            <View style={pg.reportGrid}>
-                                {filteredReports.map(report => {
-                                    const isVerified = report.status?.toLowerCase() === "verified";
-                                    const isPending = report.status?.toLowerCase() === "pending";
-                                    const isDismissed = report.status?.toLowerCase() === "dismissed";
-                                    const statusColor = isVerified ? "#16a34a" : isPending ? "#f59e0b" : "#64748b";
+                            <View style={pg.tableWrapper}>
+                                <View style={[pg.tableHeader, { backgroundColor: "#f1f5f9" }]}>
+                                    <Text style={[pg.tableHeadText, { flex: 1.5 }]}>TIME & DATE</Text>
+                                    <Text style={[pg.tableHeadText, { flex: 1 }]}>SENSOR</Text>
+                                    <Text style={[pg.tableHeadText, { flex: 1 }]}>LOCATION</Text>
+                                    <Text style={[pg.tableHeadText, { flex: 0.8 }]}>LEVEL</Text>
+                                    <Text style={[pg.tableHeadText, { flex: 0.8 }]}>STATUS</Text>
+                                </View>
 
+                                {isLoading ? (
+                                    <ActivityIndicator size="small" color="#3b82f6" style={{ margin: 32 }} />
+                                ) : floodHistory.length === 0 ? (
+                                    <View style={{ padding: 32, alignItems: "center" }}>
+                                        <Text style={{ color: "#94a3b8" }}>No flood data available</Text>
+                                    </View>
+                                ) : floodHistory.map((row, idx) => {
+                                    const rawStatus = (row.status || "").toUpperCase();
+                                    const isCritical = rawStatus === "CRITICAL" || rawStatus === "ALARM";
+                                    const isWarning = rawStatus === "WARNING";
+                                    const isAdvisory = rawStatus === "ADVISORY";
+                                    const displayStatus = isCritical ? "Critical" : (isWarning ? "Warning" : (isAdvisory ? "Advisory" : "Normal"));
                                     return (
-                                        <View key={report.id} style={[pg.reportCard, { borderTopWidth: 4, borderTopColor: statusColor }]}>
-                                            <View style={pg.reportCardHeader}>
-                                                <View>
-                                                    <Text style={pg.reportReporter}>{report.reporter_name}</Text>
-                                                    <Text style={pg.reportTime}>{formatPST(report.timestamp)}</Text>
-                                                </View>
-                                                <View style={[pg.statusBadge, {
-                                                    backgroundColor: isVerified ? "#dcfce7" : isPending ? "#fff7ed" : "#f1f5f9",
-                                                    borderColor: isVerified ? "#86efac" : isPending ? "#fdba74" : "#cbd5e1"
-                                                }]}>
-                                                    <Text style={[pg.statusBadgeText, {
-                                                        color: isVerified ? "#166534" : isPending ? "#9a3412" : "#64748b"
-                                                    }]}>
-                                                        {report.status?.toUpperCase()}
-                                                    </Text>
-                                                </View>
-                                            </View>
-
-                                            {/* Report Image Handling */}
-                                            {report.image_url && (
-                                                <TouchableOpacity
-                                                    style={pg.reportImageContainer}
-                                                    onPress={() => setSelectedImage(report.image_url.startsWith('http') ? report.image_url : `${API_BASE_URL}${report.image_url}`)}
-                                                >
-                                                    <img
-                                                        src={report.image_url.startsWith('http') ? report.image_url : `${API_BASE_URL}${report.image_url}`}
-                                                        style={{ width: "100%", borderRadius: 12, height: 180, objectFit: "cover" }}
-                                                        alt="Incident"
-                                                    />
-                                                    <TouchableOpacity
-                                                        style={pg.imgDownloadBtn}
-                                                        onPress={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDownloadImage(report.id, report.image_url);
-                                                        }}
-                                                    >
-                                                        <Feather name="download" size={14} color="#fff" />
-                                                        <Text style={pg.imgDownloadText}>Download Photo</Text>
-                                                    </TouchableOpacity>
-                                                </TouchableOpacity>
-                                            )}
-
-                                            <View style={pg.reportContent}>
-                                                <View style={pg.detailRow}>
-                                                    <Text style={pg.detailLabel}>Incident Type:</Text>
-                                                    <Text style={pg.detailValue}>{report.type}</Text>
-                                                </View>
-                                                <View style={pg.detailRow}>
-                                                    <Text style={pg.detailLabel}>Reported Location:</Text>
-                                                    <Text style={pg.detailValue}>{report.location}</Text>
-                                                </View>
-                                                <View style={pg.detailRow}>
-                                                    <Text style={pg.detailLabel}>Sensor Reading:</Text>
-                                                    <Text style={pg.detailValue}>{report.flood_level_reported || "N/A"} cm</Text>
-                                                </View>
-
-                                                <View style={pg.adminResponseBox}>
-                                                    <Text style={pg.responseLabel}>Response Details:</Text>
-                                                    <Text style={pg.responseText}>{report.recommendations || report.rejection_reason || "Verification in progress..."}</Text>
-                                                </View>
-
-                                                {isVerified && (
-                                                    <View style={pg.verifiedDetails}>
-                                                        <View style={pg.detailRow}>
-                                                            <Text style={pg.detailLabel}>Verified Status:</Text>
-                                                            <Text style={[pg.detailValue, { color: "#dc2626" }]}>{report.incident_status || "Verified Active"}</Text>
-                                                        </View>
-                                                        <View style={pg.detailRow}>
-                                                            <Text style={pg.detailLabel}>Official Depth:</Text>
-                                                            <Text style={pg.detailValue}>{report.flood_level || "—"} cm</Text>
-                                                        </View>
-                                                    </View>
-                                                )}
-                                            </View>
-
-                                            <View style={pg.reportFooter}>
-                                                <View style={pg.downloadActions}>
-                                                    <TouchableOpacity style={[pg.dlBtn, { backgroundColor: "#3b82f6", borderColor: "#2563eb" }]} onPress={() => handleDownloadPDF(report)}>
-                                                        <Feather name="file-text" size={14} color="#fff" />
-                                                        <Text style={[pg.dlBtnText, { color: "#fff" }]}>Download PDF Report</Text>
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity 
-                                                        style={[pg.dlBtn, { backgroundColor: "#ffffff", borderColor: "#fee2e2", width: 36, height: 36, paddingHorizontal: 0, justifyContent: 'center' }]} 
-                                                        onPress={() => handleDeleteReport(report)}
-                                                    >
-                                                        <Feather name="trash-2" size={16} color="#dc2626" />
-                                                    </TouchableOpacity>
+                                        <View key={row.id} style={[pg.tableRow, idx === floodHistory.length - 1 && { borderBottomWidth: 0 }]}>
+                                            <Text style={[pg.tableCellBold, { flex: 1.5 }]}>{row.time} • {row.date}</Text>
+                                            <Text style={[pg.tableCell, { flex: 1 }]}>{row.sensor}</Text>
+                                            <Text style={[pg.tableCell, { flex: 1 }]}>{row.location}</Text>
+                                            <Text style={[pg.tableCellBold, { flex: 0.8, color: isCritical ? "#dc2626" : (isWarning ? "#f97316" : (isAdvisory ? "#3b82f6" : "#0f172a")) }]}>{row.level}</Text>
+                                            <View style={{ flex: 0.8 }}>
+                                                <View style={[pg.statusBadge, { backgroundColor: isCritical ? "#fee2e2" : (isWarning ? "#fff7ed" : (isAdvisory ? "#eff6ff" : "#f1f5f9")) }]}>
+                                                    <Text style={[pg.statusBadgeText, { color: isCritical ? "#dc2626" : (isWarning ? "#f97316" : (isAdvisory ? "#3b82f6" : "#64748b")) }]}>{displayStatus}</Text>
                                                 </View>
                                             </View>
                                         </View>
                                     );
                                 })}
-                                {filteredReports.length === 0 && (
-                                    <View style={{ width: "100%", padding: 48, alignItems: "center" }}>
-                                        <Text style={{ color: "#94a3b8", fontFamily: "Poppins_400Regular" }}>No matching reports found</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* ── Section 2: Reports Data ────────────────────────────────────── */}
+                {activeCategory === "reports" && (
+                    <View style={{ marginBottom: 32 }}>
+                        {/* Filter Bar */}
+                        <View style={pg.filterBar}>
+                            <View style={pg.searchBox}>
+                                <Feather name="search" size={16} color="#94a3b8" />
+                                <TextInput
+                                    style={pg.searchInput}
+                                    placeholder="Search by reporter or location..."
+                                    placeholderTextColor="#94a3b8"
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                />
+                            </View>
+
+                            <View style={{ position: "relative", zIndex: 500 }}>
+                                <TouchableOpacity style={pg.filterSelect} onPress={() => {
+                                    setShowStatusFilter(!showStatusFilter);
+                                    setShowSensorDropdown(false);
+                                }}>
+                                    <Text style={pg.filterSelectText}>{statusFilter}</Text>
+                                    <Feather name={showStatusFilter ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
+                                </TouchableOpacity>
+
+                                {showStatusFilter && (
+                                    <View style={pg.dropdown}>
+                                        {["All Status", "Verified", "Pending", "Dismissed"].map(s => (
+                                            <TouchableOpacity
+                                                key={s}
+                                                style={[pg.dropdownItem, hoveredItem === s && { backgroundColor: '#eff6ff' }]}
+                                                onMouseEnter={() => setHoveredItem(s)}
+                                                onMouseLeave={() => setHoveredItem(null)}
+                                                onPress={() => { setStatusFilter(s); setShowStatusFilter(false); }}
+                                            >
+                                                <Text style={[pg.dropdownItemText, (statusFilter === s || hoveredItem === s) && { color: '#3b82f6', fontFamily: "Poppins_600SemiBold" }]}>{s}</Text>
+                                            </TouchableOpacity>
+                                        ))}
                                     </View>
                                 )}
                             </View>
                         </View>
-                    )}
-                </ScrollView>
-            </View>
+
+                        <View style={pg.reportGrid}>
+                            {filteredReports.map(report => {
+                                const isVerified = report.status?.toLowerCase() === "verified";
+                                const isPending = report.status?.toLowerCase() === "pending";
+                                const isDismissed = report.status?.toLowerCase() === "dismissed";
+                                const statusColor = isVerified ? "#16a34a" : isPending ? "#f59e0b" : "#64748b";
+
+                                return (
+                                    <View key={report.id} style={[pg.reportCard, { borderTopWidth: 4, borderTopColor: statusColor }]}>
+                                        <View style={pg.reportCardHeader}>
+                                            <View>
+                                                <Text style={pg.reportReporter}>{report.reporter_name}</Text>
+                                                <Text style={pg.reportTime}>{formatPST(report.timestamp)}</Text>
+                                            </View>
+                                            <View style={[pg.statusBadge, {
+                                                backgroundColor: isVerified ? "#dcfce7" : isPending ? "#fff7ed" : "#f1f5f9",
+                                                borderColor: isVerified ? "#86efac" : isPending ? "#fdba74" : "#cbd5e1"
+                                            }]}>
+                                                <Text style={[pg.statusBadgeText, {
+                                                    color: isVerified ? "#166534" : isPending ? "#9a3412" : "#64748b"
+                                                }]}>
+                                                    {report.status?.toUpperCase()}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        {/* Report Image Handling */}
+                                        {report.image_url && (
+                                            <TouchableOpacity
+                                                style={pg.reportImageContainer}
+                                                onPress={() => setSelectedImage(report.image_url.startsWith('http') ? report.image_url : `${API_BASE_URL}${report.image_url}`)}
+                                            >
+                                                <img
+                                                    src={report.image_url.startsWith('http') ? report.image_url : `${API_BASE_URL}${report.image_url}`}
+                                                    style={{ width: "100%", borderRadius: 12, height: 180, objectFit: "cover" }}
+                                                    alt="Incident"
+                                                />
+                                            </TouchableOpacity>
+                                        )}
+
+                                        <View style={pg.reportContent}>
+                                            <View style={pg.detailRow}>
+                                                <Text style={pg.detailLabel}>Incident Type:</Text>
+                                                <Text style={pg.detailValue}>{report.type}</Text>
+                                            </View>
+                                            <View style={pg.detailRow}>
+                                                <Text style={pg.detailLabel}>Reported Location:</Text>
+                                                <Text style={pg.detailValue}>{report.location}</Text>
+                                            </View>
+                                            <View style={pg.detailRow}>
+                                                <Text style={pg.detailLabel}>Sensor Reading:</Text>
+                                                <Text style={pg.detailValue}>{report.flood_level_reported || "N/A"} cm</Text>
+                                            </View>
+
+                                            <View style={pg.adminResponseBox}>
+                                                <Text style={pg.responseLabel}>Response Details:</Text>
+                                                <Text style={pg.responseText}>{report.recommendations || report.rejection_reason || "Verification in progress..."}</Text>
+                                            </View>
+
+                                            {isVerified && (
+                                                <View style={pg.verifiedDetails}>
+                                                    <View style={pg.detailRow}>
+                                                        <Text style={pg.detailLabel}>Verified Status:</Text>
+                                                        <Text style={[pg.detailValue, { color: "#dc2626" }]}>{report.incident_status || "Verified Active"}</Text>
+                                                    </View>
+                                                    <View style={pg.detailRow}>
+                                                        <Text style={pg.detailLabel}>Official Depth:</Text>
+                                                        <Text style={pg.detailValue}>{report.flood_level || "—"} cm</Text>
+                                                    </View>
+                                                </View>
+                                            )}
+                                        </View>
+
+                                        <View style={pg.reportFooter}>
+                                            <View style={pg.downloadActions}>
+                                                <TouchableOpacity style={[pg.dlBtn, { backgroundColor: "#3b82f6", borderColor: "#2563eb" }]} onPress={() => handleDownloadPDF(report)}>
+                                                    <Feather name="file-text" size={14} color="#fff" />
+                                                    <Text style={[pg.dlBtnText, { color: "#fff" }]}>Download PDF Report</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[pg.dlBtn, { backgroundColor: "#ffffff", borderColor: "#fee2e2", width: 36, height: 36, paddingHorizontal: 0, justifyContent: 'center' }]}
+                                                    onPress={() => handleDeleteReport(report)}
+                                                >
+                                                    <Feather name="trash-2" size={16} color="#dc2626" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                            {filteredReports.length === 0 && (
+                                <View style={{ width: "100%", padding: 48, alignItems: "center" }}>
+                                    <Text style={{ color: "#94a3b8", fontFamily: "Poppins_400Regular" }}>No matching reports found</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
+            </ScrollView>
+
 
             {/* Image Viewer Modal */}
             <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
@@ -811,8 +799,8 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             <TouchableOpacity style={[pg.cancelBtn, { flex: 1 }]} onPress={() => setShowDeleteModal(false)}>
                                 <Text style={pg.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[pg.submitBtn, { flex: 1, backgroundColor: "#dc2626" }]} 
+                            <TouchableOpacity
+                                style={[pg.submitBtn, { flex: 1, backgroundColor: "#dc2626" }]}
                                 onPress={confirmDeleteReport}
                                 disabled={isSubmitting}
                             >
@@ -988,48 +976,48 @@ const pg = StyleSheet.create({
     dropdownItemText: { fontSize: 13, fontFamily: "Poppins_400Regular", color: "#0f172a" },
 
     // Standardized Modals
-    modalOverlay: { 
-        flex: 1, 
-        backgroundColor: "rgba(0,0,0,0.5)", 
-        alignItems: "center", 
-        justifyContent: "center", 
-        padding: 16 
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16
     },
-    modalBox: { 
-        backgroundColor: "#fff", 
-        borderRadius: 16, 
-        overflow: "hidden", 
-        width: "100%", 
-        maxWidth: 680, 
-        maxHeight: "90%", 
-        boxShadow: "0px 8px 24px rgba(0, 0, 0, 0.2)", 
-        elevation: 10 
+    modalBox: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        overflow: "hidden",
+        width: "100%",
+        maxWidth: 680,
+        maxHeight: "90%",
+        boxShadow: "0px 8px 24px rgba(0, 0, 0, 0.2)",
+        elevation: 10
     },
-    cancelBtn: { 
-        paddingVertical: 12, 
-        paddingHorizontal: 24, 
-        borderRadius: 16, 
-        borderWidth: 1.5, 
-        borderColor: "#e2e8f0" 
+    cancelBtn: {
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: "#e2e8f0"
     },
-    cancelBtnText: { 
-        fontSize: 14, 
-        fontFamily: "Poppins_600SemiBold", 
-        color: "#475569" 
+    cancelBtnText: {
+        fontSize: 14,
+        fontFamily: "Poppins_600SemiBold",
+        color: "#475569"
     },
-    submitBtn: { 
-        flexDirection: "row", 
-        alignItems: "center", 
-        justifyContent: "center", 
-        backgroundColor: "#3b82f6", 
-        borderRadius: 16, 
-        paddingVertical: 12, 
-        paddingHorizontal: 24 
+    submitBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#3b82f6",
+        borderRadius: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 24
     },
-    submitBtnText: { 
-        fontSize: 14, 
-        fontFamily: "Poppins_600SemiBold", 
-        color: "#fff" 
+    submitBtnText: {
+        fontSize: 14,
+        fontFamily: "Poppins_600SemiBold",
+        color: "#fff"
     },
 });
 

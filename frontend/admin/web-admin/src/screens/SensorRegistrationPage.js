@@ -8,7 +8,8 @@ import RealTimeClock from "../components/RealTimeClock";
 import { API_BASE_URL } from "../config/api";
 import { formatPST } from "../utils/dateUtils";
 import { authFetch } from "../utils/helpers";
-import useSensorSocket from "../utils/useSensorSocket";
+import useDataSync from "../utils/useDataSync";
+
 import TopRightStatusIndicator from "../components/TopRightStatusIndicator";
 
 const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
@@ -352,51 +353,54 @@ useEffect(() => {
 }, []);
 
 // Real-time WebSocket: instantly patch readings without polling
-useSensorSocket((reading) => {
-    if (!reading || !reading.sensor_id) return;
-    
-    try {
-        setLiveSensors(prev => {
-            if (!Array.isArray(prev)) return [];
-            return prev.map(s => {
-                if (!s || s.id !== reading.sensor_id) return s;
-                // Sensor is Live only when actively sending data
+useDataSync({
+    onSensorUpdate: (reading) => {
+        if (!reading || !reading.sensor_id) return;
+        
+        try {
+            setLiveSensors(prev => {
+                if (!Array.isArray(prev)) return [];
+                return prev.map(s => {
+                    if (!s || s.id !== reading.sensor_id) return s;
+                    // Sensor is Live only when actively sending data
+                    return {
+                        ...s,
+                        flood_level: Number(reading.flood_level ?? 0),
+                        raw_distance: Number(reading.raw_distance ?? 0),
+                        reading_status: reading.status || s.reading_status,
+                        is_live: true, // Set to Live when receiving data
+                        enabled: reading.enabled ?? true,
+                        is_offline: false, // Not offline when receiving data
+                        last_seen: new Date().toISOString(), // Track when data was last received
+                    };
+                });
+            });
+            
+            // Also auto-update the selected sensor health modal if open
+            setSelectedSensorHealth(prev => {
+                if (!prev || prev.id !== reading.sensor_id) return prev;
                 return {
-                    ...s,
-                    flood_level: Number(reading.flood_level ?? 0),
-                    raw_distance: Number(reading.raw_distance ?? 0),
-                    reading_status: reading.status || s.reading_status,
-                    is_live: true, // Set to Live when receiving data
-                    enabled: reading.enabled ?? true,
-                    is_offline: false, // Not offline when receiving data
-                    last_seen: new Date().toISOString(), // Track when data was last received
+                    ...prev,
+                    live: {
+                        ...prev.live,
+                        flood_level: Number(reading.flood_level ?? 0),
+                        raw_distance: Number(reading.raw_distance ?? 0),
+                        reading_status: reading.status,
+                        is_live: true, // Set to Live when receiving data
+                        enabled: reading.enabled ?? true,
+                        is_offline: false, // Not offline when receiving data
+                        last_seen: new Date().toISOString(), // Track when data was last received
+                    }
                 };
             });
-        });
-        
-        // Also auto-update the selected sensor health modal if open
-        setSelectedSensorHealth(prev => {
-            if (!prev || prev.id !== reading.sensor_id) return prev;
-            return {
-                ...prev,
-                live: {
-                    ...prev.live,
-                    flood_level: Number(reading.flood_level ?? 0),
-                    raw_distance: Number(reading.raw_distance ?? 0),
-                    reading_status: reading.status,
-                    is_live: true, // Set to Live when receiving data
-                    enabled: reading.enabled ?? true,
-                    is_offline: false, // Not offline when receiving data
-                    last_seen: new Date().toISOString(), // Track when data was last received
-                }
-            };
-        });
-    } catch (error) {
-        console.error("Error processing WebSocket update:", error);
+        } catch (error) {
+            console.error("Error processing WebSocket update:", error);
+        }
+    },
+    onThresholdUpdate: () => {
+        console.log("[SensorRegistration] Thresholds changed, refreshing health data...");
+        fetchHealthData(true);
     }
-}, () => {
-    console.log("[SensorRegistration] Thresholds changed, refreshing health data...");
-    fetchHealthData(true);
 });
 
 // Animation for blinking dots
@@ -502,10 +506,8 @@ const criticalSensors = liveSensors.filter(s => s.is_live && s.enabled && (s.rea
 
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar variant={userRole} activePage="sensor-registration" onNavigate={onNavigate} onLogout={onLogout} />
+        <View style={styles.dashboardMain}>
 
-            <View style={styles.dashboardMain}>
                 {/* Top Bar */}
                 <View style={styles.dashboardTopBar}>
                     <View>
@@ -877,7 +879,7 @@ const criticalSensors = liveSensors.filter(s => s.is_live && s.enabled && (s.rea
 
                     <View style={{ height: 120 }} />
                 </ScrollView>
-            </View>
+
 
             {/* Registration Modal */}
             <Modal visible={showRegistrationModal} transparent animationType="fade">
@@ -1027,10 +1029,6 @@ const criticalSensors = liveSensors.filter(s => s.is_live && s.enabled && (s.rea
                                     <View style={pg.modalFooter}>
                                         <TouchableOpacity style={[pg.submitBtn, { backgroundColor: "#64748b" }]} onPress={() => setShowStatusModal(false)}>
                                             <Text style={pg.submitBtnText}>Done</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={pg.submitBtn} onPress={fetchHealthData}>
-                                            <Feather name="refresh-cw" size={16} color="#fff" style={{ marginRight: 4 }} />
-                                            <Text style={pg.submitBtnText}>Refresh Data</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </>

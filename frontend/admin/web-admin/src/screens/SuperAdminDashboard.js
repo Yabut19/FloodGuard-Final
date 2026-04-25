@@ -231,9 +231,8 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
     ];
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar variant="superadmin" activePage={activePage} onNavigate={onNavigate} onLogout={onLogout} />
-            <View style={styles.dashboardMain}>
+        <View style={styles.dashboardMain}>
+
                 <WelcomeBanner userName={userName} />
                 <View style={styles.dashboardTopBar}>
                     <View>
@@ -367,9 +366,8 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                     </ScrollView>
                 )}
             </View>
-        </View>
-    );
-};
+        );
+    };
 
 const sd = StyleSheet.create({
     emptyPanel: { alignItems: "center", paddingVertical: 32, gap: 4 },

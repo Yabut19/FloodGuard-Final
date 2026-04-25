@@ -203,10 +203,8 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
     };
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar variant={userRole} activePage="verify-alerts" onNavigate={onNavigate} onLogout={onLogout} />
+        <View style={styles.dashboardMain}>
 
-            <View style={styles.dashboardMain}>
                 {/* ════════════════ TOP BAR ════════════════ */}
                 <View style={styles.dashboardTopBar}>
                     <View>
@@ -511,9 +509,9 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
                             ))}
                         </View>
                     )}
-                </ScrollView>
-            </View>
 
+
+                </ScrollView>
             {/* ════════════════ VERIFICATION MODAL ════════════════ */}
             <Modal visible={showVerifyModal} transparent animationType="fade">
                 <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", paddingHorizontal: 24 }}>

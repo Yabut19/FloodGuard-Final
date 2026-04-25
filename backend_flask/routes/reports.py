@@ -436,6 +436,19 @@ def reject_report(report_id):
     
     _emit_report_update()
     
+    # Notify mobile app via WebSocket
+    try:
+        from socket_instance import socketio
+        socketio.emit("new_notification", {
+            "type": "dismissed_report",
+            "id": report_id,
+            "title": "Report Dismissed",
+            "description": f"Your report regarding {report['type']} at {report['location']} has been reviewed and dismissed.",
+            "location": report['location']
+        }, namespace="/")
+    except Exception as e:
+        logger.error("Failed to emit dismissal notification: %s", e)
+    
     return jsonify({
         "message": "Report rejected and dismissed",
         "report_id": report_id,

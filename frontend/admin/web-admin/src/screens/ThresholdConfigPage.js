@@ -130,10 +130,8 @@ const ThresholdConfigPage = ({ onNavigate, onLogout, userRole = "superadmin" }) 
     };
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar variant={userRole} activePage="threshold-config" onNavigate={onNavigate} onLogout={onLogout} />
+        <View style={styles.dashboardMain}>
 
-            <View style={styles.dashboardMain}>
                 <View style={styles.dashboardTopBar}>
                     <View>
                         <Text style={styles.dashboardTopTitle}>Threshold Configuration</Text>
@@ -298,8 +296,7 @@ const ThresholdConfigPage = ({ onNavigate, onLogout, userRole = "superadmin" }) 
                     </ScrollView>
                 )}
             </View>
-        </View>
-    );
-};
+        );
+    };
 
 export default ThresholdConfigPage;

@@ -66,23 +66,53 @@ const useSensorStatus = () => useContext(SensorStatusContext);
 const SocketContext = createContext(null);
 export const useSocket = () => useContext(SocketContext);
 
+let globalMobileSocket = null;
+let socketResetListener = null;
+
+/**
+ * disconnectMobileSocket Function
+ * Manually disconnects and nullifies the global mobile socket instance.
+ * Useful during logout to ensure a fresh connection on the next login.
+ */
+export const disconnectMobileSocket = () => {
+  if (globalMobileSocket) {
+    console.log("[Socket] Manually disconnecting mobile socket...");
+    globalMobileSocket.disconnect();
+    globalMobileSocket = null;
+    // Trigger listener to re-initialize if needed
+    if (socketResetListener) socketResetListener(Date.now());
+  }
+};
+
 const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
+  const [reinitTicket, setReinitTicket] = useState(0);
 
   useEffect(() => {
-    const s = io(API_BASE, {
-      transports: ["websocket", "polling"],
-      reconnectionAttempts: 10,
-    });
+    socketResetListener = setReinitTicket;
     
-    s.on("connect", () => console.log("[Socket] Connection established"));
-    s.on("disconnect", () => console.log("[Socket] Connection lost"));
+    if (!globalMobileSocket) {
+      console.log("[Socket] Creating fresh connection...");
+      globalMobileSocket = io(API_BASE, {
+        transports: ["websocket", "polling"],
+        reconnectionAttempts: 10,
+        timeout: 20000,
+      });
+
+      globalMobileSocket.on("connect", () => console.log("[Socket] Connection established"));
+      globalMobileSocket.on("disconnect", (reason) => {
+        console.log("[Socket] Connection lost:", reason);
+        // If it was a deliberate disconnect from our side, it will be handled by the manual reset
+      });
+    }
     
-    setSocket(s);
+    setSocket(globalMobileSocket);
+    
     return () => {
-      s.disconnect();
+      // Clean up listener on unmount
+      if (socketResetListener === setReinitTicket) socketResetListener = null;
     };
-  }, []);
+  }, [reinitTicket]);
 
   return (
     <SocketContext.Provider value={socket}>
@@ -105,48 +135,48 @@ const SensorStatusProvider = ({ children }) => {
  * Philippine Standard Time (UTC+8 / Asia/Manila)
  */
 const formatPST = (date) => {
-    if (!date) return "—";
-    const d = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(d.getTime())) return "—";
-    const options = {
-        timeZone: 'Asia/Manila',
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-    };
-    const formatter = new Intl.DateTimeFormat('en-US', options);
-    const parts = formatter.formatToParts(d);
-    const getPart = (type) => parts.find(p => p.type === type)?.value || "";
-    
-    // Requested Format: Thursday, 23 April 2026 • 6:54:12 PM
-    return `${getPart('weekday')}, ${getPart('day')} ${getPart('month')} ${getPart('year')} • ${getPart('hour')}:${getPart('minute')}:${getPart('second')} ${getPart('dayPeriod')}`;
+  if (!date) return "—";
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "—";
+  const options = {
+    timeZone: 'Asia/Manila',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  };
+  const formatter = new Intl.DateTimeFormat('en-US', options);
+  const parts = formatter.formatToParts(d);
+  const getPart = (type) => parts.find(p => p.type === type)?.value || "";
+
+  // Requested Format: Thursday, 23 April 2026 • 6:54:12 PM
+  return `${getPart('weekday')}, ${getPart('day')} ${getPart('month')} ${getPart('year')} • ${getPart('hour')}:${getPart('minute')}:${getPart('second')} ${getPart('dayPeriod')}`;
 };
 
 const formatPSTShort = (date) => {
-    if (!date) return "—";
-    const d = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(d.getTime())) return "—";
-    const options = {
-        timeZone: 'Asia/Manila',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    };
-    return new Intl.DateTimeFormat('en-US', options).format(d);
+  if (!date) return "—";
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "—";
+  const options = {
+    timeZone: 'Asia/Manila',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+  return new Intl.DateTimeFormat('en-US', options).format(d);
 };
 
 const SystemTime = ({ style }) => {
-    const [time, setTime] = useState(formatPST(new Date()));
-    useEffect(() => {
-        const interval = setInterval(() => setTime(formatPST(new Date())), 1000);
-        return () => clearInterval(interval);
-    }, []);
-    return <Text style={style}>{time}</Text>;
+  const [time, setTime] = useState(formatPST(new Date()));
+  useEffect(() => {
+    const interval = setInterval(() => setTime(formatPST(new Date())), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return <Text style={style}>{time}</Text>;
 };
 
 export const theme = {
@@ -169,6 +199,8 @@ export const theme = {
 };
 
 
+const API_BASE = "http://192.168.254.160:5000"; // Updated to current machine IP (172.16.17.33)
+
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 const BRAND_GRADIENT = ["#74C5E6", "#6a36f5"];
@@ -180,7 +212,6 @@ const ACCOUNT_IMAGE = require("./assets/flood.png");
 const LOCATION_IMAGE = require("./assets/flood4.jpg");
 const NOTIFY_IMAGE = require("./assets/flood5.jpg");
 const LOGO = require("./assets/logo.png");
-const API_BASE = "http://10.199.140.238:5000"; // Updated to current machine IP (172.16.17.33)
 
 const safeGoBack = (navigation, fallback) => {
   if (navigation?.canGoBack?.()) {
@@ -2142,6 +2173,9 @@ const DashboardScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
+    try {
+      disconnectMobileSocket();
+    } catch (e) { console.warn("Socket disconnect failed:", e); }
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('userData');
     navigation.replace("Landing");
@@ -2149,11 +2183,11 @@ const DashboardScreen = ({ navigation }) => {
 
   const { setIsOnline } = useSensorStatus();
   const isOffline = !latestSensor || latestSensor.status === "OFFLINE" || latestSensor.is_offline;
-  
+
   useEffect(() => {
     setIsOnline(!isOffline);
   }, [isOffline]);
-  
+
   const getLiveStatus = () => {
     if (isOffline) return "OFFLINE";
     const lvl = Number(latestSensor?.flood_level ?? 0);
@@ -2340,7 +2374,7 @@ const MapScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     fetchSensorData();
-    
+
     if (socket) {
       socket.on("sensor_update", (data) => {
         console.log("[Mobile Map] Sensor update:", data);
@@ -2682,16 +2716,16 @@ const AlertsScreen = ({ navigation }) => {
 
         {/* Evacuation Specific Info */}
         {alert.level === 'evacuation' && (
-           <View style={{ marginBottom: 8, backgroundColor: 'rgba(30, 58, 138, 0.1)', padding: 10, borderRadius: 8 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                 <Text style={{ color: '#94a3b8', fontSize: 11 }}>Location:</Text>
-                 <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>{alert.evacuation_location || alert.location}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                 <Text style={{ color: '#94a3b8', fontSize: 11 }}>Capacity:</Text>
-                 <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>{alert.evacuation_capacity || 'N/A'}</Text>
-              </View>
-           </View>
+          <View style={{ marginBottom: 8, backgroundColor: 'rgba(30, 58, 138, 0.1)', padding: 10, borderRadius: 8 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text style={{ color: '#94a3b8', fontSize: 11 }}>Location:</Text>
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>{alert.evacuation_location || alert.location}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ color: '#94a3b8', fontSize: 11 }}>Capacity:</Text>
+              <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>{alert.evacuation_capacity || 'N/A'}</Text>
+            </View>
+          </View>
         )}
 
         <Text style={styles.alertDescription}>{alert.description}</Text>
@@ -2885,19 +2919,19 @@ const AlertDetailScreen = ({ route, navigation }) => {
 
         {/* Evacuation Details */}
         {alert.level === 'evacuation' && (
-           <Card style={styles.alertDetailCard}>
-              <Text style={styles.alertDetailLabel}>Center Information</Text>
-              <View style={{ gap: 12, marginTop: 8 }}>
-                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: '#94a3b8' }}>Location</Text>
-                    <Text style={{ color: '#fff', fontWeight: '600' }}>{alert.evacuation_location || alert.location}</Text>
-                 </View>
-                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ color: '#94a3b8' }}>Total Capacity</Text>
-                    <Text style={{ color: '#fff', fontWeight: '600' }}>{alert.evacuation_capacity || 'N/A'}</Text>
-                 </View>
+          <Card style={styles.alertDetailCard}>
+            <Text style={styles.alertDetailLabel}>Center Information</Text>
+            <View style={{ gap: 12, marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#94a3b8' }}>Location</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{alert.evacuation_location || alert.location}</Text>
               </View>
-           </Card>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#94a3b8' }}>Total Capacity</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{alert.evacuation_capacity || 'N/A'}</Text>
+              </View>
+            </View>
+          </Card>
         )}
 
         {/* Official Recommendation Section - Not for evacuation */}
@@ -4767,6 +4801,9 @@ const CustomDrawerContent = (props) => {
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
+    try {
+      disconnectMobileSocket();
+    } catch (e) { console.warn("Socket disconnect failed:", e); }
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('userData');
     props.navigation.replace("Landing");

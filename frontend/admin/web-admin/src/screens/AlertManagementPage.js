@@ -18,8 +18,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     
     // Verification state
     const [verifyFloodLevel, setVerifyFloodLevel] = useState("medium");
-    const [incidentStatus, setIncidentStatus] = useState("");
-    const [statusError, setStatusError] = useState(false);
+    const [floodLevelError, setFloodLevelError] = useState(false);
     const [verifications, setVerifications] = useState([]);
     const [filterType, setFilterType] = useState('All Alerts');
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -403,25 +402,22 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const handleVerify = async (id, report) => {
         let hasError = false;
         
+        if (!verifyFloodLevel) {
+            setFloodLevelError(true);
+            hasError = true;
+        } else {
+            setFloodLevelError(false);
+        }
+
         if (!recommendedAction || !recommendedAction.trim()) {
             setRecError(true);
             hasError = true;
-            setErrorMessage(`Please provide an Official Recommendation for the report from ${report.reporter_name}.`);
         } else {
             setRecError(false);
         }
         
-        if (!incidentStatus) {
-            setStatusError(true);
-            hasError = true;
-            if (!errorMessage) { // Only set if not already set by recommendedAction
-                setErrorMessage(`Please select an Incident Status for the report from ${report.reporter_name}.`);
-            }
-        } else {
-            setStatusError(false);
-        }
-
         if (hasError) {
+            setErrorMessage("Please fill in all required fields marked with *");
             setShowErrorModal(true);
             return;
         }
@@ -437,7 +433,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     flood_level: verifyFloodLevel,
                     recommendations: recommendedAction,
                     recommended_action: recommendedAction,
-                    report_status: incidentStatus,
+                    report_status: 'Active',
                     source: 'report'
                 })
             });
@@ -463,10 +459,10 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
         }
     };
 
-    const handleDeleteReport = async (id, report) => {
+    const handleDismissReport = async (id, report) => {
         setIsSubmitting(true);
         try {
-            // Update report status to dismissed (Delete Action)
+            // Update report status to dismissed
             const response = await authFetch(`${API_BASE_URL}/api/reports/${id}/reject`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -477,18 +473,18 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
             });
 
             if (response.ok) {
-                setSuccessMessage(`Successfully deleted report from ${report.reporter_name}.`);
+                setSuccessMessage(`Successfully dismissed report from ${report.reporter_name}. The reporter will be notified.`);
                 setShowReportDetailsModal(false);
                 setShowSuccessModal(true);
                 setVerifications(verifications.filter((v) => v.id !== id));
                 fetchData();
             } else {
                 const err = await response.json();
-                setErrorMessage(err.error || `Error deleting report from ${report.reporter_name}`);
+                setErrorMessage(err.error || `Error dismissing report from ${report.reporter_name}`);
                 setShowErrorModal(true);
             }
         } catch (error) {
-            setErrorMessage(`Network error deleting report from ${report.reporter_name}`);
+            setErrorMessage(`Network error dismissing report from ${report.reporter_name}`);
             setShowErrorModal(true);
         } finally {
             setIsSubmitting(false);
@@ -737,10 +733,9 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         setSelectedReportForModal(item);
                                         setShowReportDetailsModal(true);
                                         setVerifyFloodLevel(item.flood_level_reported || "medium");
-                                        setIncidentStatus("");
                                         setRecommendedAction("");
                                         setRecError(false);
-                                        setStatusError(false);
+                                        setFloodLevelError(false);
                                         fetchSensorDataForBarangay(item.location);
                                     }}
                                 >
@@ -935,10 +930,8 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     );
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar activePage="alert-management" onNavigate={onNavigate} onLogout={onLogout} variant={userRole} />
+        <View style={styles.dashboardMain}>
 
-            <View style={styles.dashboardMain}>
                 <View style={styles.ccHeader}>
                     <View>
                         <Text style={styles.dashboardTopTitle}>Command Center</Text>
@@ -956,7 +949,8 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     {activeTab === "broadcast" && renderBroadcastStudio()}
                     {activeTab === "audit" && renderAuditLog()}
                 </View>
-            </View>
+
+
 
             {/* Image Modal */}
             {/* Report Details Modal */}
@@ -971,23 +965,23 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         {selectedReportForModal && (
                             <>
                                 {/* Modal Header */}
-                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 28, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 28, paddingVertical: 20, backgroundColor: '#0f172a' }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                                        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#f0f9ff', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Feather name="clipboard" size={20} color="#0284c7" />
+                                        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Feather name="clipboard" size={20} color="#ffffff" />
                                         </View>
                                         <View>
-                                            <Text style={{ fontSize: 17, fontFamily: "Poppins_700Bold", color: '#0f172a' }}>Review Citizen Report</Text>
-                                            <Text style={{ fontSize: 12, color: '#94a3b8', fontFamily: "Poppins_400Regular" }}>
+                                            <Text style={{ fontSize: 17, fontFamily: "Poppins_700Bold", color: '#ffffff' }}>Review Citizen Report</Text>
+                                            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: "Poppins_400Regular" }}>
                                                 Submitted {formatPST(selectedReportForModal.timestamp)}
                                             </Text>
                                         </View>
                                     </View>
                                     <TouchableOpacity
                                         onPress={() => setShowReportDetailsModal(false)}
-                                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}
+                                        style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}
                                     >
-                                        <Feather name="x" size={16} color="#64748b" />
+                                        <Feather name="x" size={16} color="#ffffff" />
                                     </TouchableOpacity>
                                 </View>
 
@@ -1110,11 +1104,11 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                     {/* RIGHT — Official Response */}
                                     <View style={{ flex: 1.2, backgroundColor: '#fcfcfc', borderLeftWidth: 1, borderLeftColor: '#f1f5f9' }}>
                                         <ScrollView contentContainerStyle={{ padding: 28 }} showsVerticalScrollIndicator={false}>
-                                            <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: '#94a3b8', letterSpacing: 1, marginBottom: 20, textTransform: 'uppercase' }}>Official Response</Text>
+                                            <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: '#94a3b8', letterSpacing: 1, marginBottom: 20, textTransform: 'uppercase' }}>Response</Text>
 
                                             {/* Flood Level */}
                                             <View style={{ marginBottom: 20 }}>
-                                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#374151', marginBottom: 10 }}>Official Flood Level</Text>
+                                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#374151', marginBottom: 10 }}>Flood Level <Text style={{ color: '#ef4444' }}>*</Text></Text>
                                                 <View style={{ flexDirection: 'row', gap: 8 }}>
                                                     {[
                                                         { level: "advisory", label: "Advisory", color: "#3b82f6", bg: "#eff6ff", dot: "#3b82f6" },
@@ -1123,12 +1117,12 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                     ].map(({ level, label, color, bg }) => (
                                                         <TouchableOpacity
                                                             key={level}
-                                                            onPress={() => setVerifyFloodLevel(level)}
+                                                            onPress={() => { setVerifyFloodLevel(level); setFloodLevelError(false); }}
                                                             style={{
                                                                 flex: 1, paddingVertical: 11, borderRadius: 10, alignItems: 'center',
                                                                 backgroundColor: verifyFloodLevel === level ? bg : '#f8fafc',
                                                                 borderWidth: 1.5,
-                                                                borderColor: verifyFloodLevel === level ? color : '#e2e8f0',
+                                                                borderColor: verifyFloodLevel === level ? color : floodLevelError ? '#fca5a5' : '#e2e8f0',
                                                             }}
                                                         >
                                                             <Text style={{ fontSize: 12, fontFamily: verifyFloodLevel === level ? "Poppins_700Bold" : "Poppins_400Regular", color: verifyFloodLevel === level ? color : '#94a3b8' }}>{label}</Text>
@@ -1137,45 +1131,16 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                 </View>
                                             </View>
 
-                                            {/* Incident Status */}
-                                            <View style={{ marginBottom: 20 }}>
-                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                                    <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#374151' }}>Incident Status <Text style={{ color: '#ef4444' }}>*</Text></Text>
-                                                    {statusError && <Text style={{ fontSize: 11, color: '#ef4444', fontFamily: "Poppins_400Regular" }}>Required</Text>}
-                                                </View>
-                                                <View style={{ flexDirection: 'row', gap: 8 }}>
-                                                    {[
-                                                        { value: "Active",   icon: "zap",          color: "#d97706", bg: "#fffbeb" },
-                                                    ].map(({ value, icon, color, bg }) => (
-                                                        <TouchableOpacity
-                                                            key={value}
-                                                            onPress={() => { setIncidentStatus(value); setStatusError(false); }}
-                                                            style={{
-                                                                flex: 1, paddingVertical: 11, borderRadius: 10, alignItems: 'center',
-                                                                flexDirection: 'row', justifyContent: 'center', gap: 6,
-                                                                backgroundColor: incidentStatus === value ? bg : '#f8fafc',
-                                                                borderWidth: 1.5,
-                                                                borderColor: incidentStatus === value ? color : statusError ? '#fca5a5' : '#e2e8f0',
-                                                            }}
-                                                        >
-                                                            <Feather name={icon} size={13} color={incidentStatus === value ? color : '#94a3b8'} />
-                                                            <Text style={{ fontSize: 12, fontFamily: incidentStatus === value ? "Poppins_700Bold" : "Poppins_400Regular", color: incidentStatus === value ? color : '#94a3b8' }}>{value}</Text>
-                                                        </TouchableOpacity>
-                                                    ))}
-                                                </View>
-                                            </View>
-
                                             {/* Official Recommendation */}
                                             <View style={{ marginBottom: 8 }}>
                                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                                    <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#374151' }}>Official Recommendation <Text style={{ color: '#ef4444' }}>*</Text></Text>
-                                                    {recError && <Text style={{ fontSize: 11, color: '#ef4444', fontFamily: "Poppins_400Regular" }}>Required</Text>}
+                                                    <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#374151' }}>Recommended Action <Text style={{ color: '#ef4444' }}>*</Text></Text>
                                                 </View>
                                                 <TextInput
                                                     style={{
-                                                        backgroundColor: recError ? '#fef2f2' : '#f8fafc',
+                                                        backgroundColor: '#f8fafc',
                                                         borderWidth: 1.5,
-                                                        borderColor: recError ? '#fca5a5' : '#e2e8f0',
+                                                        borderColor: '#e2e8f0',
                                                         borderRadius: 10,
                                                         padding: 14,
                                                         minHeight: 110,
@@ -1197,11 +1162,11 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                         {/* Action Buttons — pinned to bottom of right column */}
                                         <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: '#f1f5f9', flexDirection: 'row', gap: 10 }}>
                                             <TouchableOpacity
-                                                onPress={() => handleDeleteReport(selectedReportForModal.id, selectedReportForModal)}
+                                                onPress={() => handleDismissReport(selectedReportForModal.id, selectedReportForModal)}
                                                 style={{ flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, borderWidth: 1.5, borderColor: '#e2e8f0', backgroundColor: '#ffffff' }}
+                                                disabled={isSubmitting}
                                             >
-                                                <Feather name="trash-2" size={14} color="#dc2626" />
-                                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#dc2626' }}>Delete</Text>
+                                                {isSubmitting ? <ActivityIndicator size="small" color="#64748b" /> : <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: '#64748b' }}>Dismiss</Text>}
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 onPress={() => handleVerify(selectedReportForModal.id, selectedReportForModal)}

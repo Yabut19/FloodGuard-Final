@@ -84,26 +84,26 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
                     authFetch(`${API_BASE_URL}/api/admin/locations`),
                     authFetch(`${API_BASE_URL}/api/iot/sensors`)
                 ]);
-                
+
                 if (locRes.ok) {
                     let locations = await locRes.json();
-                    
+
                     if (sensorRes.ok) {
                         const sensorData = await sensorRes.json();
                         const sensorsList = sensorData.sensors || [];
                         const sensorNames = sensorsList.map(s => s.name?.toLowerCase());
                         const sensorIds = sensorsList.map(s => s.id?.toLowerCase());
-                        
+
                         // Filter out any locations that match sensor names, IDs, or contain "Sensor"
                         locations = locations.filter(loc => {
                             if (!loc) return false;
                             const lowLoc = loc.toLowerCase();
-                            return !sensorNames.includes(lowLoc) && 
-                                   !sensorIds.includes(lowLoc) && 
-                                   !lowLoc.includes("sensor");
+                            return !sensorNames.includes(lowLoc) &&
+                                !sensorIds.includes(lowLoc) &&
+                                !lowLoc.includes("sensor");
                         });
                     }
-                    
+
                     setAvailableLocations(locations);
                 }
             } catch (e) {
@@ -125,9 +125,9 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
             fetchUsers();
         },
         onSensorUpdate: (reading) => {
-             // Optional: update the system status indicator live if readings come in
-             // but we already have fetchSystemStatus polling. 
-             // We can just rely on the sync event if needed.
+            // Optional: update the system status indicator live if readings come in
+            // but we already have fetchSystemStatus polling. 
+            // We can just rely on the sync event if needed.
         },
         onSensorListUpdate: () => {
             // If sensors go online/offline, update the status indicator
@@ -160,7 +160,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
         const matchesSearch = name.includes(search) ||
             email.includes(search) ||
             location.includes(search);
-            
+
         const matchesRole = roleFilter === "All Roles" || user.role === roleFilter;
         const matchesStatus = statusFilter === "All Status" || user.status === statusFilter;
         return matchesSearch && matchesRole && matchesStatus;
@@ -204,9 +204,9 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
         setEditingUser(user);
         const currentStatus = user.status?.toLowerCase() === 'active' ? 'active' : 'inactive';
         const currentRole = user.role === 'LGU Moderator' ? 'lgu_admin' :
-                           user.role === 'Admin' ? 'super_admin' :
-                           user.role === 'User' ? 'user' : 'user';
-        
+            user.role === 'Admin' ? 'super_admin' :
+                user.role === 'User' ? 'user' : 'user';
+
         const formValues = {
             full_name: user.name || "",
             barangay: user.location || "",
@@ -235,7 +235,7 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
             const detailRes = await authFetch(`${API_BASE_URL}/api/admin/users/${editingUser.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     full_name: editForm.full_name,
                     barangay: editForm.barangay,
                     password: editForm.password
@@ -370,611 +370,616 @@ const UserManagementPage = ({ onNavigate, onLogout, userRole = "superadmin" }) =
     };
 
     return (
-        <View style={styles.dashboardRoot}>
-            <AdminSidebar variant={userRole} activePage="user-management" onNavigate={onNavigate} onLogout={onLogout} />
+        <View style={styles.dashboardMain}>
 
-            <View style={styles.dashboardMain}>
                 <>
                     <View style={styles.dashboardTopBar}>
-                    <View>
-                        <Text style={styles.dashboardTopTitle}>User Management</Text>
-                        <Text style={styles.dashboardTopSubtitle}>
-                            Manage all user accounts and permissions
-                        </Text>
-                    </View>
-                    <View style={styles.dashboardTopRight}>
-                        <TopRightStatusIndicator />
-                        <RealTimeClock style={styles.dashboardTopDate} />
-                    </View>
-                </View>
-
-                <ScrollView
-                    style={styles.dashboardScroll}
-                    contentContainerStyle={styles.dashboardScrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* Stats Cards */}
-                    <View style={pg.statsRow}>
-                        {[
-                            { icon: "users", label: "Total Users", value: stats.total_users, color: "#2563eb", bg: "#eff6ff", filter: { r: "All Roles", s: "All Status" } },
-                            { icon: "user-check", label: "Active Users", value: stats.active_users, color: "#16a34a", bg: "#dcfce7", filter: { r: "All Roles", s: "Active" } },
-                            { icon: "shield", label: "LGU Moderators", value: stats.lgu_moderators, color: "#7c3aed", bg: "#f3e8ff", filter: { r: "LGU Moderator", s: "All Status" } },
-                            { icon: "lock", label: "Admins", value: stats.super_admins, color: "#dc2626", bg: "#fee2e2", filter: { r: "Admin", s: "All Status" } },
-                        ].map((card) => (
-                            <TouchableOpacity 
-                                key={card.label} 
-                                style={pg.statsCard} 
-                                onPress={() => { setRoleFilter(card.filter.r); setStatusFilter(card.filter.s); }}
-                            >
-                                <View style={[pg.statsIcon, { backgroundColor: card.bg }]}>
-                                    <Feather name={card.icon} size={20} color={card.color} />
-                                </View>
-                                <Text style={pg.statsValue}>{card.value}</Text>
-                                <Text style={pg.statsLabel}>{card.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* Filter Bar */}
-                    <View style={[pg.toolbar, { zIndex: 100, overflow: 'visible' }]}>
-                        <View style={pg.searchBox}>
-                            <Feather name="search" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
-                            <TextInput
-                                style={pg.searchInput}
-                                placeholder="Search users by name, email, or location..."
-                                placeholderTextColor="#94a3b8"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
-                        </View>
-
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, zIndex: 110, overflow: 'visible' }}>
-                            {/* Role Filter */}
-                            <View style={{ zIndex: 120 }}>
-                                <TouchableOpacity 
-                                    style={pg.filterSelect} 
-                                    onPress={() => {
-                                        setShowRoleDropdown(!showRoleDropdown);
-                                        setShowStatusDropdown(false);
-                                    }}
-                                >
-                                    <Text style={pg.filterSelectText}>{roleFilter}</Text>
-                                    <Feather name={showRoleDropdown ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
-                                </TouchableOpacity>
-                                
-                                {showRoleDropdown && (
-                                    <View style={pg.dropdown}>
-                                        {["All Roles", "Admin", "LGU Moderator", "User"].map((role) => (
-                                            <TouchableOpacity 
-                                                key={role} 
-                                                style={pg.dropdownItem}
-                                                onPress={() => {
-                                                    setRoleFilter(role);
-                                                    setShowRoleDropdown(false);
-                                                }}
-                                            >
-                                                <Text style={[pg.dropdownItemText, roleFilter === role && { fontFamily: "Poppins_700Bold", color: '#2563eb' }]}>{role}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                )}
-                            </View>
-
-                            {/* Status Filter */}
-                            <View style={{ zIndex: 120 }}>
-                                <TouchableOpacity 
-                                    style={pg.filterSelect}
-                                    onPress={() => {
-                                        setShowStatusDropdown(!showStatusDropdown);
-                                        setShowRoleDropdown(false);
-                                    }}
-                                >
-                                    <Text style={pg.filterSelectText}>{statusFilter}</Text>
-                                    <Feather name={showStatusDropdown ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
-                                </TouchableOpacity>
-
-                                {showStatusDropdown && (
-                                    <View style={pg.dropdown}>
-                                        {["All Status", "Active", "Inactive"].map((status) => (
-                                            <TouchableOpacity 
-                                                key={status} 
-                                                style={pg.dropdownItem}
-                                                onPress={() => {
-                                                    setStatusFilter(status);
-                                                    setShowStatusDropdown(false);
-                                                }}
-                                            >
-                                                <Text style={[pg.dropdownItemText, statusFilter === status && { fontFamily: "Poppins_700Bold", color: '#2563eb' }]}>{status}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                )}
-                            </View>
-
-                            <TouchableOpacity style={pg.addUserBtn} onPress={handleAddUserClick}>
-                                <Feather name="plus" size={18} color="#ffffff" />
-                                <Text style={pg.addUserBtnText}>Add User</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* User Table Card */}
-                    <View style={[styles.userTableCard, { zIndex: 1 }]}>
-                        <View style={styles.userTableHeader}>
-                            <Text style={[styles.userTableHeaderCell, styles.userColUser]}>User</Text>
-                            <Text style={[styles.userTableHeaderCell, styles.userColRole]}>Role</Text>
-                            <Text style={[styles.userTableHeaderCell, styles.userColLocation]}>Location</Text>
-                            <Text style={[styles.userTableHeaderCell, styles.userColStatus]}>Status</Text>
-                            <Text style={[styles.userTableHeaderCell, styles.userColJoined]}>Joined</Text>
-                            <Text style={[styles.userTableHeaderCell, styles.userColActions]}>Actions</Text>
-                        </View>
-
-                        {filteredUsers.map((user) => {
-                            const roleStyle = getRoleBadgeStyle(user.role);
-                            const statusStyle = getStatusBadgeStyle(user.status);
-
-                            return (
-                                <View key={user.id} style={styles.userTableRow}>
-                                    <View style={[styles.userCellUser, styles.userColUser]}>
-                                        <View style={styles.userAvatar}>
-                                            {user.avatar_url ? (
-                                                <Image
-                                                    source={{ uri: `${API_BASE_URL}${user.avatar_url}` }}
-                                                    style={{ width: "100%", height: "100%", borderRadius: 16 }}
-                                                />
-                                            ) : (
-                                                <Text style={styles.userAvatarText}>
-                                                    {user.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                                                </Text>
-                                            )}
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
-                                            <Text style={styles.userEmail} numberOfLines={1} ellipsizeMode="tail">{user.email || "No Email"}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.userColRole}>
-                                        <View style={[styles.userRoleBadge, { backgroundColor: roleStyle.backgroundColor }]}>
-                                            <Text style={[styles.userRoleBadgeText, { color: roleStyle.color }]}>{user.role}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.userColLocation}>
-                                        <Text style={styles.userCellText}>{user.location}</Text>
-                                    </View>
-
-                                    <View style={styles.userColStatus}>
-                                        <View style={[styles.userStatusBadge, { backgroundColor: statusStyle.bg }]}>
-                                            <View style={[styles.userStatusDot, { backgroundColor: statusStyle.dot }]} />
-                                            <Text style={[styles.userStatusText, { color: statusStyle.text }]}>{user.status.toUpperCase()}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.userColJoined}>
-                                        <Text style={styles.userCellText}>{formatPST(user.joined)}</Text>
-                                    </View>
-
-                                    <View style={styles.userColActions}>
-                                        <View style={styles.userActionButtons}>
-                                            {user.role === 'Admin' ? (
-                                                <>
-                                                    <View style={[styles.userActionButton, { opacity: 0.6 }]}>
-                                                        <Feather name="lock" size={16} color="#64748b" />
-                                                    </View>
-                                                    <TouchableOpacity
-                                                        style={[styles.userActionButton, { backgroundColor: '#ffffff', borderColor: '#e2e8f0' }]}
-                                                        onPress={() => handleDeleteUser(user)}
-                                                    >
-                                                        <Feather name="trash-2" size={16} color="#dc2626" />
-                                                    </TouchableOpacity>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <TouchableOpacity
-                                                        style={styles.userActionButton}
-                                                        onPress={() => handleEditUserClick(user)}
-                                                    >
-                                                        <Feather name="edit-2" size={16} color="#2563eb" />
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        style={[styles.userActionButton, { backgroundColor: '#ffffff', borderColor: '#e2e8f0' }]}
-                                                        onPress={() => handleDeleteUser(user)}
-                                                    >
-                                                        <Feather name="trash-2" size={16} color="#dc2626" />
-                                                    </TouchableOpacity>
-                                                </>
-                                            )}
-                                        </View>
-                                    </View>
-                                </View>
-                            );
-                        })}
-                    </View>
-
-                </ScrollView>
-
-                {/* Add User Modal */}
-                <Modal visible={showAddLGUModal} transparent animationType="fade">
-                    <View style={pg.modalOverlay}>
-                        <View style={pg.modalBox}>
-                            <LinearGradient colors={["#001D39", "#0A4174"]} style={pg.modalHeader}>
-                                <Text style={pg.modalTitle}>Add New User</Text>
-                                <TouchableOpacity onPress={() => setShowAddLGUModal(false)}>
-                                    <Feather name="x" size={22} color="#fff" />
-                                </TouchableOpacity>
-                            </LinearGradient>
-
-                            <ScrollView style={pg.modalBody} showsVerticalScrollIndicator={false}>
-                                <View style={pg.formGrid}>
-                                    <View style={pg.formGroup}>
-                                        <Text style={pg.formLabel}>Full Name <Text style={{ color: "#dc2626" }}>*</Text></Text>
-                                        <TextInput 
-                                            style={pg.formInput} 
-                                            placeholder="Enter full name" 
-                                            placeholderTextColor="#94a3b8"
-                                            value={lguForm.full_name} 
-                                            onChangeText={(text) => setLguForm({ ...lguForm, full_name: text })} 
-                                        />
-                                    </View>
-                                    <View style={pg.formGroup}>
-                                        <Text style={pg.formLabel}>Email Address <Text style={{ color: "#dc2626" }}>*</Text></Text>
-                                        <TextInput 
-                                            style={pg.formInput} 
-                                            placeholder="Enter email address" 
-                                            placeholderTextColor="#94a3b8"
-                                            value={lguForm.email} 
-                                            onChangeText={(text) => setLguForm({ ...lguForm, email: text })} 
-                                        />
-                                    </View>
-                                </View>
-
-                                <View style={pg.formGroup}>
-                                    <Text style={pg.formLabel}>Account Role <Text style={{ color: "#dc2626" }}>*</Text></Text>
-                                    <View style={{ flexDirection: "row", gap: 8 }}>
-                                        {[
-                                            { label: "User", value: "user", color: "#2563eb", bg: "#eff6ff" },
-                                            { label: "LGU", value: "lgu_admin", color: "#7c3aed", bg: "#f3e8ff" },
-                                            { label: "Admin", value: "super_admin", color: "#dc2626", bg: "#fee2e2" }
-                                        ].map((role) => (
-                                            <TouchableOpacity
-                                                key={role.value}
-                                                style={{ 
-                                                    flex: 1, 
-                                                    flexDirection: "row", 
-                                                    alignItems: "center", 
-                                                    justifyContent: "center", 
-                                                    padding: 10, 
-                                                    borderWidth: 1.5, 
-                                                    borderColor: lguForm.role === role.value ? role.color : "#e2e8f0", 
-                                                    borderRadius: 12, 
-                                                    backgroundColor: lguForm.role === role.value ? role.bg : "#f8fafc" 
-                                                }}
-                                                onPress={() => setLguForm({ ...lguForm, role: role.value })}
-                                            >
-                                                <Text style={{ 
-                                                    fontSize: 13, 
-                                                    color: lguForm.role === role.value ? "#1e293b" : "#64748b", 
-                                                    fontFamily: lguForm.role === role.value ? "Poppins_600SemiBold" : "Poppins_400Regular" 
-                                                }}>{role.label}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                </View>
-
-                                {lguForm.role !== 'super_admin' && (
-                                    <View style={pg.formGroup}>
-                                        <Text style={pg.formLabel}>Location (Sitio) <Text style={{ color: "#dc2626" }}>*</Text></Text>
-                                        <TouchableOpacity
-                                            style={[pg.formInput, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
-                                            onPress={() => setShowSitioDropdown(!showSitioDropdown)}
-                                        >
-                                            <Text style={{ color: lguForm.barangay ? "#0f172a" : "#94a3b8" }}>
-                                                {lguForm.barangay || "Select Sitio"}
-                                            </Text>
-                                            <Feather name={showSitioDropdown ? "chevron-up" : "chevron-down"} size={18} color="#94a3b8" />
-                                        </TouchableOpacity>
-
-                                        {showSitioDropdown && (
-                                            <View style={{ 
-                                                marginTop: 8,
-                                                backgroundColor: "#fff", 
-                                                borderRadius: 12, 
-                                                borderWidth: 1, 
-                                                borderColor: "#e2e8f0", 
-                                                overflow: 'hidden',
-                                                maxHeight: 180,
-                                            }}>
-                                                <ScrollView nestedScrollEnabled={true}>
-                                                    {availableLocations.map((sitio, index) => (
-                                                        <TouchableOpacity
-                                                            key={index}
-                                                            style={{ 
-                                                                paddingVertical: 12, 
-                                                                paddingHorizontal: 16, 
-                                                                borderBottomWidth: index === availableLocations.length - 1 ? 0 : 1, 
-                                                                borderBottomColor: "#f1f5f9" 
-                                                            }}
-                                                            onPress={() => {
-                                                                setLguForm({ ...lguForm, barangay: sitio });
-                                                                setShowSitioDropdown(false);
-                                                            }}
-                                                        >
-                                                            <Text style={{ fontSize: 14, color: "#0f172a", fontFamily: "Poppins_400Regular" }}>{sitio}</Text>
-                                                        </TouchableOpacity>
-                                                    ))}
-                                                </ScrollView>
-                                            </View>
-                                        )}
-                                    </View>
-                                )}
-
-                                <View style={pg.formGroup}>
-                                    <Text style={pg.formLabel}>Password <Text style={{ fontSize: 11, color: "#94a3b8", fontFamily: "Poppins_400Regular" }}>(Optional - auto-generated if empty)</Text></Text>
-                                    <TextInput 
-                                        style={pg.formInput} 
-                                        placeholder="Leave blank to auto-generate" 
-                                        placeholderTextColor="#94a3b8"
-                                        secureTextEntry={true}
-                                        value={lguForm.password} 
-                                        onChangeText={(text) => setLguForm({ ...lguForm, password: text })} 
-                                    />
-                                </View>
-                            </ScrollView>
-
-                            <View style={pg.modalFooter}>
-                                <TouchableOpacity style={pg.cancelBtn} onPress={() => setShowAddLGUModal(false)}>
-                                    <Text style={pg.cancelBtnText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity 
-                                    style={pg.submitBtn} 
-                                    onPress={handleCreateUser} 
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
-                                        <>
-                                            <Feather name="check" size={16} color="#fff" style={{ marginRight: 4 }} />
-                                            <Text style={pg.submitBtnText}>Create Account</Text>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
-
-                {/* Edit User Modal */}
-                {showEditUserModal && (
-                    <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-                        <View style={{ width: 450, backgroundColor: "#fff", borderRadius: 16, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 10, elevation: 10 }}>
-                            {/* Header */}
-                            <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#f1f5f9", flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#1e293b" }}>Edit User</Text>
-                                <TouchableOpacity onPress={() => setShowEditUserModal(false)}>
-                                    <Feather name="x" size={24} color="#64748b" />
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* Body */}
-                            <View style={{ padding: 24 }}>
-                                {/* User Info Summary */}
-                                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24, padding: 12, backgroundColor: "#f8fafc", borderRadius: 12 }}>
-                                    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#e2e8f0", justifyContent: "center", alignItems: "center", marginRight: 12, overflow: "hidden" }}>
-                                        {editingUser?.avatar_url ? (
-                                            <Image source={{ uri: `${API_BASE_URL}${editingUser.avatar_url}` }} style={{ width: "100%", height: "100%" }} />
-                                        ) : (
-                                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#64748b" }}>{editingUser?.name?.substring(0, 2)}</Text>
-                                        )}
-                                    </View>
-                                    <View>
-                                        <Text style={{ fontSize: 16, fontFamily: "Poppins_600SemiBold", color: "#334155" }}>{editingUser?.name}</Text>
-                                        <Text style={{ fontSize: 13, color: "#94a3b8" }}>{editingUser?.email}</Text>
-                                    </View>
-                                </View>
-
-                                {/* Full Name */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Full Name <Text style={{ color: "#dc2626" }}>*</Text></Text>
-                                <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, height: 44 }}>
-                                    <Feather name="user" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
-                                    <TextInput
-                                        style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
-                                        placeholder="Enter full name"
-                                        value={editForm.full_name}
-                                        onChangeText={(text) => setEditForm({ ...editForm, full_name: text })}
-                                    />
-                                </View>
-
-                                 {/* Location Dropdown (Available for LGUs and Mobile Users) */}
-                                 {editingUser?.id?.startsWith('u-') && (
-                                    <View style={{ marginBottom: 16, zIndex: 2000 }}>
-                                        <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
-                                            Location (Sitio) <Text style={{ color: "#dc2626" }}>*</Text>
-                                        </Text>
-                                        <TouchableOpacity
-                                            style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44, backgroundColor: "#fff" }}
-                                            onPress={() => setShowEditSitioDropdown(!showEditSitioDropdown)}
-                                        >
-                                            <Feather name="map-pin" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
-                                            <Text style={{ flex: 1, fontSize: 14, color: editForm.barangay ? "#0f172a" : "#94a3b8" }}>
-                                                {editForm.barangay || "Select Sitio"}
-                                            </Text>
-                                            <Feather name={showEditSitioDropdown ? "chevron-up" : "chevron-down"} size={18} color="#94a3b8" />
-                                        </TouchableOpacity>
-
-                                        {showEditSitioDropdown && (
-                                            <View style={{ position: "absolute", top: 50, left: 0, right: 0, backgroundColor: "#fff", borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 5, maxHeight: 150, zIndex: 5001 }}>
-                                                <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
-                                                    {availableLocations.map((sitio, index) => (
-                                                        <TouchableOpacity
-                                                            key={index}
-                                                            style={{ paddingVertical: 8, paddingHorizontal: 12, borderBottomWidth: index === availableLocations.length - 1 ? 0 : 1, borderBottomColor: "#f1f5f9" }}
-                                                            onPress={() => {
-                                                                setEditForm({ ...editForm, barangay: sitio });
-                                                                setShowEditSitioDropdown(false);
-                                                            }}
-                                                        >
-                                                            <Text style={{ fontSize: 14, color: "#0f172a" }}>{sitio}</Text>
-                                                        </TouchableOpacity>
-                                                    ))}
-                                                </ScrollView>
-                                            </View>
-                                        )}
-                                    </View>
-                                )}
-
-                                {/* Status Toggle */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
-                                    Account Status <Text style={{ color: "#dc2626" }}>*</Text>
-                                </Text>
-                                <View style={{ flexDirection: "row", marginBottom: 24, backgroundColor: "#f1f5f9", borderRadius: 8, padding: 4 }}>
-                                    <TouchableOpacity
-                                        style={{ flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 6, backgroundColor: editForm.status === 'active' ? "#fff" : "transparent", shadowColor: editForm.status === 'active' ? "#000" : "transparent", shadowOpacity: 0.1, shadowRadius: 2 }}
-                                        onPress={() => setEditForm({ ...editForm, status: 'active' })}
-                                    >
-                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_500Medium", color: editForm.status === 'active' ? "#16a34a" : "#64748b" }}>Active</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={{ flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 6, backgroundColor: editForm.status === 'inactive' ? "#fff" : "transparent", shadowColor: editForm.status === 'inactive' ? "#000" : "transparent", shadowOpacity: 0.1, shadowRadius: 2 }}
-                                        onPress={() => setEditForm({ ...editForm, status: 'inactive' })}
-                                    >
-                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_500Medium", color: editForm.status === 'inactive' ? "#dc2626" : "#64748b" }}>Inactive</Text>
-                                    </TouchableOpacity>
-                                </View>
-
-                                {/* Role Selection */}
-                                <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
-                                    User Role <Text style={{ color: "#dc2626" }}>*</Text>
-                                </Text>
-                                <View style={{ gap: 8 }}>
-                                    <TouchableOpacity
-                                        style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'user' ? "#2563eb" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'user' ? "#eff6ff" : "#fff" }}
-                                        onPress={() => setEditForm({ ...editForm, role: 'user' })}
-                                    >
-                                        <Feather name="user" size={18} color={editForm.role === 'user' ? "#2563eb" : "#94a3b8"} style={{ marginRight: 12 }} />
-                                        <Text style={{ fontSize: 14, color: editForm.role === 'user' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'user' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Regular User</Text>
-                                        {editForm.role === 'user' && <Feather name="check" size={18} color="#2563eb" style={{ marginLeft: "auto" }} />}
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'lgu_admin' ? "#7c3aed" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'lgu_admin' ? "#f3e8ff" : "#fff" }}
-                                        onPress={() => setEditForm({ ...editForm, role: 'lgu_admin' })}
-                                    >
-                                        <Feather name="shield" size={18} color={editForm.role === 'lgu_admin' ? "#7c3aed" : "#94a3b8"} style={{ marginRight: 12 }} />
-                                        <Text style={{ fontSize: 14, color: editForm.role === 'lgu_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'lgu_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>LGU Moderator</Text>
-                                        {editForm.role === 'lgu_admin' && <Feather name="check" size={18} color="#7c3aed" style={{ marginLeft: "auto" }} />}
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'super_admin' ? "#dc2626" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'super_admin' ? "#fee2e2" : "#fff" }}
-                                        onPress={() => setEditForm({ ...editForm, role: 'super_admin' })}
-                                    >
-                                        <Feather name="lock" size={18} color={editForm.role === 'super_admin' ? "#dc2626" : "#94a3b8"} style={{ marginRight: 12 }} />
-                                        <Text style={{ fontSize: 14, color: editForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'super_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Admin</Text>
-                                        {editForm.role === 'super_admin' && <Feather name="check" size={18} color="#dc2626" style={{ marginLeft: "auto" }} />}
-                                    </TouchableOpacity>
-                                </View>
-
-                                 {/* Password Change (Only for LGUs) */}
-                                 {editForm.role === 'lgu_admin' && (
-                                     <View style={{ marginTop: 16, marginBottom: 16 }}>
-                                         <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Change Password</Text>
-                                         <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44 }}>
-                                             <Feather name="key" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
-                                             <TextInput
-                                                 style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
-                                                 placeholder="Enter new password"
-                                                 secureTextEntry={!showEditPassword}
-                                                 value={editForm.password}
-                                                 onChangeText={(text) => setEditForm({ ...editForm, password: text })}
-                                             />
-                                             <TouchableOpacity onPress={() => setShowEditPassword(!showEditPassword)}>
-                                                 <Feather name={showEditPassword ? "eye-off" : "eye"} size={18} color="#94a3b8" />
-                                             </TouchableOpacity>
-                                         </View>
-                                         <Text style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Leave blank to keep current password</Text>
-                                     </View>
-                                 )}
-
-                                {/* Save Button */}
-                                <TouchableOpacity
-                                    style={{ marginTop: 32, backgroundColor: "#2563eb", paddingVertical: 12, borderRadius: 16, alignItems: "center" }}
-                                    onPress={handleUpdateUser}
-                                    disabled={isSubmitting}
-                                >
-                                    <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Poppins_700Bold" }}>
-                                        {isSubmitting ? "Saving Changes..." : "Save Changes"}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                )}
-
-                {/* Success Modal */}
-                <Modal visible={showSuccessModal} transparent animationType="fade">
-                    <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
-                        <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
-                            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#dcfce7", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                                <Feather name="check-circle" size={32} color="#16a34a" />
-                            </View>
-                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Success!</Text>
-                            <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{successMessage}</Text>
-                            <TouchableOpacity style={pg.submitBtn} onPress={() => setShowSuccessModal(false)}>
-                                <Text style={pg.submitBtnText}>Done</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
-
-                {/* Delete Confirmation Modal */}
-                <Modal visible={showDeleteModal} transparent animationType="fade">
-                    <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
-                        <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
-                            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                                <Feather name="trash-2" size={32} color="#dc2626" />
-                            </View>
-                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Delete User?</Text>
-                            <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>
-                                Are you sure you want to delete <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#0f172a" }}>{userToDelete?.name || "this user"}</Text>? This action cannot be undone.
+                        <View>
+                            <Text style={styles.dashboardTopTitle}>User Management</Text>
+                            <Text style={styles.dashboardTopSubtitle}>
+                                Manage all user accounts and permissions
                             </Text>
-                            <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
-                                <TouchableOpacity style={[pg.cancelBtn, { flex: 1 }]} onPress={cancelDelete}>
-                                    <Text style={pg.cancelBtnText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity 
-                                    style={[pg.submitBtn, { flex: 1, backgroundColor: "#dc2626" }]} 
-                                    onPress={confirmDelete}
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
-                                        <Text style={pg.submitBtnText}>Delete</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
+                        </View>
+                        <View style={styles.dashboardTopRight}>
+                            <TopRightStatusIndicator />
+                            <RealTimeClock style={styles.dashboardTopDate} />
                         </View>
                     </View>
-                </Modal>
 
-                {/* Error Modal */}
-                <Modal visible={showErrorModal} transparent animationType="fade">
-                    <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
-                        <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
-                            <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                                <Feather name="alert-circle" size={32} color="#dc2626" />
-                            </View>
-                            <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8 }}>Error</Text>
-                            <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{errorMessage}</Text>
-                            <TouchableOpacity style={[pg.submitBtn, { backgroundColor: "#dc2626" }]} onPress={() => setShowErrorModal(false)}>
-                                <Text style={pg.submitBtnText}>Close</Text>
-                            </TouchableOpacity>
+                    <ScrollView
+                        style={styles.dashboardScroll}
+                        contentContainerStyle={styles.dashboardScrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {/* Stats Cards */}
+                        <View style={pg.statsRow}>
+                            {[
+                                { icon: "users", label: "Total Users", value: stats.total_users, color: "#2563eb", bg: "#eff6ff", filter: { r: "All Roles", s: "All Status" } },
+                                { icon: "user-check", label: "Active Users", value: stats.active_users, color: "#16a34a", bg: "#dcfce7", filter: { r: "All Roles", s: "Active" } },
+                                { icon: "shield", label: "LGU Moderators", value: stats.lgu_moderators, color: "#7c3aed", bg: "#f3e8ff", filter: { r: "LGU Moderator", s: "All Status" } },
+                                { icon: "lock", label: "Admins", value: stats.super_admins, color: "#dc2626", bg: "#fee2e2", filter: { r: "Admin", s: "All Status" } },
+                            ].map((card) => (
+                                <TouchableOpacity
+                                    key={card.label}
+                                    style={pg.statsCard}
+                                    onPress={() => { setRoleFilter(card.filter.r); setStatusFilter(card.filter.s); }}
+                                >
+                                    <View style={[pg.statsIcon, { backgroundColor: card.bg }]}>
+                                        <Feather name={card.icon} size={20} color={card.color} />
+                                    </View>
+                                    <Text style={pg.statsValue}>{card.value}</Text>
+                                    <Text style={pg.statsLabel}>{card.label}</Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
-                    </View>
-                </Modal>
-            </>
-        </View>
-    </View>
-    );
-};
+
+                        {/* Filter Bar */}
+                        <View style={[pg.toolbar, { zIndex: 100, overflow: 'visible' }]}>
+                            <View style={pg.searchBox}>
+                                <Feather name="search" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+                                <TextInput
+                                    style={pg.searchInput}
+                                    placeholder="Search users by name, email, or location..."
+                                    placeholderTextColor="#94a3b8"
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                />
+                            </View>
+
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, zIndex: 110, overflow: 'visible' }}>
+                                {/* Role Filter */}
+                                <View style={{ zIndex: 120 }}>
+                                    <TouchableOpacity
+                                        style={pg.filterSelect}
+                                        onPress={() => {
+                                            setShowRoleDropdown(!showRoleDropdown);
+                                            setShowStatusDropdown(false);
+                                        }}
+                                    >
+                                        <Text style={pg.filterSelectText}>{roleFilter}</Text>
+                                        <Feather name={showRoleDropdown ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
+                                    </TouchableOpacity>
+
+                                    {showRoleDropdown && (
+                                        <View style={pg.dropdown}>
+                                            {["All Roles", "Admin", "LGU Moderator", "User"].map((role) => (
+                                                <TouchableOpacity
+                                                    key={role}
+                                                    style={pg.dropdownItem}
+                                                    onPress={() => {
+                                                        setRoleFilter(role);
+                                                        setShowRoleDropdown(false);
+                                                    }}
+                                                >
+                                                    <Text style={[pg.dropdownItemText, roleFilter === role && { fontFamily: "Poppins_700Bold", color: '#2563eb' }]}>{role}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Status Filter */}
+                                <View style={{ zIndex: 120 }}>
+                                    <TouchableOpacity
+                                        style={pg.filterSelect}
+                                        onPress={() => {
+                                            setShowStatusDropdown(!showStatusDropdown);
+                                            setShowRoleDropdown(false);
+                                        }}
+                                    >
+                                        <Text style={pg.filterSelectText}>{statusFilter}</Text>
+                                        <Feather name={showStatusDropdown ? "chevron-up" : "chevron-down"} size={16} color="#475569" />
+                                    </TouchableOpacity>
+
+                                    {showStatusDropdown && (
+                                        <View style={pg.dropdown}>
+                                            {["All Status", "Active", "Inactive"].map((status) => (
+                                                <TouchableOpacity
+                                                    key={status}
+                                                    style={pg.dropdownItem}
+                                                    onPress={() => {
+                                                        setStatusFilter(status);
+                                                        setShowStatusDropdown(false);
+                                                    }}
+                                                >
+                                                    <Text style={[pg.dropdownItemText, statusFilter === status && { fontFamily: "Poppins_700Bold", color: '#2563eb' }]}>{status}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    )}
+                                </View>
+
+                                <TouchableOpacity style={pg.addUserBtn} onPress={handleAddUserClick}>
+                                    <Feather name="plus" size={18} color="#ffffff" />
+                                    <Text style={pg.addUserBtnText}>Add User</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* User Table Card */}
+                        <View style={[styles.userTableCard, { zIndex: 1 }]}>
+                            <View style={styles.userTableHeader}>
+                                <Text style={[styles.userTableHeaderCell, styles.userColUser]}>User</Text>
+                                <Text style={[styles.userTableHeaderCell, styles.userColRole]}>Role</Text>
+                                <Text style={[styles.userTableHeaderCell, styles.userColLocation]}>Location</Text>
+                                <Text style={[styles.userTableHeaderCell, styles.userColStatus]}>Status</Text>
+                                <Text style={[styles.userTableHeaderCell, styles.userColJoined]}>Joined</Text>
+                                <Text style={[styles.userTableHeaderCell, styles.userColActions]}>Actions</Text>
+                            </View>
+
+                            {filteredUsers.map((user) => {
+                                const roleStyle = getRoleBadgeStyle(user.role);
+                                const statusStyle = getStatusBadgeStyle(user.status);
+
+                                return (
+                                    <View key={user.id} style={styles.userTableRow}>
+                                        <View style={[styles.userCellUser, styles.userColUser]}>
+                                            <View style={styles.userAvatar}>
+                                                {user.avatar_url ? (
+                                                    <Image
+                                                        source={{ uri: `${API_BASE_URL}${user.avatar_url}` }}
+                                                        style={{ width: "100%", height: "100%", borderRadius: 16 }}
+                                                    />
+                                                ) : (
+                                                    <Text style={styles.userAvatarText}>
+                                                        {user.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user.name}</Text>
+                                                <Text style={styles.userEmail} numberOfLines={1} ellipsizeMode="tail">{user.email || "No Email"}</Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.userColRole}>
+                                            <View style={[styles.userRoleBadge, { backgroundColor: roleStyle.backgroundColor }]}>
+                                                <Text style={[styles.userRoleBadgeText, { color: roleStyle.color }]}>{user.role}</Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.userColLocation}>
+                                            <Text style={styles.userCellText}>{user.location}</Text>
+                                        </View>
+
+                                        <View style={styles.userColStatus}>
+                                            <View style={[styles.userStatusBadge, { backgroundColor: statusStyle.bg }]}>
+                                                <View style={[styles.userStatusDot, { backgroundColor: statusStyle.dot }]} />
+                                                <Text style={[styles.userStatusText, { color: statusStyle.text }]}>{user.status.toUpperCase()}</Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.userColJoined}>
+                                            <Text style={styles.userCellText}>{formatPST(user.joined)}</Text>
+                                        </View>
+
+                                        <View style={styles.userColActions}>
+                                            <View style={styles.userActionButtons}>
+                                                {user.role === 'Admin' ? (
+                                                    <>
+                                                        <View style={[styles.userActionButton, { opacity: 0.6 }]}>
+                                                            <Feather name="lock" size={16} color="#64748b" />
+                                                        </View>
+                                                        <TouchableOpacity
+                                                            style={[styles.userActionButton, { backgroundColor: '#ffffff', borderColor: '#e2e8f0' }]}
+                                                            onPress={() => handleDeleteUser(user)}
+                                                        >
+                                                            <Feather name="trash-2" size={16} color="#dc2626" />
+                                                        </TouchableOpacity>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <TouchableOpacity
+                                                            style={styles.userActionButton}
+                                                            onPress={() => handleEditUserClick(user)}
+                                                        >
+                                                            <Feather name="edit-2" size={16} color="#2563eb" />
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            style={[styles.userActionButton, { backgroundColor: '#ffffff', borderColor: '#e2e8f0' }]}
+                                                            onPress={() => handleDeleteUser(user)}
+                                                        >
+                                                            <Feather name="trash-2" size={16} color="#dc2626" />
+                                                        </TouchableOpacity>
+                                                    </>
+                                                )}
+                                            </View>
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </View>
+
+                    </ScrollView>
+
+                    {/* Add User Modal */}
+                    <Modal visible={showAddLGUModal} transparent animationType="fade">
+                        <View style={pg.modalOverlay}>
+                            <View style={pg.modalBox}>
+                                <LinearGradient colors={["#001D39", "#0A4174"]} style={pg.modalHeader}>
+                                    <Text style={pg.modalTitle}>Add New User</Text>
+                                    <TouchableOpacity onPress={() => setShowAddLGUModal(false)}>
+                                        <Feather name="x" size={22} color="#fff" />
+                                    </TouchableOpacity>
+                                </LinearGradient>
+
+                                <ScrollView style={pg.modalBody} showsVerticalScrollIndicator={false}>
+                                    <View style={pg.formGrid}>
+                                        <View style={pg.formGroup}>
+                                            <Text style={pg.formLabel}>Full Name <Text style={{ color: "#dc2626" }}>*</Text></Text>
+                                            <TextInput
+                                                style={pg.formInput}
+                                                placeholder="Enter full name"
+                                                placeholderTextColor="#94a3b8"
+                                                value={lguForm.full_name}
+                                                onChangeText={(text) => setLguForm({ ...lguForm, full_name: text })}
+                                            />
+                                        </View>
+                                        <View style={pg.formGroup}>
+                                            <Text style={pg.formLabel}>Email Address <Text style={{ color: "#dc2626" }}>*</Text></Text>
+                                            <TextInput
+                                                style={pg.formInput}
+                                                placeholder="Enter email address"
+                                                placeholderTextColor="#94a3b8"
+                                                value={lguForm.email}
+                                                onChangeText={(text) => setLguForm({ ...lguForm, email: text })}
+                                            />
+                                        </View>
+                                    </View>
+
+                                    <View style={pg.formGroup}>
+                                        <Text style={pg.formLabel}>Account Role <Text style={{ color: "#dc2626" }}>*</Text></Text>
+                                        <View style={{ flexDirection: "row", gap: 8 }}>
+                                            {[
+                                                { label: "User", value: "user", color: "#2563eb", bg: "#eff6ff" },
+                                                { label: "LGU", value: "lgu_admin", color: "#7c3aed", bg: "#f3e8ff" },
+                                                { label: "Admin", value: "super_admin", color: "#dc2626", bg: "#fee2e2" }
+                                            ].map((role) => (
+                                                <TouchableOpacity
+                                                    key={role.value}
+                                                    style={{
+                                                        flex: 1,
+                                                        flexDirection: "row",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        padding: 10,
+                                                        borderWidth: 1.5,
+                                                        borderColor: lguForm.role === role.value ? role.color : "#e2e8f0",
+                                                        borderRadius: 12,
+                                                        backgroundColor: lguForm.role === role.value ? role.bg : "#f8fafc"
+                                                    }}
+                                                    onPress={() => setLguForm({ ...lguForm, role: role.value })}
+                                                >
+                                                    <Text style={{
+                                                        fontSize: 13,
+                                                        color: lguForm.role === role.value ? "#1e293b" : "#64748b",
+                                                        fontFamily: lguForm.role === role.value ? "Poppins_600SemiBold" : "Poppins_400Regular"
+                                                    }}>{role.label}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </View>
+
+                                    {lguForm.role !== 'super_admin' && (
+                                        <View style={[pg.formGroup, { zIndex: 1000 }]}>
+                                            <Text style={pg.formLabel}>Location (Sitio) <Text style={{ color: "#dc2626" }}>*</Text></Text>
+                                            <TouchableOpacity
+                                                style={[pg.formInput, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
+                                                onPress={() => setShowSitioDropdown(!showSitioDropdown)}
+                                            >
+                                                <Text style={{ color: lguForm.barangay ? "#0f172a" : "#94a3b8" }}>
+                                                    {lguForm.barangay || "Select Sitio"}
+                                                </Text>
+                                                <Feather name={showSitioDropdown ? "chevron-up" : "chevron-down"} size={18} color="#94a3b8" />
+                                            </TouchableOpacity>
+
+                                            {showSitioDropdown && (
+                                                <View style={{
+                                                    position: "absolute",
+                                                    top: 75,
+                                                    left: 0,
+                                                    right: 0,
+                                                    backgroundColor: "#fff",
+                                                    borderRadius: 12,
+                                                    borderWidth: 1,
+                                                    borderColor: "#e2e8f0",
+                                                    overflow: 'hidden',
+                                                    maxHeight: 180,
+                                                    zIndex: 1001,
+                                                    shadowColor: "#000",
+                                                    shadowOpacity: 0.1,
+                                                    shadowRadius: 4,
+                                                    elevation: 5
+                                                }}>
+                                                    <ScrollView nestedScrollEnabled={true}>
+                                                        {availableLocations.map((sitio, index) => (
+                                                            <TouchableOpacity
+                                                                key={index}
+                                                                style={{
+                                                                    paddingVertical: 12,
+                                                                    paddingHorizontal: 16,
+                                                                    borderBottomWidth: index === availableLocations.length - 1 ? 0 : 1,
+                                                                    borderBottomColor: "#f1f5f9"
+                                                                }}
+                                                                onPress={() => {
+                                                                    setLguForm({ ...lguForm, barangay: sitio });
+                                                                    setShowSitioDropdown(false);
+                                                                }}
+                                                            >
+                                                                <Text style={{ fontSize: 14, color: "#0f172a", fontFamily: "Poppins_400Regular" }}>{sitio}</Text>
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </ScrollView>
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    <View style={pg.formGroup}>
+                                        <Text style={pg.formLabel}>Password <Text style={{ fontSize: 11, color: "#94a3b8", fontFamily: "Poppins_400Regular" }}>(Optional - auto-generated if empty)</Text></Text>
+                                        <TextInput
+                                            style={pg.formInput}
+                                            placeholder="Leave blank to auto-generate"
+                                            placeholderTextColor="#94a3b8"
+                                            secureTextEntry={true}
+                                            value={lguForm.password}
+                                            onChangeText={(text) => setLguForm({ ...lguForm, password: text })}
+                                        />
+                                    </View>
+                                </ScrollView>
+
+                                <View style={pg.modalFooter}>
+                                    <TouchableOpacity style={pg.cancelBtn} onPress={() => setShowAddLGUModal(false)}>
+                                        <Text style={pg.cancelBtnText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={pg.submitBtn}
+                                        onPress={handleCreateUser}
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
+                                            <>
+                                                <Feather name="check" size={16} color="#fff" style={{ marginRight: 4 }} />
+                                                <Text style={pg.submitBtnText}>Create Account</Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+
+                    {/* Edit User Modal */}
+                    {showEditUserModal && (
+                        <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+                            <View style={{ width: 450, backgroundColor: "#fff", borderRadius: 16, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 10, elevation: 10 }}>
+                                {/* Header */}
+                                <LinearGradient colors={["#001D39", "#0A4174"]} style={pg.modalHeader}>
+                                    <Text style={pg.modalTitle}>Edit User</Text>
+                                    <TouchableOpacity onPress={() => setShowEditUserModal(false)}>
+                                        <Feather name="x" size={22} color="#fff" />
+                                    </TouchableOpacity>
+                                </LinearGradient>
+
+                                {/* Body */}
+                                <View style={{ padding: 24 }}>
+                                    {/* User Info Summary */}
+                                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24, padding: 12, backgroundColor: "#f8fafc", borderRadius: 12 }}>
+                                        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#e2e8f0", justifyContent: "center", alignItems: "center", marginRight: 12, overflow: "hidden" }}>
+                                            {editingUser?.avatar_url ? (
+                                                <Image source={{ uri: `${API_BASE_URL}${editingUser.avatar_url}` }} style={{ width: "100%", height: "100%" }} />
+                                            ) : (
+                                                <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#64748b" }}>{editingUser?.name?.substring(0, 2)}</Text>
+                                            )}
+                                        </View>
+                                        <View>
+                                            <Text style={{ fontSize: 16, fontFamily: "Poppins_600SemiBold", color: "#334155" }}>{editingUser?.name}</Text>
+                                            <Text style={{ fontSize: 13, color: "#94a3b8" }}>{editingUser?.email}</Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Full Name */}
+                                    <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Full Name <Text style={{ color: "#dc2626" }}>*</Text></Text>
+                                    <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, marginBottom: 16, height: 44 }}>
+                                        <Feather name="user" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+                                        <TextInput
+                                            style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
+                                            placeholder="Enter full name"
+                                            value={editForm.full_name}
+                                            onChangeText={(text) => setEditForm({ ...editForm, full_name: text })}
+                                        />
+                                    </View>
+
+                                    {/* Location Dropdown (Available for LGUs and Mobile Users) */}
+                                    {editingUser?.id?.startsWith('u-') && (
+                                        <View style={{ marginBottom: 16, zIndex: 2000 }}>
+                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
+                                                Location (Sitio) <Text style={{ color: "#dc2626" }}>*</Text>
+                                            </Text>
+                                            <TouchableOpacity
+                                                style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44, backgroundColor: "#fff" }}
+                                                onPress={() => setShowEditSitioDropdown(!showEditSitioDropdown)}
+                                            >
+                                                <Feather name="map-pin" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+                                                <Text style={{ flex: 1, fontSize: 14, color: editForm.barangay ? "#0f172a" : "#94a3b8" }}>
+                                                    {editForm.barangay || "Select Sitio"}
+                                                </Text>
+                                                <Feather name={showEditSitioDropdown ? "chevron-up" : "chevron-down"} size={18} color="#94a3b8" />
+                                            </TouchableOpacity>
+
+                                            {showEditSitioDropdown && (
+                                                <View style={{ position: "absolute", top: 50, left: 0, right: 0, backgroundColor: "#fff", borderRadius: 8, borderWidth: 1, borderColor: "#e2e8f0", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 5, maxHeight: 150, zIndex: 5001 }}>
+                                                    <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }}>
+                                                        {availableLocations.map((sitio, index) => (
+                                                            <TouchableOpacity
+                                                                key={index}
+                                                                style={{ paddingVertical: 8, paddingHorizontal: 12, borderBottomWidth: index === availableLocations.length - 1 ? 0 : 1, borderBottomColor: "#f1f5f9" }}
+                                                                onPress={() => {
+                                                                    setEditForm({ ...editForm, barangay: sitio });
+                                                                    setShowEditSitioDropdown(false);
+                                                                }}
+                                                            >
+                                                                <Text style={{ fontSize: 14, color: "#0f172a" }}>{sitio}</Text>
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </ScrollView>
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    {/* Status Toggle */}
+                                    <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
+                                        Account Status <Text style={{ color: "#dc2626" }}>*</Text>
+                                    </Text>
+                                    <View style={{ flexDirection: "row", marginBottom: 24, backgroundColor: "#f1f5f9", borderRadius: 8, padding: 4 }}>
+                                        <TouchableOpacity
+                                            style={{ flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 6, backgroundColor: editForm.status === 'active' ? "#fff" : "transparent", shadowColor: editForm.status === 'active' ? "#000" : "transparent", shadowOpacity: 0.1, shadowRadius: 2 }}
+                                            onPress={() => setEditForm({ ...editForm, status: 'active' })}
+                                        >
+                                            <Text style={{ fontSize: 14, fontFamily: "Poppins_500Medium", color: editForm.status === 'active' ? "#16a34a" : "#64748b" }}>Active</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={{ flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 6, backgroundColor: editForm.status === 'inactive' ? "#fff" : "transparent", shadowColor: editForm.status === 'inactive' ? "#000" : "transparent", shadowOpacity: 0.1, shadowRadius: 2 }}
+                                            onPress={() => setEditForm({ ...editForm, status: 'inactive' })}
+                                        >
+                                            <Text style={{ fontSize: 14, fontFamily: "Poppins_500Medium", color: editForm.status === 'inactive' ? "#dc2626" : "#64748b" }}>Inactive</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* Role Selection */}
+                                    <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>
+                                        User Role <Text style={{ color: "#dc2626" }}>*</Text>
+                                    </Text>
+                                    <View style={{ gap: 8 }}>
+                                        <TouchableOpacity
+                                            style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'user' ? "#2563eb" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'user' ? "#eff6ff" : "#fff" }}
+                                            onPress={() => setEditForm({ ...editForm, role: 'user' })}
+                                        >
+                                            <Feather name="user" size={18} color={editForm.role === 'user' ? "#2563eb" : "#94a3b8"} style={{ marginRight: 12 }} />
+                                            <Text style={{ fontSize: 14, color: editForm.role === 'user' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'user' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Regular User</Text>
+                                            {editForm.role === 'user' && <Feather name="check" size={18} color="#2563eb" style={{ marginLeft: "auto" }} />}
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'lgu_admin' ? "#7c3aed" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'lgu_admin' ? "#f3e8ff" : "#fff" }}
+                                            onPress={() => setEditForm({ ...editForm, role: 'lgu_admin' })}
+                                        >
+                                            <Feather name="shield" size={18} color={editForm.role === 'lgu_admin' ? "#7c3aed" : "#94a3b8"} style={{ marginRight: 12 }} />
+                                            <Text style={{ fontSize: 14, color: editForm.role === 'lgu_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'lgu_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>LGU Moderator</Text>
+                                            {editForm.role === 'lgu_admin' && <Feather name="check" size={18} color="#7c3aed" style={{ marginLeft: "auto" }} />}
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={{ flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 1, borderColor: editForm.role === 'super_admin' ? "#dc2626" : "#e2e8f0", borderRadius: 8, backgroundColor: editForm.role === 'super_admin' ? "#fee2e2" : "#fff" }}
+                                            onPress={() => setEditForm({ ...editForm, role: 'super_admin' })}
+                                        >
+                                            <Feather name="lock" size={18} color={editForm.role === 'super_admin' ? "#dc2626" : "#94a3b8"} style={{ marginRight: 12 }} />
+                                            <Text style={{ fontSize: 14, color: editForm.role === 'super_admin' ? "#1e293b" : "#64748b", fontFamily: editForm.role === 'super_admin' ? "Poppins_600SemiBold" : "Poppins_400Regular" }}>Admin</Text>
+                                            {editForm.role === 'super_admin' && <Feather name="check" size={18} color="#dc2626" style={{ marginLeft: "auto" }} />}
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* Password Change (Only for LGUs) */}
+                                    {editForm.role === 'lgu_admin' && (
+                                        <View style={{ marginTop: 16, marginBottom: 16 }}>
+                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#334155", marginBottom: 8 }}>Change Password</Text>
+                                            <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44 }}>
+                                                <Feather name="key" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+                                                <TextInput
+                                                    style={{ flex: 1, fontSize: 14, color: "#0f172a", outlineStyle: 'none' }}
+                                                    placeholder="Enter new password"
+                                                    secureTextEntry={!showEditPassword}
+                                                    value={editForm.password}
+                                                    onChangeText={(text) => setEditForm({ ...editForm, password: text })}
+                                                />
+                                                <TouchableOpacity onPress={() => setShowEditPassword(!showEditPassword)}>
+                                                    <Feather name={showEditPassword ? "eye-off" : "eye"} size={18} color="#94a3b8" />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <Text style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Leave blank to keep current password</Text>
+                                        </View>
+                                    )}
+
+                                    {/* Save Button */}
+                                    <TouchableOpacity
+                                        style={{ marginTop: 32, backgroundColor: "#2563eb", paddingVertical: 12, borderRadius: 16, alignItems: "center" }}
+                                        onPress={handleUpdateUser}
+                                        disabled={isSubmitting}
+                                    >
+                                        <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Poppins_700Bold" }}>
+                                            {isSubmitting ? "Saving Changes..." : "Save Changes"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Success Modal */}
+                    <Modal visible={showSuccessModal} transparent animationType="fade">
+                        <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
+                            <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
+                                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#dcfce7", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                                    <Feather name="check-circle" size={32} color="#16a34a" />
+                                </View>
+                                <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Success!</Text>
+                                <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{successMessage}</Text>
+                                <TouchableOpacity style={pg.submitBtn} onPress={() => setShowSuccessModal(false)}>
+                                    <Text style={pg.submitBtnText}>Done</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
+
+                    {/* Delete Confirmation Modal */}
+                    <Modal visible={showDeleteModal} transparent animationType="fade">
+                        <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
+                            <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
+                                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                                    <Feather name="trash-2" size={32} color="#dc2626" />
+                                </View>
+                                <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Delete User?</Text>
+                                <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>
+                                    Are you sure you want to delete <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#0f172a" }}>{userToDelete?.name || "this user"}</Text>? This action cannot be undone.
+                                </Text>
+                                <View style={{ flexDirection: "row", gap: 12, width: "100%" }}>
+                                    <TouchableOpacity style={[pg.cancelBtn, { flex: 1 }]} onPress={cancelDelete}>
+                                        <Text style={pg.cancelBtnText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[pg.submitBtn, { flex: 1, backgroundColor: "#dc2626" }]}
+                                        onPress={confirmDelete}
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? <ActivityIndicator size="small" color="#fff" /> : (
+                                            <Text style={pg.submitBtnText}>Delete</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+
+                    {/* Error Modal */}
+                    <Modal visible={showErrorModal} transparent animationType="fade">
+                        <View style={[pg.modalOverlay, { zIndex: 10000 }]}>
+                            <View style={[pg.modalBox, { maxWidth: 400, padding: 32, alignItems: "center" }]}>
+                                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                                    <Feather name="alert-circle" size={32} color="#dc2626" />
+                                </View>
+                                <Text style={{ fontSize: 18, fontFamily: "Poppins_700Bold", color: "#0f172a", marginBottom: 8 }}>Error</Text>
+                                <Text style={{ fontSize: 14, fontFamily: "Poppins_400Regular", color: "#64748b", textAlign: "center", marginBottom: 24 }}>{errorMessage}</Text>
+                                <TouchableOpacity style={[pg.submitBtn, { backgroundColor: "#dc2626" }]} onPress={() => setShowErrorModal(false)}>
+                                    <Text style={pg.submitBtnText}>Close</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
+                </>
+            </View>
+        );
+    };
 
 export default UserManagementPage;
 
