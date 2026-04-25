@@ -45,6 +45,7 @@ def create_evacuation_center():
             INSERT INTO evacuation_centers (name, location, lat, lng, capacity, phone)
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (name, location, lat, lng, capacity, phone))
+        center_id = cursor.lastrowid
         
         # Automatically create an alert for the new center
         alert_title = f"New Evacuation Center: {name}"
@@ -53,29 +54,26 @@ def create_evacuation_center():
             INSERT INTO alerts (title, description, level, barangay, status, evacuation_status, evacuation_location, evacuation_capacity, timestamp)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (alert_title, alert_description, 'evacuation', 'All', 'active', 'open', location, capacity, format_pst(get_pst_now())))
+        alert_id = cursor.lastrowid
 
         db.commit()
-        alert_id = cursor.lastrowid
-        
-        # Correctly capture the center_id which was inserted first
-        cursor.execute("SELECT id FROM evacuation_centers WHERE name = %s AND location = %s ORDER BY id DESC LIMIT 1", (name, location))
-        row = cursor.fetchone()
-        center_id = row[0] if row else alert_id
 
         # ── REAL-TIME BROADCAST: Instant delivery to mobile apps ──
-        try:
-            from socket_instance import socketio
-            # Notify about new evacuation center
-            socketio.emit("new_notification", {
-                "type": "alert", # Treat as alert for instant popup
-                "id": alert_id,
-                "title": alert_title,
-                "description": alert_description,
-                "location": location,
-                "capacity": capacity,
-                "timestamp": get_pst_now().isoformat()
-            }, namespace="/")
-        except: pass
+        from socket_instance import socketio
+        # Notify about new evacuation center
+        socketio.emit("new_notification", {
+            "type": "alert", # Treat as alert for instant popup
+            "level": "evacuation",
+            "id": alert_id,
+            "title": alert_title,
+            "description": alert_description,
+            "name": name,
+            "location": location,
+            "capacity": capacity,
+            "evacuation_status": "open", 
+            "status": "active",
+            "timestamp": get_pst_now().isoformat()
+        }, namespace="/")
 
         _emit_evacuation_update()
 
@@ -139,17 +137,20 @@ def update_evacuation_center(center_id):
         alert_id = cursor.fetchone()[0]
 
         # Broadcast the alert via WebSocket
-        try:
-            from socket_instance import socketio
-            socketio.emit("new_notification", {
-                "type": "alert",
-                "id": alert_id,
-                "level": "evacuation",
-                "title": alert_title,
-                "description": alert_description,
-                "timestamp": get_pst_now().isoformat()
-            }, namespace="/")
-        except: pass
+        from socket_instance import socketio
+        socketio.emit("new_notification", {
+            "type": "alert",
+            "id": alert_id,
+            "level": "evacuation",
+            "title": alert_title,
+            "description": alert_description,
+            "name": c[0],
+            "location": c[1],
+            "evacuation_status": c[2],
+            "status": "active",
+            "capacity": c[3],
+            "timestamp": get_pst_now().isoformat()
+        }, namespace="/")
 
         _emit_evacuation_update()
 

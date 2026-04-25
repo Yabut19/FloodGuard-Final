@@ -27,6 +27,7 @@ import {
   Switch,
   BackHandler,
   InteractionManager,
+  AppState,
 } from "react-native";
 import { NavigationContainer, useFocusEffect, createNavigationContainerRef } from "@react-navigation/native";
 
@@ -96,22 +97,38 @@ const SocketProvider = ({ children }) => {
       console.log("[Socket] Creating fresh connection...");
       globalMobileSocket = io(API_BASE, {
         transports: ["websocket", "polling"],
-        reconnectionAttempts: 10,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
         timeout: 20000,
+        pingTimeout: 10000,
+        pingInterval: 5000,
       });
 
       globalMobileSocket.on("connect", () => console.log("[Socket] Connection established"));
       globalMobileSocket.on("disconnect", (reason) => {
         console.log("[Socket] Connection lost:", reason);
-        // If it was a deliberate disconnect from our side, it will be handled by the manual reset
       });
     }
     
     setSocket(globalMobileSocket);
+
+    // ── FOREGROUND LIVELINESS GUARD ──
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log("[Socket] App returned to foreground, checking connection...");
+        if (globalMobileSocket && !globalMobileSocket.connected) {
+          globalMobileSocket.connect();
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
     
     return () => {
-      // Clean up listener on unmount
       if (socketResetListener === setReinitTicket) socketResetListener = null;
+      subscription.remove();
     };
   }, [reinitTicket]);
 
@@ -4983,6 +5000,8 @@ function NotificationProvider({ children }) {
     if (!socket) return;
 
     socket.on("new_notification", async (data) => {
+      console.log("[WS] Received raw notification data:", data);
+      console.log("[WS] Current Socket Connected:", socket.connected);
       // ── NAVIGATION GUARD: Don't show popups on auth-related screens ──
       if (navigationRef.isReady()) {
         const route = navigationRef.getCurrentRoute();
@@ -5010,51 +5029,56 @@ function NotificationProvider({ children }) {
       shownIds.current.add(normalizedId);
 
       // ── PRIORITY 1: SHOW DIALOG IMMEDIATELY ──
-      // Using InteractionManager ensures this system call isn't blocked by background tasks
-      InteractionManager.runAfterInteractions(() => {
-        const isActiveBroadcast = data.status ? data.status === 'active' : true;
-        if (isActiveBroadcast && (
-          data.level === 'critical' || 
-          data.level === 'warning' || 
-          data.level === 'evacuation' || 
-          data.type === 'alert' || 
-          data.type === 'auto_alert' ||
-          data.type === 'verified_report' ||
-          data.type === 'evacuation_center'
-        )) {
-          // ── CONTENT FORMATTING ──
-          let message = "";
-          if (data.type === 'verified_report') {
-             message = `📍 Location: ${data.barangay}\n🔍 Incident: ${data.description}\n🤝 Response: ${data.recommendations || 'LGU is monitoring and responding'}`;
-          } else if (data.level === 'evacuation' || data.type === 'evacuation_center') {
-             message = data.description;
-          } else {
-             const levelLabel = data.level ? data.level.toUpperCase() : 'ADVISORY';
-             message = `📍 Location: ${data.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${data.recommended_action || 'Follow safety protocols'}\n\n${data.description}`;
-          }
-
-          Alert.alert(
-            `📢 ${data.title}`,
-            message,
-            [
-              {
-                text: "Dismiss",
-                style: "cancel",
-                onPress: () => markAsRead(normalizedId)
-              },
-              {
-                text: "View Details",
-                style: "default",
-                onPress: () => {
-                  markAsRead(normalizedId);
-                  const alertObj = { ...data, id: normalizedId };
-                  globalNavigate("AlertDetail", { alert: alertObj });
-                }
-              }
-            ]
-          );
+      const isActiveBroadcast = data.status ? data.status === 'active' : true;
+      if (isActiveBroadcast && (
+        data.level === 'critical' || 
+        data.level === 'warning' || 
+        data.level === 'evacuation' || 
+        data.type === 'alert' || 
+        data.type === 'auto_alert' ||
+        data.type === 'verified_report' ||
+        data.type === 'evacuation_center'
+      )) {
+        // ── CONTENT FORMATTING ──
+        let message = "";
+        if (data.type === 'verified_report') {
+           message = `📍 Location: ${data.barangay}\n🔍 Incident: ${data.description}\n🤝 Response: ${data.recommendations || 'LGU is monitoring and responding'}`;
+        } else if (data.level === 'evacuation' || data.type === 'evacuation_center') {
+           const location = data.location || data.evacuation_location || 'Not Specified';
+           const capacity = data.capacity || data.evacuation_capacity || 'N/A';
+           const status = data.evacuation_status || data.status || 'OPEN';
+           message = `📍 Pinned Location: ${location}\n👥 Total Capacity: ${capacity}\n🔄 Status: ${status.toUpperCase()}`;
+        } else {
+           const levelLabel = data.level ? data.level.toUpperCase() : 'ADVISORY';
+           message = `📍 Location: ${data.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${data.recommended_action || 'Follow safety protocols'}\n\n${data.description}`;
         }
-      });
+
+        const isEvacuation = data.level === 'evacuation' || data.type === 'evacuation_center';
+        const alertTitle = isEvacuation 
+          ? (data.name || data.title?.replace('New Evacuation Center: ', '') || 'Evacuation Center')
+          : data.title;
+
+        Alert.alert(
+          `📢 ${alertTitle}`,
+          message,
+          [
+            {
+              text: "Dismiss",
+              style: "cancel",
+              onPress: () => markAsRead(normalizedId)
+            },
+            {
+              text: "View Details",
+              style: "default",
+              onPress: () => {
+                markAsRead(normalizedId);
+                const alertObj = { ...data, id: normalizedId };
+                globalNavigate("AlertDetail", { alert: alertObj });
+              }
+            }
+          ]
+        );
+      }
 
       // ── PRIORITY 2: REFRESH LIST IN BACKGROUND ──
       // Delay this slightly so it doesn't compete with the system alert's appearance
@@ -5222,15 +5246,23 @@ function NotificationProvider({ children }) {
           let message = "";
           if (newItem.sourceType === 'community_report') {
              message = `📍 Location: ${newItem.location}\n🔍 Incident: ${newItem.description}\n🤝 Response: ${newItem.recommendations || 'LGU is responding'}`;
-          } else if (newItem.level === 'evacuation') {
-             message = newItem.description || newItem.message;
+          } else if (newItem.level === 'evacuation' || newItem.type === 'evacuation_center') {
+             const location = newItem.location || newItem.evacuation_location || 'Not Specified';
+             const capacity = newItem.capacity || newItem.evacuation_capacity || 'N/A';
+             const status = newItem.status || newItem.evacuation_status || 'OPEN';
+             message = `📍 Pinned Location: ${location}\n👥 Total Capacity: ${capacity}\n🔄 Status: ${status.toUpperCase()}`;
           } else {
              const levelLabel = newItem.level ? newItem.level.toUpperCase() : 'ADVISORY';
              message = `📍 Location: ${newItem.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${newItem.recommended_action || 'Follow safety protocols'}\n\n${newItem.description || newItem.message}`;
           }
 
+          const isEvacItem = newItem.level === 'evacuation' || newItem.type === 'evacuation_center';
+          const alertTitleFallback = isEvacItem
+            ? (newItem.name || newItem.title?.replace('New Evacuation Center: ', '') || 'Evacuation Center')
+            : (newItem.title || newItem.message);
+
           Alert.alert(
-            `📢 ${newItem.title || newItem.message}`,
+            `📢 ${alertTitleFallback}`,
             message,
             [
               {
