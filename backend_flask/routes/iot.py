@@ -122,6 +122,7 @@ def sensor_reading():
         # Extract metadata if provided
         battery_level = data.get("battery_level")
         signal_strength = data.get("signal_strength")
+        power_supply = data.get("power_supply")
         
         update_query = "UPDATE sensors SET last_update = NOW()"
         update_params = []
@@ -131,6 +132,9 @@ def sensor_reading():
         if signal_strength is not None:
             update_query += ", signal_strength = %s"
             update_params.append(signal_strength)
+        if power_supply is not None:
+            update_query += ", power_supply = %s"
+            update_params.append(power_supply)
         update_query += " WHERE id = %s"
         update_params.append(sensor_id)
         
@@ -259,6 +263,8 @@ def sensor_reading():
             "enabled":      True,
             "is_offline":   False,
             "timestamp":    timestamp,
+            "battery_level": int(battery_level) if battery_level is not None else 100,
+            "power_supply":  power_supply if power_supply else "battery"
         }
         _emit_sensor_update(ws_payload)
 
@@ -456,7 +462,7 @@ def get_all_sensors(current_user):
     try:
         cur.execute("""
             SELECT id, name, barangay, description, lat, lng, status, battery_level, 
-                   signal_strength, last_update
+                   signal_strength, power_supply, last_update
             FROM sensors
             ORDER BY last_update DESC
         """)
@@ -483,7 +489,7 @@ def get_all_sensors_status(current_user):
     cur = db.cursor(dictionary=True)
     try:
         # Get all registered sensors
-        cur.execute("SELECT id, name, barangay, lat, lng, status, battery_level, signal_strength, last_update FROM sensors")
+        cur.execute("SELECT id, name, barangay, lat, lng, status, battery_level, signal_strength, power_supply, last_update FROM sensors")
         sensors = cur.fetchall()
         
         # DEBUG: Print number of sensors found
@@ -565,6 +571,7 @@ def get_all_sensors_status(current_user):
             s['lat'] = float(s['lat']) if s['lat'] else 0.0
             s['lng'] = float(s['lng']) if s['lng'] else 0.0
             s['battery_level'] = int(s['battery_level']) if s['battery_level'] is not None else 100
+            s['power_supply'] = s.get('power_supply') or 'battery'
             
             # Fix datetime serialization for jsonify
             if 'last_update' in s and hasattr(s['last_update'], 'isoformat'):

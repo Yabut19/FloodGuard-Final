@@ -299,6 +299,7 @@ def verify_report(report_id):
     # ── Auto-escalate to create official alert ──────────────────────────────────
     alert_creation_warning = None
     alert_level = None
+    alert_id = None
     try:
         cursor = db.cursor()
         # Map reported level to standardized alert levels
@@ -325,7 +326,7 @@ def verify_report(report_id):
                 recommendations or '',
                 report_status or 'Active'
             ))
-    
+            alert_id = cursor.lastrowid
             db.commit()
             cursor.close()
     
@@ -346,13 +347,16 @@ def verify_report(report_id):
     # ── REAL-TIME BROADCAST: Instant escalation to all mobile apps ──
     try:
         from socket_instance import socketio
+        # Broadcast as an 'alert' type using the new alert_id to ensure single-popup consistency
         socketio.emit("new_notification", {
-            "type": "verified_report",
-            "id": report_id,
+            "type": "alert",
+            "id": alert_id or f"rep-{report_id}",
             "title": f"Verified: {report['type']} at {report['location']}",
             "description": f"Verified by LGU Official ({verified_by})\nFlood Level: {flood_level}",
             "level": alert_level,
-            "barangay": report['location']
+            "barangay": report['location'],
+            "recommended_action": recommendations,
+            "timestamp": now_pst.isoformat()
         }, namespace="/")
     except: pass
 

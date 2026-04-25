@@ -4999,8 +4999,9 @@ function NotificationProvider({ children }) {
 
       console.log("[WS] Instant alert received:", data);
       
-      const normalizedId = data.type === 'alert' || data.type === 'auto_alert' ? `alert-${data.id || 'new'}` :
-        data.type === 'evacuation_center' ? `evac-${data.id || 'new'}` : `id-${data.id || Date.now()}`;
+      // ── STANDARDIZED ID GENERATION (Must match fetchNotifications exactly) ──
+      const isReport = data.type === 'verified_report' || data.type === 'report' || data.type === 'dismissed_report';
+      const normalizedId = isReport ? `report-${data.id}` : `alert-${data.id || 'new'}`;
 
       // 1. EXACTLY-ONCE CHECK
       if (shownIds.current.has(normalizedId)) return;
@@ -5012,18 +5013,29 @@ function NotificationProvider({ children }) {
       // Using InteractionManager ensures this system call isn't blocked by background tasks
       InteractionManager.runAfterInteractions(() => {
         const isActiveBroadcast = data.status ? data.status === 'active' : true;
-        // Include 'evacuation' in the immediate priority list to eliminate delay
         if (isActiveBroadcast && (
           data.level === 'critical' || 
           data.level === 'warning' || 
           data.level === 'evacuation' || 
           data.type === 'alert' || 
           data.type === 'auto_alert' ||
+          data.type === 'verified_report' ||
           data.type === 'evacuation_center'
         )) {
+          // ── CONTENT FORMATTING ──
+          let message = "";
+          if (data.type === 'verified_report') {
+             message = `📍 Location: ${data.barangay}\n🔍 Incident: ${data.description}\n🤝 Response: ${data.recommendations || 'LGU is monitoring and responding'}`;
+          } else if (data.level === 'evacuation' || data.type === 'evacuation_center') {
+             message = data.description;
+          } else {
+             const levelLabel = data.level ? data.level.toUpperCase() : 'ADVISORY';
+             message = `📍 Location: ${data.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${data.recommended_action || 'Follow safety protocols'}\n\n${data.description}`;
+          }
+
           Alert.alert(
-            "📢 BROADCAST ALERT",
-            `${data.title}\n\n${data.description}`,
+            `📢 ${data.title}`,
+            message,
             [
               {
                 text: "Dismiss",
@@ -5191,15 +5203,35 @@ function NotificationProvider({ children }) {
       if (shouldShowFallback) {
         const newItem = latestItems[0];
 
+        // 1. DEDUPLICATION GUARD: Suppress popups for verified community reports
+        const isVerifiedReportEntry = newItem.sourceType === 'community_report' && (newItem.status === 'verified' || newItem.report_status === 'Active');
+
+        // 2. RECENCY CHECK: Only trigger popups for items created in the last 5 minutes
+        // This prevents old alerts from popping up if a newer one is deleted.
+        const itemTime = new Date(newItem.timestamp || newItem.created_at).getTime();
+        const now = Date.now();
+        const isRecent = (now - itemTime) < (5 * 60 * 1000); // 5 minutes
+
         // Suppress pop-up if the user has already read/dismissed, if already shown, or if the broadcast is NOT active
         const isActive = newItem.status ? newItem.status === 'active' : true;
-        if (!readIds.includes(newItem.id) && !shownIds.current.has(newItem.id) && isActive) {
+        if (!readIds.includes(newItem.id) && !shownIds.current.has(newItem.id) && isActive && !isVerifiedReportEntry && isRecent) {
           // Mark as shown to prevent duplicate triggers
           shownIds.current.add(newItem.id);
 
+          // ── CONTENT FORMATTING (Consistent with Socket listener) ──
+          let message = "";
+          if (newItem.sourceType === 'community_report') {
+             message = `📍 Location: ${newItem.location}\n🔍 Incident: ${newItem.description}\n🤝 Response: ${newItem.recommendations || 'LGU is responding'}`;
+          } else if (newItem.level === 'evacuation') {
+             message = newItem.description || newItem.message;
+          } else {
+             const levelLabel = newItem.level ? newItem.level.toUpperCase() : 'ADVISORY';
+             message = `📍 Location: ${newItem.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${newItem.recommended_action || 'Follow safety protocols'}\n\n${newItem.description || newItem.message}`;
+          }
+
           Alert.alert(
-            "📢 New Notification",
-            newItem.title || newItem.message,
+            `📢 ${newItem.title || newItem.message}`,
+            message,
             [
               {
                 text: "Dismiss",

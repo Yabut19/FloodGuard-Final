@@ -268,6 +268,8 @@ const fetchHealthData = async (preserveLiveState = false) => {
                             raw_distance: apiSensor.raw_distance,
                             reading_status: apiSensor.reading_status,
                             enabled: apiSensor.enabled,
+                            battery_level: apiSensor.battery_level,
+                            power_supply: apiSensor.power_supply,
                         };
                     });
                 });
@@ -371,6 +373,8 @@ useDataSync({
                         is_live: true, // Set to Live when receiving data
                         enabled: reading.enabled ?? true,
                         is_offline: false, // Not offline when receiving data
+                        battery_level: reading.battery_level ?? s.battery_level,
+                        power_supply: reading.power_supply ?? s.power_supply,
                         last_seen: new Date().toISOString(), // Track when data was last received
                     };
                 });
@@ -389,6 +393,8 @@ useDataSync({
                         is_live: true, // Set to Live when receiving data
                         enabled: reading.enabled ?? true,
                         is_offline: false, // Not offline when receiving data
+                        battery_level: reading.battery_level ?? prev.live?.battery_level,
+                        power_supply: reading.power_supply ?? prev.live?.power_supply,
                         last_seen: new Date().toISOString(), // Track when data was last received
                     }
                 };
@@ -999,6 +1005,73 @@ const criticalSensors = liveSensors.filter(s => s.is_live && s.enabled && (s.rea
                                                 <Text style={{ fontSize: 11, color: "#94a3b8" }}>cm to ground</Text>
                                             </View>
                                         </View>
+
+                                        {/* Dynamic Battery Indicator - Only shown when sensor is actively sending data */}
+                                        {isLive && isEnabled && (
+                                            <View style={{ 
+                                                backgroundColor: "#fff", 
+                                                borderRadius: 16, 
+                                                padding: 16, 
+                                                marginBottom: 16,
+                                                borderWidth: 1,
+                                                borderColor: "#f1f5f9",
+                                                flexDirection: "row",
+                                                alignSelf: "center",
+                                                width: "100%",
+                                                alignItems: "center",
+                                                gap: 16
+                                            }}>
+                                                {(() => {
+                                                    const bat = parseInt(sh.live?.battery_level ?? sh.battery_level ?? 100);
+                                                    const pSource = (sh.live?.power_supply ?? sh.power_supply ?? "battery").toLowerCase();
+                                                    const isSMPS = pSource === "smps" || pSource === "spms";
+                                                    const color = isSMPS ? "#16a34a" : getBatteryColor(bat);
+                                                    
+                                                    return (
+                                                        <>
+                                                            <View style={{ 
+                                                                width: 40, 
+                                                                height: 40, 
+                                                                borderRadius: 20, 
+                                                                backgroundColor: isSMPS ? "#dcfce7" : (bat < 20 ? "#fee2e2" : "#f1f5f9"),
+                                                                alignItems: 'center', 
+                                                                justifyContent: 'center'
+                                                            }}>
+                                                                <Feather 
+                                                                    name={isSMPS ? "zap" : (bat > 20 ? "battery" : "battery-charging")} 
+                                                                    size={20} 
+                                                                    color={color} 
+                                                                />
+                                                            </View>
+                                                            <View style={{ flex: 1 }}>
+                                                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                                                                    <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: "#0f172a" }}>
+                                                                        {isSMPS ? "Fixed Power Supply" : "Battery Powered"}
+                                                                    </Text>
+                                                                    {!isSMPS && (
+                                                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
+                                                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: color }}>
+                                                                                {bat}%
+                                                                            </Text>
+                                                                        </View>
+                                                                    )}
+                                                                </View>
+                                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_500Medium", color: isSMPS ? "#16a34a" : "#64748b" }}>
+                                                                    {isSMPS ? "System is running via SPMS Power Supply" : (bat < 20 ? "Critical: Battery low, please check" : "Running on dual 18650 lithium batteries")}
+                                                                </Text>
+                                                                
+                                                                {!isSMPS && (
+                                                                    <View style={{ height: 6, backgroundColor: "#f1f5f9", borderRadius: 3, marginTop: 8, overflow: 'hidden' }}>
+                                                                        <View style={{ width: `${bat}%`, height: '100%', backgroundColor: color }} />
+                                                                    </View>
+                                                                )}
+                                                            </View>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </View>
+                                        )}
 
                                          {/* Alert level badge */}
                                         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginBottom: 16, paddingHorizontal: 4 }}>

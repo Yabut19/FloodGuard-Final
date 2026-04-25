@@ -354,8 +354,8 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     };
 
     const handleBroadcast = async () => {
-        if (selectedBarangays.length === 0 || !alertTitle) {
-            setErrorMessage("Please fill in all fields (Title, Barangays)");
+        if (selectedBarangays.length === 0 || !alertTitle || !recommendedAction) {
+            setErrorMessage("Please fill in all required fields marked with *");
             setShowErrorModal(true);
             return;
         }
@@ -775,7 +775,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     <Text style={[styles.ccPanelTitle, { marginBottom: 16 }]}>Broadcast Alert Studio</Text>
                     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
                     <View style={{ marginBottom: 16 }}>
-                        <Text style={styles.alertInputLabel}>Priority Level</Text>
+                        <Text style={styles.alertInputLabel}>Risk Classification <Text style={{ color: '#ef4444' }}>*</Text></Text>
                         <View style={styles.ccBrgyGrid}>
                             {['advisory', 'warning', 'critical'].map(level => (
                                 <TouchableOpacity
@@ -800,7 +800,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
 
                     <View style={{ marginBottom: 16 }}>
-                        <Text style={styles.alertInputLabel}>Alert Headline</Text>
+                        <Text style={styles.alertInputLabel}>Alert Headline <Text style={{ color: '#ef4444' }}>*</Text></Text>
                         <TextInput
                             style={[styles.modalInput, { backgroundColor: '#f8fafc' }]}
                             placeholder="e.g. Critical Water Level Warning"
@@ -811,7 +811,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
 
                     <View style={{ marginBottom: 16 }}>
-                        <Text style={styles.alertInputLabel}>Recommended Action</Text>
+                        <Text style={styles.alertInputLabel}>Recommended Action <Text style={{ color: '#ef4444' }}>*</Text></Text>
                         <TextInput
                             style={[styles.alertMessageInput, { backgroundColor: '#f8fafc', height: 90 }]}
                             placeholder="e.g. Evacuate to the nearest evacuation center. Avoid flood-prone roads..."
@@ -822,7 +822,7 @@ const AlertManagementPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     </View>
 
                     <View style={{ marginBottom: 24 }}>
-                        <Text style={styles.alertInputLabel}>Target Coverage</Text>
+                        <Text style={styles.alertInputLabel}>Target Coverage <Text style={{ color: '#ef4444' }}>*</Text></Text>
                         <View style={styles.ccBrgyGrid}>
                             {barangays.map(b => (
                                 <TouchableOpacity
