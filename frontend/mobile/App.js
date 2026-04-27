@@ -59,6 +59,54 @@ export const useTheme = () => useContext(ThemeContext);
 const LocationContext = createContext(null);
 const useUserLocation = () => useContext(LocationContext);
 
+const API_BASE = "http://10.199.140.238:5000"; // Global API base URL
+
+const UserDataContext = createContext(null);
+export const useUserData = () => useContext(UserDataContext);
+
+const UserDataProvider = ({ children }) => {
+  const [userData, setUserData] = useState(null);
+  const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now());
+  const socket = useSocket();
+
+  const fetchUser = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem('userData');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setUserData(prev => prev || parsed); // Initial optimistic load from storage
+        
+        const response = await fetch(`${API_BASE}/api/users/${parsed.id}`);
+        if (response.ok) {
+          const freshData = await response.json();
+          setUserData(freshData);
+          setAvatarTimestamp(Date.now());
+          await AsyncStorage.setItem('userData', JSON.stringify(freshData));
+        }
+      }
+    } catch (e) {
+      console.log("[UserProvider] Sync error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("user_update", fetchUser);
+      return () => socket.off("user_update", fetchUser);
+    }
+  }, [socket, fetchUser]);
+
+  return (
+    <UserDataContext.Provider value={{ userData, setUserData, avatarTimestamp, setAvatarTimestamp, refreshUser: fetchUser }}>
+      {children}
+    </UserDataContext.Provider>
+  );
+};
+
 const NotificationContext = createContext(null);
 const useNotifications = () => useContext(NotificationContext);
 
@@ -92,7 +140,7 @@ const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     socketResetListener = setReinitTicket;
-    
+
     if (!globalMobileSocket) {
       console.log("[Socket] Creating fresh connection...");
       globalMobileSocket = io(API_BASE, {
@@ -111,7 +159,7 @@ const SocketProvider = ({ children }) => {
         console.log("[Socket] Connection lost:", reason);
       });
     }
-    
+
     setSocket(globalMobileSocket);
 
     // ── FOREGROUND LIVELINESS GUARD ──
@@ -125,7 +173,7 @@ const SocketProvider = ({ children }) => {
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-    
+
     return () => {
       if (socketResetListener === setReinitTicket) socketResetListener = null;
       subscription.remove();
@@ -217,8 +265,6 @@ export const theme = {
 };
 
 
-const API_BASE = "http://192.168.254.160:5000"; // Updated to current machine IP (172.16.17.33)
-
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 const BRAND_GRADIENT = ["#74C5E6", "#6a36f5"];
@@ -230,6 +276,9 @@ const ACCOUNT_IMAGE = require("./assets/flood.png");
 const LOCATION_IMAGE = require("./assets/flood4.jpg");
 const NOTIFY_IMAGE = require("./assets/flood5.jpg");
 const LOGO = require("./assets/logo.png");
+const SAFETY_BEFORE_IMG = require("./assets/safety_before.png");
+const SAFETY_DURING_IMG = require("./assets/safety_during.png");
+const SAFETY_AFTER_IMG = require("./assets/safety_after.png");
 
 const safeGoBack = (navigation, fallback) => {
   if (navigation?.canGoBack?.()) {
@@ -407,7 +456,8 @@ const getStatusColor = (status) => {
     case "WARNING": return "#f97316";  // Orange
     case "ADVISORY": return "#3b82f6"; // Blue
     case "NORMAL": return "#22c55e";   // Green
-    case "OFFLINE": return "#64748b";
+    case "OFFLINE": 
+    case "DISCONNECTED": return "#64748b";
     default: return "#64748b";
   }
 };
@@ -418,7 +468,8 @@ const getStatusBgColor = (status) => {
     case "WARNING": return "rgba(249, 115, 22, 0.1)";
     case "ADVISORY": return "rgba(59, 130, 246, 0.1)";
     case "NORMAL": return "rgba(34, 197, 94, 0.1)";
-    case "OFFLINE": return "rgba(100, 116, 139, 0.1)";
+    case "OFFLINE":
+    case "DISCONNECTED": return "rgba(100, 116, 139, 0.1)";
     default: return "rgba(100, 116, 139, 0.1)";
   }
 };
@@ -809,7 +860,8 @@ const LogoutConfirmationModal = ({ visible, onConfirm, onCancel }) => {
 };
 
 // Premium Edit Profile Modal Component
-const EditProfileModal = ({ visible, userData, onSave, onCancel, onPickImage, selectedImage, avatarTimestamp }) => {
+// Premium Edit Profile Modal Component
+const EditProfileModal = ({ visible, userData, onSave, onCancel, onPickImage, onRemoveImage, selectedImage, avatarTimestamp }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const [fullName, setFullName] = useState(userData?.full_name || "");
@@ -864,6 +916,25 @@ const EditProfileModal = ({ visible, userData, onSave, onCancel, onPickImage, se
                 <Ionicons name="camera" size={14} color="white" />
               </View>
             </TouchableOpacity>
+            
+            {/* Remove Avatar Button */}
+            {(userData?.avatar_url || selectedImage) && (
+              <TouchableOpacity 
+                style={{ 
+                  marginTop: 10, 
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 6, 
+                  borderRadius: 15,
+                  borderWidth: 1,
+                  borderColor: 'rgba(239, 68, 68, 0.2)'
+                }} 
+                onPress={onRemoveImage}
+              >
+                <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600' }}>Remove Photo</Text>
+              </TouchableOpacity>
+            )}
+            
             <Text style={styles.editProfileAvatarLabel}>
               {selectedImage ? "Image selected - tap to change" : "Tap to change photo"}
             </Text>
@@ -2047,25 +2118,13 @@ const CustomHeader = ({ navigation, title, subtitle }) => {
 const WelcomeBanner = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
-  const [userData, setUserData] = useState(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('userData');
-        if (stored) setUserData(JSON.parse(stored));
-      } catch (e) {
-        console.log("Error fetching user data", e);
-      }
-    };
-    fetchUser();
-  }, []);
+  const { userData, avatarTimestamp } = useUserData();
 
   const firstName = (userData?.full_name || userData?.name)?.split(' ')[0] || "User";
+  const avatarInitial = firstName[0]?.toUpperCase() || "?";
+  const profilePic = userData?.avatar_url;
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? "Good Morning" : currentHour < 18 ? "Good Afternoon" : "Good Evening";
-
-  const { isOnline } = useSensorStatus();
 
   return (
     <LinearGradient
@@ -2078,19 +2137,20 @@ const WelcomeBanner = () => {
         <View>
           <Text style={styles.welcomeGreeting}>{greeting},</Text>
           <Text style={styles.welcomeName}>{firstName}!</Text>
-          <View style={styles.welcomeStatusRow}>
-            <View style={[styles.welcomePulse, { backgroundColor: isOnline ? '#2fb864' : '#64748b' }]} />
-            <Text style={[styles.welcomeStatusText, { color: isOnline ? '#2fb864' : '#94a3b8' }]}>
-              {isOnline ? "System secure and operational" : "System offline"}
-            </Text>
-          </View>
         </View>
         <View style={styles.welcomeAvatarContainer}>
           <LinearGradient
             colors={['#74C5E6', '#3490dc']}
             style={styles.welcomeAvatarGradient}
           >
-            <Text style={styles.welcomeAvatarText}>{firstName[0]}</Text>
+            {profilePic ? (
+              <Image 
+                source={{ uri: profilePic.startsWith('http') ? profilePic : `${API_BASE}${profilePic}?t=${avatarTimestamp}` }} 
+                style={styles.welcomeAvatarImage} 
+              />
+            ) : (
+              <Text style={styles.welcomeAvatarText}>{avatarInitial}</Text>
+            )}
           </LinearGradient>
         </View>
       </View>
@@ -2109,39 +2169,73 @@ const DashboardScreen = ({ navigation }) => {
   const [latestSensor, setLatestSensor] = useState(null);
   const [thresholds, setThresholds] = useState({ advisory_cm: 10, warning_cm: 15, critical_cm: 25 });
   const [loadingSensor, setLoadingSensor] = useState(true);
-  const [userData, setUserData] = useState(null);
+  const { userData } = useUserData();
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [isDisconnected, setIsDisconnected] = useState(true);
   const esRef = useRef(null);
   const fallbackRef = useRef(null);
 
+  // ── LOCATION-BASED SYNC: Track user's sitio for sensor matching ──
+  const userSitioRef = useRef(userData?.barangay || null);
+
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('userData');
-        if (stored) setUserData(JSON.parse(stored));
-      } catch (e) {
-        console.log("Error fetching user data in Dashboard", e);
-      }
-    };
-    fetchUser();
-  }, []);
+    if (userData?.barangay) {
+      userSitioRef.current = userData.barangay;
+    }
+  }, [userData]);
 
   // Real-time sensor stream via WebSocket
   const socket = useSocket();
 
   useEffect(() => {
-    const parseSensor = (data) => {
+    const checkTimeout = () => {
+      if (!lastUpdated) {
+        setIsDisconnected(true);
+        return;
+      }
+      const diff = Date.now() - new Date(lastUpdated).getTime();
+      if (diff > 1500) { // 1.5 second threshold for instant disconnection detection
+        setIsDisconnected(true);
+      } else {
+        setIsDisconnected(false);
+      }
+    };
+    const timer = setInterval(checkTimeout, 500);
+    return () => clearInterval(timer);
+  }, [lastUpdated]);
+
+  useEffect(() => {
+    // ── LOCATION-BASED SYNC: Only accept sensor data matching user's sitio ──
+    const matchesUserLocation = (sensorBarangay) => {
+      const userSitio = userSitioRef.current;
+      if (!userSitio || !sensorBarangay) return false;
+      return userSitio.trim().toLowerCase() === sensorBarangay.trim().toLowerCase();
+    };
+
+    const parseSensor = (data, isLiveUpdate = false) => {
       if (data && data.sensor_id) {
+        // ── LOCATION GATE: Reject data from sensors not in user's sitio ──
+        if (!matchesUserLocation(data.barangay)) {
+          console.log(`[Mobile] Sensor ${data.sensor_id} location "${data.barangay}" does not match user sitio "${userSitioRef.current}" — ignoring`);
+          return;
+        }
+
         setLatestSensor({
           ...data,
           flood_level: Number(data.flood_level ?? 0),
           raw_distance: Number(data.raw_distance ?? 0),
-          status: data.is_offline ? "OFFLINE" : (data.status || "UNKNOWN"),
+          status: data.is_offline ? "DISCONNECTED" : (data.status || "UNKNOWN"),
         });
         if (data.thresholds) {
           setThresholds(data.thresholds);
         }
-        setLastUpdated(new Date());
+        
+        // ── LIVE VALIDATION: Only mark as active if coming from WebSocket ──
+        if (data.is_offline) {
+          setLastUpdated(null);
+        } else if (isLiveUpdate) {
+          setLastUpdated(new Date());
+        }
       } else {
         setLatestSensor(null);
       }
@@ -2150,22 +2244,79 @@ const DashboardScreen = ({ navigation }) => {
 
     const fetchInitial = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/iot/latest`);
-        if (res.ok) parseSensor(await res.json());
-        else setLoadingSensor(false);
-      } catch (e) { setLoadingSensor(false); }
+        const sitio = userSitioRef.current;
+        if (!sitio) {
+          // No user location set — cannot sync with any sensor
+          console.log("[Mobile] No user sitio set — sensor sync disabled");
+          setLatestSensor(null);
+          setLoadingSensor(false);
+          return;
+        }
+
+        // ── LOCATION-BASED FETCH: Only retrieve data from sensors in user's sitio ──
+        const res = await fetch(`${API_BASE}/api/iot/sensor-by-location?location=${encodeURIComponent(sitio)}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Double-check location match on the response
+          if (data && data.barangay && matchesUserLocation(data.barangay)) {
+            parseSensor(data, false);
+          } else if (data && data.sensor_id && !data.barangay) {
+            // Endpoint returned data without barangay field — accept if from location-filtered endpoint
+            parseSensor({ ...data, barangay: sitio }, false);
+          } else {
+            console.log("[Mobile] Sensor-by-location response did not match user sitio");
+            setLatestSensor(null);
+            setLoadingSensor(false);
+          }
+        } else {
+          // No sensor found for this location
+          console.log(`[Mobile] No sensor data for sitio: ${sitio}`);
+          setLatestSensor(null);
+          setLoadingSensor(false);
+        }
+      } catch (e) {
+        console.log("[Mobile] Error fetching location-based sensor:", e);
+        setLoadingSensor(false);
+      }
+    };
+
+    const fetchThresholds = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/config/thresholds`);
+        if (res.ok) {
+          const data = await res.json();
+          setThresholds({
+            advisory_cm: data.advisory_level,
+            warning_cm: data.warning_level,
+            critical_cm: data.critical_level
+          });
+        }
+      } catch (e) {
+        console.log("[Mobile] Error fetching thresholds:", e);
+      }
     };
 
     fetchInitial();
+    fetchThresholds();
 
     if (socket) {
       socket.on("sensor_update", (data) => {
         console.log("[Mobile] Live sensor update:", data);
-        parseSensor(data);
+        // ── LOCATION GATE: WebSocket updates are filtered by sitio match ──
+        // ── LIVE VALIDATION: Mark as live update ──
+        parseSensor(data, true);
       });
       socket.on("threshold_update", (data) => {
-        console.log("[Mobile] Threshold update:", data);
-        fetchInitial(); // Refresh to get new thresholds
+        console.log("[Mobile] Real-time Threshold update:", data);
+        if (data && data.advisory_level !== undefined) {
+          setThresholds({
+            advisory_cm: data.advisory_level,
+            warning_cm: data.warning_level,
+            critical_cm: data.critical_level
+          });
+        } else {
+          fetchThresholds(); // Fallback if data payload is missing
+        }
       });
     }
 
@@ -2175,7 +2326,7 @@ const DashboardScreen = ({ navigation }) => {
         socket.off("threshold_update");
       }
     };
-  }, [socket]);
+  }, [socket, userData]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -2200,14 +2351,20 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const { setIsOnline } = useSensorStatus();
-  const isOffline = !latestSensor || latestSensor.status === "OFFLINE" || latestSensor.is_offline;
+  const isSensorOffline = latestSensor && latestSensor.enabled === false;
+  const isSensorLive = latestSensor && latestSensor.enabled !== false && !isDisconnected;
 
   useEffect(() => {
-    setIsOnline(!isOffline);
-  }, [isOffline]);
+    setIsOnline(isSensorLive);
+  }, [isSensorLive]);
 
   const getLiveStatus = () => {
-    if (isOffline) return "OFFLINE";
+    // ── STRICT STATUS ENFORCEMENT ──
+    // "Offline" means manual shutdown via toggle
+    if (isSensorOffline) return "OFFLINE";
+    // "Disconnected" means hardware/transmission failure (no data)
+    if (isDisconnected) return "DISCONNECTED";
+    
     const lvl = Number(latestSensor?.flood_level ?? 0);
     if (lvl >= (thresholds?.critical_cm || 25)) return "CRITICAL";
     if (lvl >= (thresholds?.warning_cm || 15)) return "WARNING";
@@ -2217,10 +2374,10 @@ const DashboardScreen = ({ navigation }) => {
 
   const liveStatus = getLiveStatus();
   const statusColor = getStatusColor(liveStatus);
-  const floodLevel = Number(latestSensor?.flood_level ?? 0);
-  const rawDistance = Number(latestSensor?.raw_distance ?? 0);
+  const floodLevel = isSensorLive ? Number(latestSensor?.flood_level ?? 0) : 0;
+  const rawDistance = isSensorLive ? Number(latestSensor?.raw_distance ?? 0) : 0;
   const maxRange = thresholds?.critical_cm || 25;
-  const fillPct = Math.max(0, Math.min(100, (floodLevel / maxRange) * 100));
+  const fillPct = isSensorLive ? Math.max(0, Math.min(100, (floodLevel / maxRange) * 100)) : 0;
   const formatUpdated = () => {
     if (!lastUpdated) return "Waiting for data...";
     const diff = Math.floor((Date.now() - lastUpdated) / 1000);
@@ -2246,12 +2403,6 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.locationCard}>
           <View style={styles.locationHeaderRow}>
             <Text style={styles.locationLabel}>CURRENT LOCATION</Text>
-            <View style={[styles.safeBadge, isOffline && { backgroundColor: 'rgba(148,163,184,0.15)' }]}>
-              <View style={[styles.safeBadgeDot, isOffline && { backgroundColor: '#94a3b8' }]} />
-              <Text style={[styles.safeBadgeText, isOffline && { color: '#94a3b8' }]}>
-                {isOffline ? "OFFLINE" : (liveStatus === "NORMAL" ? "SAFE" : liveStatus)}
-              </Text>
-            </View>
           </View>
 
           <View style={styles.locationTitleRow}>
@@ -2259,36 +2410,14 @@ const DashboardScreen = ({ navigation }) => {
             <Text style={styles.locationTitle}>{userData?.barangay || "Mabolo District"}</Text>
           </View>
           <Text style={styles.locationTimeText}>
-            {isOffline ? "Sensor offline" : `Updated ${formatUpdated()}`}
+            {isSensorOffline ? "Manual Shutdown (Offline)" : isDisconnected ? "No Data (Disconnected)" : `Updated ${formatUpdated()}`}
           </Text>
-
-          <View style={styles.riskLevelRow}>
-            <Text style={styles.riskLevelLabel}>Risk Level</Text>
-            <View style={styles.riskLevelBarTrack}>
-              <View style={[styles.riskLevelBarFill, { width: `${fillPct}%`, backgroundColor: statusColor }]} />
-            </View>
-            <Text style={[styles.riskLevelValue, { color: statusColor }]}>
-              {isOffline ? "—" : liveStatus}
-            </Text>
-          </View>
         </View>
 
         <View style={styles.sensorMainCard}>
           <View style={[styles.sensorCardHeader, { alignItems: 'center' }]}>
             <View>
               <Text style={styles.sensorCardTitle}>Flood Monitoring System</Text>
-              <Text style={styles.sensorCardSubtitle}>Station: {latestSensor?.sensor_id || "Main Street Bridge"}</Text>
-            </View>
-            {/* Live / Offline pill */}
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: 5,
-              backgroundColor: isOffline ? 'rgba(148,163,184,0.12)' : 'rgba(34,197,94,0.12)',
-              paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20,
-            }}>
-              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: isOffline ? '#94a3b8' : '#22c55e' }} />
-              <Text style={{ fontSize: 11, color: isOffline ? '#94a3b8' : '#22c55e', fontWeight: '700' }}>
-                {isOffline ? "OFFLINE" : "LIVE"}
-              </Text>
             </View>
           </View>
 
@@ -2335,7 +2464,7 @@ const DashboardScreen = ({ navigation }) => {
               <View style={styles.statusChip}>
                 <View style={[styles.statusChipDot, { backgroundColor: statusColor }]} />
                 <Text style={styles.statusChipText}>
-                  {loadingSensor ? "LOADING" : (isOffline ? "OFFLINE" : liveStatus)}
+                  {loadingSensor ? "LOADING" : liveStatus}
                 </Text>
               </View>
             </View>
@@ -2346,7 +2475,7 @@ const DashboardScreen = ({ navigation }) => {
               <Feather name="info" size={14} color="#64748b" />
               <Text style={styles.thresholdText}>Current Max Level: <Text style={styles.thresholdTextBold}>{Math.round(maxRange)} cm</Text></Text>
             </View>
-            <Text style={styles.sensorIdText}>STATION ID: {latestSensor?.sensor_id || "—"}</Text>
+
           </View>
         </View>
       </ScrollView>
@@ -2362,24 +2491,60 @@ const MapScreen = ({ navigation, route }) => {
   const [sensorPointsState, setSensorPointsState] = useState(SENSOR_POINTS);
   const [sensorData, setSensorData] = useState([]);
   const [loadingSensors, setLoadingSensors] = useState(true);
+  const [thresholds, setThresholds] = useState({ advisory_cm: 10, warning_cm: 15, critical_cm: 25 });
+  const [userData, setUserData] = useState(null);
+  const userSitioRef = useRef(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('userData');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setUserData(parsed);
+          userSitioRef.current = parsed?.barangay || null;
+        }
+      } catch (e) { console.log("Error fetching user data in Map", e); }
+    };
+    fetchUser();
+  }, []);
 
   const activeSensorPoint = sensorPointsState.find((s) => s.id === IOT_SENSOR_ID) || sensorPointsState[0] || { id: IOT_SENSOR_ID, latitude: 10.3189, longitude: 123.9162, risk: "low" };
+
+  const matchesUserLocation = (sensorBarangay) => {
+    const userSitio = userSitioRef.current;
+    if (!userSitio || !sensorBarangay) return false;
+    return userSitio.trim().toLowerCase() === sensorBarangay.trim().toLowerCase();
+  };
 
   const fetchSensorData = async () => {
     try {
       setLoadingSensors(true);
-      const res = await fetch(`${API_BASE}/api/iot/latest`);
-      if (!res.ok) {
-        throw new Error(`Status ${res.status}`);
+      const sitio = userSitioRef.current;
+      if (!sitio) {
+        setSensorData([]);
+        setLoadingSensors(false);
+        return;
       }
-      const data = await res.json();
-      const sensorRecord = data?.sensor_id ? [{
-        ...data,
-        flood_level: Number(data.flood_level ?? 0),
-        raw_distance: Number(data.raw_distance ?? 0),
-        status: data.is_offline ? "OFFLINE" : (data.status || "UNKNOWN"),
-      }] : [];
-      setSensorData(sensorRecord);
+
+      // ── LOCATION-BASED FETCH: Only retrieve data from sensors in user's sitio ──
+      const res = await fetch(`${API_BASE}/api/iot/sensor-by-location?location=${encodeURIComponent(sitio)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.sensor_id && matchesUserLocation(data.barangay || sitio)) {
+          const sensorRecord = [{
+            ...data,
+            flood_level: Number(data.flood_level ?? 0),
+            raw_distance: Number(data.raw_distance ?? 0),
+            status: data.enabled === false ? "OFFLINE" : (data.is_offline ? "DISCONNECTED" : (data.status || "UNKNOWN")),
+          }];
+          setSensorData(sensorRecord);
+        } else {
+          setSensorData([]);
+        }
+      } else {
+        setSensorData([]);
+      }
     } catch (err) {
       console.warn("Failed load sensor data", err);
       setSensorData([]);
@@ -2390,26 +2555,61 @@ const MapScreen = ({ navigation, route }) => {
 
   const socket = useSocket();
 
+  const fetchThresholds = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/config/thresholds`);
+      if (res.ok) {
+        const data = await res.json();
+        setThresholds({
+          advisory_cm: data.advisory_level,
+          warning_cm: data.warning_level,
+          critical_cm: data.critical_level
+        });
+      }
+    } catch (e) { console.log("[Mobile Map] Error fetching thresholds:", e); }
+  };
+
   useEffect(() => {
-    fetchSensorData();
+    if (userData) {
+      fetchSensorData();
+      fetchThresholds();
+    }
 
     if (socket) {
       socket.on("sensor_update", (data) => {
-        console.log("[Mobile Map] Sensor update:", data);
-        const sensorRecord = data?.sensor_id ? [{
-          ...data,
-          flood_level: Number(data.flood_level ?? 0),
-          raw_distance: Number(data.raw_distance ?? 0),
-          status: data.is_offline ? "OFFLINE" : (data.status || "UNKNOWN"),
-        }] : [];
-        setSensorData(sensorRecord);
+        // ── LOCATION GATE: Only update if sensor location matches user's sitio ──
+        if (data && data.sensor_id && matchesUserLocation(data.barangay)) {
+          console.log("[Mobile Map] Sensor update matches location:", data);
+          const sensorRecord = [{
+            ...data,
+            flood_level: Number(data.flood_level ?? 0),
+            raw_distance: Number(data.raw_distance ?? 0),
+            status: data.enabled === false ? "OFFLINE" : (data.is_offline ? "DISCONNECTED" : (data.status || "UNKNOWN")),
+          }];
+          setSensorData(sensorRecord);
+        }
+      });
+      socket.on("threshold_update", (data) => {
+        console.log("[Mobile Map] Real-time Threshold update:", data);
+        if (data && data.advisory_level !== undefined) {
+          setThresholds({
+            advisory_cm: data.advisory_level,
+            warning_cm: data.warning_level,
+            critical_cm: data.critical_level
+          });
+        } else {
+          fetchThresholds();
+        }
       });
     }
 
     return () => {
-      if (socket) socket.off("sensor_update");
+      if (socket) {
+        socket.off("sensor_update");
+        socket.off("threshold_update");
+      }
     };
-  }, [socket]);
+  }, [socket, userData]);
 
   const latestMapSensor = sensorData[0] || {};
   const mergedSensors = [
@@ -2420,9 +2620,10 @@ const MapScreen = ({ navigation, route }) => {
       latitude: latestMapSensor.latitude || activeSensorPoint.latitude,
       longitude: latestMapSensor.longitude || activeSensorPoint.longitude,
       flood_level: latestMapSensor?.flood_level ?? 0,
-      status: latestMapSensor?.is_offline ? "OFFLINE" : (latestMapSensor?.status || "NO DATA"),
+      status: latestMapSensor?.enabled === false ? "OFFLINE" : (latestMapSensor?.is_offline ? "DISCONNECTED" : (latestMapSensor?.status || "NO DATA")),
       risk:
-        (latestMapSensor?.flood_level ?? 0) >= 70 ? "high" : (latestMapSensor?.flood_level ?? 0) >= 40 ? "medium" : "low",
+        (latestMapSensor?.flood_level ?? 0) >= thresholds.critical_cm ? "high" : 
+        (latestMapSensor?.flood_level ?? 0) >= thresholds.warning_cm ? "medium" : "low",
     },
   ];
   const mapFocusSensor = mergedSensors[0];
@@ -4154,21 +4355,16 @@ const ReportScreen = ({ navigation, userName }) => {
 const SettingsScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const socket = useSocket();
+  const { userData, avatarTimestamp, setAvatarTimestamp, refreshUser } = useUserData();
 
   const topInset = Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 0;
   const bottomInset = Platform.OS === "android" ? 32 : 16;
   const [offlineReady] = useState(true);
-  const [userData, setUserData] = useState({
-    full_name: "Loading...",
-    email: "Loading...",
-    barangay: "Loading...",
-    phone: "",
-    avatar_url: null
-  });
+  
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now());
 
   // Subscription State
   const [showSubscriptions, setShowSubscriptions] = useState(false);
@@ -4184,27 +4380,10 @@ const SettingsScreen = ({ navigation }) => {
   ];
 
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      const storedUser = await AsyncStorage.getItem('userData');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        // Fetch fresh data from API
-        const response = await fetch(`${API_BASE}/api/users/${user.id}`);
-        if (response.ok) {
-          const freshData = await response.json();
-          setUserData(freshData);
-          // Update stored data
-          await AsyncStorage.setItem('userData', JSON.stringify(freshData));
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
+    if (userData?.id) {
+      fetchSubscriptions(userData.id);
     }
-  };
+  }, [userData]);
 
   const fetchSubscriptions = async (userId) => {
     try {
@@ -4277,6 +4456,30 @@ const SettingsScreen = ({ navigation }) => {
     }
   };
 
+  const handleRemoveAvatar = async () => {
+    try {
+      const storedUser = await AsyncStorage.getItem('userData');
+      if (!storedUser) return;
+      const user = JSON.parse(storedUser);
+
+      const response = await fetch(`${API_BASE}/api/users/${user.id}/avatar`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        Alert.alert("Success", "Profile picture removed!");
+        setSelectedImage(null);
+        refreshUser();
+      } else {
+        const data = await response.json();
+        Alert.alert("Error", data.error || "Could not remove profile picture.");
+      }
+    } catch (error) {
+      console.error("Remove avatar error:", error);
+      Alert.alert("Error", "Failed to remove profile picture.");
+    }
+  };
+
   const uploadAvatar = async (asset) => {
     try {
       const storedUser = await AsyncStorage.getItem('userData');
@@ -4301,7 +4504,7 @@ const SettingsScreen = ({ navigation }) => {
       const data = await response.json();
       if (response.ok) {
         Alert.alert("Success", "Profile picture updated!");
-        fetchUserProfile(); // Refresh data
+        refreshUser(); // Refresh data
       } else {
         Alert.alert("Upload Failed", data.error || "Could not upload image.");
       }
@@ -4361,7 +4564,7 @@ const SettingsScreen = ({ navigation }) => {
         setShowEditProfile(false);
         setSelectedImage(null);
         setAvatarTimestamp(Date.now()); // Update timestamp to force image refresh
-        fetchUserProfile();
+        refreshUser();
       } else {
         const errorData = await response.json();
         Alert.alert("Update Failed", errorData.error || "Could not update profile.");
@@ -4520,6 +4723,7 @@ const SettingsScreen = ({ navigation }) => {
           visible={showEditProfile}
           userData={userData}
           onSave={handleUpdateProfile}
+          onRemoveImage={handleRemoveAvatar}
           onCancel={() => {
             setShowEditProfile(false);
             setSelectedImage(null);
@@ -4812,6 +5016,187 @@ const EvacuationMapScreen = ({ navigation, route }) => {
   );
 };
 
+const SafetyGuidesScreen = ({ navigation }) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const bottomInset = Platform.OS === "android" ? 32 : 16;
+
+  const sections = [
+    {
+      id: "before",
+      title: "Before a Flood",
+      icon: "shield-checkmark",
+      accentColor: "#3b82f6",
+      accentBg: "rgba(59, 130, 246, 0.12)",
+      image: SAFETY_BEFORE_IMG,
+      description: "Preparation is key to reducing flood damage and keeping your family safe.",
+      tips: [
+        "Know your area's flood risk level and evacuation routes.",
+        "Prepare an emergency kit: water, food, flashlight, batteries, first aid supplies, medications, and important documents in a waterproof bag.",
+        "Sign up for community flood alerts and weather warnings through this app.",
+        "Elevate electrical appliances, furniture, and valuables above potential flood levels.",
+        "Clear gutters, drains, and waterways near your home of debris.",
+        "Have a family communication and evacuation plan that everyone understands.",
+        "Store important documents (IDs, insurance, medical records) in waterproof containers.",
+        "Know how to turn off electricity, gas, and water supply in your home.",
+      ],
+    },
+    {
+      id: "during",
+      title: "During a Flood",
+      icon: "warning",
+      accentColor: "#f97316",
+      accentBg: "rgba(249, 115, 22, 0.12)",
+      image: SAFETY_DURING_IMG,
+      description: "Stay calm, stay informed, and prioritize your safety above all else.",
+      tips: [
+        "Move immediately to higher ground if water is rising around you.",
+        "Never walk, swim, or drive through flood waters — even 15 cm of moving water can knock you down.",
+        "Stay away from power lines, electrical wires, and flooded electrical outlets.",
+        "Avoid bridges and areas over fast-moving water.",
+        "If trapped in a building, go to the highest level. Do NOT go into a closed attic — you may get trapped.",
+        "Call emergency services (911 / 143) if you need rescue.",
+        "Listen to official alerts through the FloodGuard app for real-time updates.",
+        "If driving and water rises around your car, abandon the vehicle and move to higher ground.",
+      ],
+    },
+    {
+      id: "after",
+      title: "After a Flood",
+      icon: "checkmark-circle",
+      accentColor: "#22c55e",
+      accentBg: "rgba(34, 197, 94, 0.12)",
+      image: SAFETY_AFTER_IMG,
+      description: "Return home safely and take steps to protect your health during cleanup.",
+      tips: [
+        "Do NOT return home until authorities confirm it is safe to do so.",
+        "Beware of structural damage — floors, walls, and stairs may have been weakened.",
+        "Take photos of all flood damage before cleanup for insurance claims.",
+        "Wear protective gear (rubber boots, gloves, mask) during cleanup.",
+        "Throw away food, medicine, and water that came into contact with flood water.",
+        "Disinfect all surfaces and items that were exposed to flood water.",
+        "Watch for hazards like broken glass, sharp debris, and contaminated water.",
+        "Report any downed power lines or gas leaks to authorities immediately.",
+        "Seek medical attention for any injuries or signs of waterborne illness.",
+      ],
+    },
+  ];
+
+  return (
+    <SafeAreaView style={styles.dashboardSafe}>
+      <CustomHeader navigation={navigation} title="Safety Guides" subtitle="Flood prevention and preparedness" />
+      <ScrollView
+        contentContainerStyle={[
+          styles.safetyGuidesContent,
+          { paddingBottom: 80 + bottomInset },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Introduction Card */}
+        <LinearGradient
+          colors={['#1e293b', '#0f172a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.safetyHeroBanner}
+        >
+          <View style={styles.safetyHeroContent}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.safetyHeroTitle}>Flood Safety</Text>
+              <Text style={styles.safetyHeroSubtitle}>Know what to do before, during, and after a flood to protect yourself and your family.</Text>
+            </View>
+            <View style={styles.safetyHeroIconContainer}>
+              <LinearGradient
+                colors={['#74C5E6', '#3490dc']}
+                style={styles.safetyHeroIconGradient}
+              >
+                <Ionicons name="book" size={28} color="#fff" />
+              </LinearGradient>
+            </View>
+          </View>
+          <View style={[styles.welcomeOrb, { top: -20, right: -20, opacity: 0.1 }]} />
+          <View style={[styles.welcomeOrb, { bottom: -30, left: 10, width: 80, height: 80, opacity: 0.05 }]} />
+        </LinearGradient>
+
+        {/* Emergency Hotline Quick Card */}
+        <Card style={styles.safetyEmergencyCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={styles.safetyEmergencyIcon}>
+              <Ionicons name="call" size={20} color="#e2463b" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: theme.textPrimary }}>Emergency Hotlines</Text>
+              <Text style={{ fontSize: 12, color: theme.textSecondary, marginTop: 2 }}>National Emergency: 911 | Red Cross: 143</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.safetyCallButton}
+              onPress={() => Linking.openURL('tel:911')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="call" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </Card>
+
+        {/* Safety Guide Sections */}
+        {sections.map((section, sectionIndex) => (
+          <View key={section.id} style={styles.safetySection}>
+            {/* Section Header */}
+            <View style={styles.safetySectionHeader}>
+              <View style={[styles.safetySectionIconBadge, { backgroundColor: section.accentBg }]}>
+                <Ionicons name={section.icon} size={22} color={section.accentColor} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.safetySectionTitle}>{section.title}</Text>
+                <Text style={styles.safetySectionDesc}>{section.description}</Text>
+              </View>
+            </View>
+
+            {/* Section Image */}
+            <View style={styles.safetySectionImageContainer}>
+              <Image source={section.image} style={styles.safetySectionImage} resizeMode="cover" />
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.4)']}
+                style={styles.safetySectionImageOverlay}
+              />
+              <View style={[styles.safetySectionImageBadge, { backgroundColor: section.accentBg, borderColor: section.accentColor + '30' }]}>
+                <Ionicons name={section.icon} size={14} color={section.accentColor} />
+                <Text style={[styles.safetySectionImageBadgeText, { color: section.accentColor }]}>{section.title}</Text>
+              </View>
+            </View>
+
+            {/* Tips List */}
+            <View style={styles.safetyTipsList}>
+              {section.tips.map((tip, tipIndex) => (
+                <View key={`${section.id}-tip-${tipIndex}`} style={styles.safetyTipItem}>
+                  <View style={[styles.safetyTipNumber, { backgroundColor: section.accentBg }]}>
+                    <Text style={[styles.safetyTipNumberText, { color: section.accentColor }]}>{tipIndex + 1}</Text>
+                  </View>
+                  <Text style={styles.safetyTipText}>{tip}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Separator between sections */}
+            {sectionIndex < sections.length - 1 && (
+              <View style={styles.safetySectionDivider} />
+            )}
+          </View>
+        ))}
+
+        {/* Footer Note */}
+        <Card style={styles.safetyFooterNote}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="information-circle" size={20} color={theme.primary} />
+            <Text style={{ flex: 1, fontSize: 12, color: theme.textSecondary, lineHeight: 18 }}>
+              This guide follows recommendations from NDRRMC and PAGASA. Always follow official instructions from local authorities during emergencies.
+            </Text>
+          </View>
+        </Card>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
 const CustomDrawerContent = (props) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
@@ -4855,6 +5240,7 @@ const CustomDrawerContent = (props) => {
             { label: "Evacuate", icon: "map", route: "Evacuate" },
             { label: "Report", icon: "chatbubble", route: "Report" },
             { label: "Settings", icon: "settings", route: "Settings" },
+            { label: "Safety Guides", icon: "book", route: "SafetyGuides" },
           ].map((item) => {
             const activeRouteIndex = props.state?.index ?? 0;
             const activeRouteName = props.state?.routeNames[activeRouteIndex] ?? "Dashboard";
@@ -4951,6 +5337,7 @@ const MainDrawer = () => {
         {(props) => <ReportScreen {...props} userName={userName} />}
       </Drawer.Screen>
       <Drawer.Screen name="Settings" component={SettingsScreen} />
+      <Drawer.Screen name="SafetyGuides" component={SafetyGuidesScreen} />
     </Drawer.Navigator>
   );
 };
@@ -4986,13 +5373,86 @@ function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [readIds, setReadIds] = useState([]);
+  const [popupShownIds, setPopupShownIds] = useState([]);
+  const [lastAutoLevels, setLastAutoLevels] = useState({});
 
-  const shownIds = useRef(new Set());
+  const popupShownIdsRef = useRef([]);
   const readIdsRef = useRef(readIds);
+  const lastAutoLevelsRef = useRef({});
 
   useEffect(() => {
     readIdsRef.current = readIds;
   }, [readIds]);
+
+  useEffect(() => {
+    popupShownIdsRef.current = popupShownIds;
+  }, [popupShownIds]);
+
+  useEffect(() => {
+    lastAutoLevelsRef.current = lastAutoLevels;
+  }, [lastAutoLevels]);
+
+  /**
+   * Centralized logic to determine if a notification popup should be displayed.
+   * Enforces:
+   * 1. Standard Alerts: One-time popup per alert ID.
+   * 2. Automated Alerts: Re-triggerable if the risk level changes and returns to Warning/Critical.
+   */
+  const shouldShowPopup = useCallback(async (data, isPolling = false) => {
+    // ── NAVIGATION GUARD ──
+    if (navigationRef.isReady()) {
+      const route = navigationRef.getCurrentRoute();
+      const authScreens = ['Landing', 'Login', 'Loading', 'ChangePassword'];
+      if (route && authScreens.includes(route.name)) return false;
+    }
+
+    const storedUser = await AsyncStorage.getItem("userData");
+    if (!storedUser) return false;
+
+    // ── IDENTIFICATION ──
+    const isReport = data.type === 'verified_report' || data.type === 'report' || data.sourceType === 'community_report';
+    const rawId = data.id?.toString().replace('alert-', '').replace('report-', '');
+    const normalizedId = isReport ? `report-${rawId}` : `alert-${rawId || 'new'}`;
+    const isAutomated = data.type === 'auto_alert' || (data.title && data.title.startsWith("Automated"));
+
+    // ── PERSISTENT ID CHECK (Standard & Automated) ──
+    // This ensures we never show the EXACT same alert event (ID) twice.
+    if (popupShownIdsRef.current.includes(normalizedId)) return false;
+    if (readIdsRef.current.includes(normalizedId)) return false;
+
+    // ── RECENCY CHECK (Polling Fallback only) ──
+    if (isPolling) {
+      const itemTime = new Date(data.timestamp || data.created_at).getTime();
+      const isRecent = (Date.now() - itemTime) < (5 * 60 * 1000); // 5 mins
+      if (!isRecent) return false;
+      
+      // Additional suppression for polling verified reports to reduce noise
+      if (isReport) return false;
+    }
+
+    // ── AUTOMATED ALERT RE-TRIGGER LOGIC ──
+    if (isAutomated) {
+      const barangay = data.barangay || 'All';
+      const currentLevel = data.level?.toLowerCase() || 'normal';
+      const lastLevel = lastAutoLevelsRef.current[barangay];
+
+      if (currentLevel !== lastLevel) {
+        // Track the transition persistently
+        const updatedLevels = { ...lastAutoLevelsRef.current, [barangay]: currentLevel };
+        lastAutoLevelsRef.current = updatedLevels; // Update ref immediately to prevent race conditions
+        setLastAutoLevels(updatedLevels);
+        await AsyncStorage.setItem("notif_last_auto_levels", JSON.stringify(updatedLevels));
+
+        // Re-trigger popup ONLY if it returns to high-risk (Warning/Critical)
+        return (currentLevel === 'warning' || currentLevel === 'critical');
+      }
+      return false; // Level hasn't changed
+    }
+
+    // ── STANDARD ALERTS (Manual, Evac Centers, etc.) ──
+    // They are shown exactly once (passed the ID check above)
+    return true;
+  }, [lastAutoLevels]);
 
   // ── REAL-TIME BROADCAST: delivering sub-2-second latency ──
   const socket = useSocket();
@@ -5001,87 +5461,59 @@ function NotificationProvider({ children }) {
 
     socket.on("new_notification", async (data) => {
       console.log("[WS] Received raw notification data:", data);
-      console.log("[WS] Current Socket Connected:", socket.connected);
-      // ── NAVIGATION GUARD: Don't show popups on auth-related screens ──
-      if (navigationRef.isReady()) {
-        const route = navigationRef.getCurrentRoute();
-        const authScreens = ['Landing', 'Login', 'Loading', 'ChangePassword'];
-        if (route && authScreens.includes(route.name)) {
-          console.log(`[WS] Notification suppressed on screen: ${route.name}`);
-          return;
-        }
-      }
-
-      // Secondary check for data persistence
-      const storedUser = await AsyncStorage.getItem("userData");
-      if (!storedUser) return;
-
-      console.log("[WS] Instant alert received:", data);
       
-      // ── STANDARDIZED ID GENERATION (Must match fetchNotifications exactly) ──
-      const isReport = data.type === 'verified_report' || data.type === 'report' || data.type === 'dismissed_report';
-      const normalizedId = isReport ? `report-${data.id}` : `alert-${data.id || 'new'}`;
+      if (!(await shouldShowPopup(data))) return;
 
-      // 1. EXACTLY-ONCE CHECK
-      if (shownIds.current.has(normalizedId)) return;
-      if (readIdsRef.current.includes(normalizedId)) return;
+      console.log("[WS] Triggering alert popup for:", data.title);
 
-      shownIds.current.add(normalizedId);
+      // ── STANDARDIZED ID GENERATION ──
+      const isReport = data.type === 'verified_report' || data.type === 'report';
+      const rawId = data.id?.toString().replace('alert-', '').replace('report-', '');
+      const normalizedId = isReport ? `report-${rawId}` : `alert-${rawId || 'new'}`;
 
-      // ── PRIORITY 1: SHOW DIALOG IMMEDIATELY ──
-      const isActiveBroadcast = data.status ? data.status === 'active' : true;
-      if (isActiveBroadcast && (
-        data.level === 'critical' || 
-        data.level === 'warning' || 
-        data.level === 'evacuation' || 
-        data.type === 'alert' || 
-        data.type === 'auto_alert' ||
-        data.type === 'verified_report' ||
-        data.type === 'evacuation_center'
-      )) {
-        // ── CONTENT FORMATTING ──
-        let message = "";
-        if (data.type === 'verified_report') {
-           message = `📍 Location: ${data.barangay}\n🔍 Incident: ${data.description}\n🤝 Response: ${data.recommendations || 'LGU is monitoring and responding'}`;
-        } else if (data.level === 'evacuation' || data.type === 'evacuation_center') {
-           const location = data.location || data.evacuation_location || 'Not Specified';
-           const capacity = data.capacity || data.evacuation_capacity || 'N/A';
-           const status = data.evacuation_status || data.status || 'OPEN';
-           message = `📍 Pinned Location: ${location}\n👥 Total Capacity: ${capacity}\n🔄 Status: ${status.toUpperCase()}`;
-        } else {
-           const levelLabel = data.level ? data.level.toUpperCase() : 'ADVISORY';
-           message = `📍 Location: ${data.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${data.recommended_action || 'Follow safety protocols'}\n\n${data.description}`;
-        }
+      markPopupAsShown(normalizedId);
 
-        const isEvacuation = data.level === 'evacuation' || data.type === 'evacuation_center';
-        const alertTitle = isEvacuation 
-          ? (data.name || data.title?.replace('New Evacuation Center: ', '') || 'Evacuation Center')
-          : data.title;
-
-        Alert.alert(
-          `📢 ${alertTitle}`,
-          message,
-          [
-            {
-              text: "Dismiss",
-              style: "cancel",
-              onPress: () => markAsRead(normalizedId)
-            },
-            {
-              text: "View Details",
-              style: "default",
-              onPress: () => {
-                markAsRead(normalizedId);
-                const alertObj = { ...data, id: normalizedId };
-                globalNavigate("AlertDetail", { alert: alertObj });
-              }
-            }
-          ]
-        );
+      // ── CONTENT FORMATTING ──
+      let message = "";
+      if (data.type === 'verified_report') {
+        message = `📍 Location: ${data.barangay}\n🔍 Incident: ${data.description}\n🤝 Response: ${data.recommendations || 'LGU is monitoring and responding'}`;
+      } else if (data.level === 'evacuation' || data.type === 'evacuation_center') {
+        const location = data.location || data.evacuation_location || 'Not Specified';
+        const capacity = data.capacity || data.evacuation_capacity || 'N/A';
+        const status = data.evacuation_status || data.status || 'OPEN';
+        message = `📍 Pinned Location: ${location}\n👥 Total Capacity: ${capacity}\n🔄 Status: ${status.toUpperCase()}`;
+      } else {
+        const levelLabel = data.level ? data.level.toUpperCase() : 'ADVISORY';
+        message = `📍 Location: ${data.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${data.recommended_action || 'Follow safety protocols'}\n\n${data.description}`;
       }
 
-      // ── PRIORITY 2: REFRESH LIST IN BACKGROUND ──
-      // Delay this slightly so it doesn't compete with the system alert's appearance
+      const isEvacuation = data.level === 'evacuation' || data.type === 'evacuation_center';
+      const alertTitle = isEvacuation
+        ? (data.name || data.title?.replace('New Evacuation Center: ', '') || 'Evacuation Center')
+        : data.title;
+
+      Alert.alert(
+        `📢 ${alertTitle}`,
+        message,
+        [
+          {
+            text: "Dismiss",
+            style: "cancel",
+            onPress: () => markAsRead(normalizedId)
+          },
+          {
+            text: "View Details",
+            style: "default",
+            onPress: () => {
+              markAsRead(normalizedId);
+              const alertObj = { ...data, id: normalizedId };
+              globalNavigate("AlertDetail", { alert: alertObj });
+            }
+          }
+        ]
+      );
+
+      // Refresh list in background
       setTimeout(() => {
         fetchNotifications(true);
       }, 800);
@@ -5090,10 +5522,10 @@ function NotificationProvider({ children }) {
     return () => {
       if (socket) socket.off("new_notification");
     };
-  }, [socket]); // Empty dependency array ensures we only have ONE socket listener
+  }, [socket, shouldShowPopup]);
 
   useEffect(() => {
-    loadReadIds();
+    loadPersistentIds();
     fetchNotifications();
 
     const interval = setInterval(() => {
@@ -5103,12 +5535,26 @@ function NotificationProvider({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  const loadReadIds = async () => {
+  const loadPersistentIds = async () => {
     try {
-      const stored = await AsyncStorage.getItem("notif_read_ids");
-      if (stored) setReadIds(JSON.parse(stored));
+      const [read, shown, levels] = await Promise.all([
+        AsyncStorage.getItem("notif_read_ids"),
+        AsyncStorage.getItem("notif_popup_shown_ids"),
+        AsyncStorage.getItem("notif_last_auto_levels")
+      ]);
+      if (read) setReadIds(JSON.parse(read));
+      if (shown) {
+        const parsed = JSON.parse(shown);
+        setPopupShownIds(parsed);
+        popupShownIdsRef.current = parsed;
+      }
+      if (levels) {
+        const parsed = JSON.parse(levels);
+        setLastAutoLevels(parsed);
+        lastAutoLevelsRef.current = parsed;
+      }
     } catch (e) {
-      console.error("Error loading read ids:", e);
+      console.error("Error loading persistent notification ids:", e);
     }
   };
 
@@ -5117,6 +5563,19 @@ function NotificationProvider({ children }) {
       await AsyncStorage.setItem("notif_read_ids", JSON.stringify(ids));
     } catch (e) {
       console.error("Error saving read ids:", e);
+    }
+  };
+
+  const markPopupAsShown = async (id) => {
+    // Avoid redundant updates
+    if (!popupShownIdsRef.current.includes(id)) {
+      const newIds = [...popupShownIdsRef.current, id];
+      setPopupShownIds(newIds);
+      try {
+        await AsyncStorage.setItem("notif_popup_shown_ids", JSON.stringify(newIds));
+      } catch (e) {
+        console.error("Error saving shown popup ids:", e);
+      }
     }
   };
 
@@ -5226,34 +5685,24 @@ function NotificationProvider({ children }) {
 
       if (shouldShowFallback) {
         const newItem = latestItems[0];
-
-        // 1. DEDUPLICATION GUARD: Suppress popups for verified community reports
-        const isVerifiedReportEntry = newItem.sourceType === 'community_report' && (newItem.status === 'verified' || newItem.report_status === 'Active');
-
-        // 2. RECENCY CHECK: Only trigger popups for items created in the last 5 minutes
-        // This prevents old alerts from popping up if a newer one is deleted.
-        const itemTime = new Date(newItem.timestamp || newItem.created_at).getTime();
-        const now = Date.now();
-        const isRecent = (now - itemTime) < (5 * 60 * 1000); // 5 minutes
-
-        // Suppress pop-up if the user has already read/dismissed, if already shown, or if the broadcast is NOT active
         const isActive = newItem.status ? newItem.status === 'active' : true;
-        if (!readIds.includes(newItem.id) && !shownIds.current.has(newItem.id) && isActive && !isVerifiedReportEntry && isRecent) {
-          // Mark as shown to prevent duplicate triggers
-          shownIds.current.add(newItem.id);
+
+        if (isActive && (await shouldShowPopup(newItem, true))) {
+          // Mark as shown to prevent duplicate triggers (Persistent)
+          markPopupAsShown(newItem.id);
 
           // ── CONTENT FORMATTING (Consistent with Socket listener) ──
           let message = "";
           if (newItem.sourceType === 'community_report') {
-             message = `📍 Location: ${newItem.location}\n🔍 Incident: ${newItem.description}\n🤝 Response: ${newItem.recommendations || 'LGU is responding'}`;
+            message = `📍 Location: ${newItem.location}\n🔍 Incident: ${newItem.description}\n🤝 Response: ${newItem.recommendations || 'LGU is responding'}`;
           } else if (newItem.level === 'evacuation' || newItem.type === 'evacuation_center') {
-             const location = newItem.location || newItem.evacuation_location || 'Not Specified';
-             const capacity = newItem.capacity || newItem.evacuation_capacity || 'N/A';
-             const status = newItem.status || newItem.evacuation_status || 'OPEN';
-             message = `📍 Pinned Location: ${location}\n👥 Total Capacity: ${capacity}\n🔄 Status: ${status.toUpperCase()}`;
+            const location = newItem.location || newItem.evacuation_location || 'Not Specified';
+            const capacity = newItem.capacity || newItem.evacuation_capacity || 'N/A';
+            const status = newItem.status || newItem.evacuation_status || 'OPEN';
+            message = `📍 Pinned Location: ${location}\n👥 Total Capacity: ${capacity}\n🔄 Status: ${status.toUpperCase()}`;
           } else {
-             const levelLabel = newItem.level ? newItem.level.toUpperCase() : 'ADVISORY';
-             message = `📍 Location: ${newItem.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${newItem.recommended_action || 'Follow safety protocols'}\n\n${newItem.description || newItem.message}`;
+            const levelLabel = newItem.level ? newItem.level.toUpperCase() : 'ADVISORY';
+            message = `📍 Location: ${newItem.barangay || 'All Areas'}\n⚠️ Risk: ${levelLabel}\n💡 Action: ${newItem.recommended_action || 'Follow safety protocols'}\n\n${newItem.description || newItem.message}`;
           }
 
           const isEvacItem = newItem.level === 'evacuation' || newItem.type === 'evacuation_center';
@@ -5313,66 +5762,68 @@ export default function App() {
 
   return (
     <SocketProvider>
-      <SensorStatusProvider>
-        <LocationProvider>
-          <NotificationProvider>
-            <ThemeContext.Provider value={{ theme }}>
-              <StatusBar
-                barStyle="light-content"
-                backgroundColor={theme.background}
-              />
-              <NavigationContainer ref={navigationRef}>
-                <Stack.Navigator
-                  initialRouteName="Loading"
-                  screenOptions={{
-                    headerShown: false,
-                    animationEnabled: false,
-                    cardStyleInterpolator: CardStyleInterpolators.forNoAnimation,
-                  }}
-                >
-                  <Stack.Screen name="Loading" component={LoadingScreen} />
-                  <Stack.Screen name="Landing" component={LandingScreen} />
-                  <Stack.Screen name="Login" component={LoginScreen} />
-                  <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                  <Stack.Screen name="Account">
-                    {(props) => (
-                      <AccountScreen {...props} form={form} setForm={setForm} />
-                    )}
-                  </Stack.Screen>
-                  <Stack.Screen name="Location">
-                    {(props) => (
-                      <LocationScreen
-                        {...props}
-                        selection={selection}
-                        setSelection={setSelection}
-                        area={area}
-                        setArea={setArea}
-                      />
-                    )}
-                  </Stack.Screen>
-                  <Stack.Screen name="Notifications">
-                    {(props) => (
-                      <NotificationsScreen
-                        {...props}
-                        toggles={toggles}
-                        setToggles={setToggles}
-                        form={form}
-                        selection={selection}
-                      />
-                    )}
-                  </Stack.Screen>
-                  <Stack.Screen name="MainDrawer" component={MainDrawer} />
-                  <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
-                  <Stack.Screen name="EvacuationMap" component={EvacuationMapScreen} />
-                  <Stack.Screen name="ActiveNavigation" component={ActiveNavigationScreen} />
-                  <Stack.Screen name="Map" component={MapScreen} />
-                </Stack.Navigator>
-              </NavigationContainer>
-            </ThemeContext.Provider>
-          </NotificationProvider>
-        </LocationProvider>
-      </SensorStatusProvider>
+      <UserDataProvider>
+        <SensorStatusProvider>
+          <LocationProvider>
+            <NotificationProvider>
+              <ThemeContext.Provider value={{ theme }}>
+                <StatusBar
+                  barStyle="light-content"
+                  backgroundColor={theme.background}
+                />
+                <NavigationContainer ref={navigationRef}>
+                  <Stack.Navigator
+                    initialRouteName="Loading"
+                    screenOptions={{
+                      headerShown: false,
+                      animationEnabled: false,
+                      cardStyleInterpolator: CardStyleInterpolators.forNoAnimation,
+                    }}
+                  >
+                    <Stack.Screen name="Loading" component={LoadingScreen} />
+                    <Stack.Screen name="Landing" component={LandingScreen} />
+                    <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+                    <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                    <Stack.Screen name="Account">
+                      {(props) => (
+                        <AccountScreen {...props} form={form} setForm={setForm} />
+                      )}
+                    </Stack.Screen>
+                    <Stack.Screen name="Location">
+                      {(props) => (
+                        <LocationScreen
+                          {...props}
+                          selection={selection}
+                          setSelection={setSelection}
+                          area={area}
+                          setArea={setArea}
+                        />
+                      )}
+                    </Stack.Screen>
+                    <Stack.Screen name="Notifications">
+                      {(props) => (
+                        <NotificationsScreen
+                          {...props}
+                          toggles={toggles}
+                          setToggles={setToggles}
+                          form={form}
+                          selection={selection}
+                        />
+                      )}
+                    </Stack.Screen>
+                    <Stack.Screen name="MainDrawer" component={MainDrawer} />
+                    <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+                    <Stack.Screen name="EvacuationMap" component={EvacuationMapScreen} />
+                    <Stack.Screen name="ActiveNavigation" component={ActiveNavigationScreen} />
+                    <Stack.Screen name="Map" component={MapScreen} />
+                  </Stack.Navigator>
+                </NavigationContainer>
+              </ThemeContext.Provider>
+            </NotificationProvider>
+          </LocationProvider>
+        </SensorStatusProvider>
+      </UserDataProvider>
     </SocketProvider>
   );
 }
@@ -7254,6 +7705,11 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
   },
+  welcomeAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 25,
+  },
   welcomeOrb: {
     position: 'absolute',
     width: 120,
@@ -7698,5 +8154,166 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 1,
+  },
+
+  // ─── Safety Guides Screen Styles ───
+  safetyGuidesContent: {
+    padding: 18,
+    gap: 14,
+  },
+  safetyHeroBanner: {
+    borderRadius: 20,
+    padding: 20,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  safetyHeroContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  safetyHeroTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#ffffff',
+    marginBottom: 6,
+  },
+  safetyHeroSubtitle: {
+    fontSize: 13,
+    color: '#94a3b8',
+    lineHeight: 19,
+  },
+  safetyHeroIconContainer: {
+    width: 56,
+    height: 56,
+  },
+  safetyHeroIconGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safetyEmergencyCard: {
+    borderWidth: 1,
+    borderColor: 'rgba(226, 70, 59, 0.2)',
+    backgroundColor: theme.surface,
+  },
+  safetyEmergencyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(226, 70, 59, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safetyCallButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e2463b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safetySection: {
+    gap: 12,
+  },
+  safetySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  safetySectionIconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safetySectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: theme.textPrimary,
+    marginBottom: 4,
+  },
+  safetySectionDesc: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    lineHeight: 19,
+  },
+  safetySectionImageContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 180,
+    position: 'relative',
+  },
+  safetySectionImage: {
+    width: '100%',
+    height: '100%',
+  },
+  safetySectionImageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  safetySectionImageBadge: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  safetySectionImageBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  safetyTipsList: {
+    gap: 10,
+  },
+  safetyTipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: theme.surface,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  safetyTipNumber: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  safetyTipNumberText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  safetyTipText: {
+    flex: 1,
+    fontSize: 13,
+    color: theme.textPrimary,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  safetySectionDivider: {
+    height: 1,
+    backgroundColor: theme.border,
+    marginVertical: 8,
+  },
+  safetyFooterNote: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
   },
 });

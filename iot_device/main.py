@@ -9,6 +9,7 @@ p_echo = machine.Pin(27, machine.Pin.IN)
 buzzer = machine.PWM(machine.Pin(4))
 buzzer.freq(2000); buzzer.duty(0)
 led = machine.Pin(2, machine.Pin.OUT)
+# ADC pins removed for software simulation
 
 # System Status variables
 wlan = network.WLAN(network.STA_IF)
@@ -104,6 +105,28 @@ def activate_buzzer():
     utime.sleep(3) # Exact 3-second block
     buzzer.duty(0)
 
+# ---- POWER MONITORING FUNCTIONS (SOFTWARE SIMULATION) ----
+def get_dynamic_power():
+    try:
+        import urandom
+        # Simulate SMPS Voltage (fluctuating around 12.2V)
+        v_base = 12.2
+        v_reading = v_base + (urandom.getrandbits(7) / 128.0) * 0.4 - 0.2
+        
+        # Simulate Current (fluctuating around 0.45A)
+        i_base = 0.45
+        i_reading = i_base + (urandom.getrandbits(7) / 128.0) * 0.1 - 0.05
+        
+        # Calculate Power
+        p_reading = v_reading * i_reading
+        
+        # Identify as SMPS since user is using it
+        p_source = "smps"
+        
+        return round(v_reading, 2), round(i_reading, 3), round(p_reading, 2), p_source
+    except:
+        return 12.2, 0.45, 5.5, "smps"
+
 # ---- THE MAIN EVENT LOOP ----
 def main():
     global t_warning, t_critical
@@ -171,14 +194,20 @@ def main():
                 
             # STREAMING TO DASHBOARD
             if utime.ticks_diff(now, last_send) >= 1000:
-                print("FLOOD: {:6.2f} cm | STATUS: {}".format(display_val, current_status))
+                v, i, p, src = get_dynamic_power()
+                print("FLOOD: {:6.2f} cm | PWR: {} | VOLT: {}V".format(display_val, src, v))
                 if wlan.isconnected():
                     try:
                         urequests.post(BACKEND_URL, json={
                             "sensor_id": SENSOR_ID, 
                             "raw_distance": baseline - display_val, 
                             "flood_level": display_val, 
-                            "status": current_status
+                            "status": current_status,
+                            "battery_level": 0 if src == "smps" else 85, # Set to 0 to test "no + battery" UI
+                            "power_supply": src,
+                            "voltage": v,
+                            "current": i,
+                            "power_consumption": p
                         }, timeout=1.0).close()
                     except: pass
                 last_send = now

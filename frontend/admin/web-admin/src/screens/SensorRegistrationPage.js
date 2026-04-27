@@ -28,6 +28,19 @@ const ManageSensorsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All Status");
+    const [showSitioDropdown, setShowSitioDropdown] = useState(false);
+
+    const SITIOS_MABOLO = [
+        "Sitio Magtalisay",
+        "Sitio Regla",
+        "Sitio Sinulog",
+        "Sitio Laray Holy Name",
+        "Sitio San Vicente",
+        "Sitio San Isidro",
+        "Sitio Fatima",
+        "Sitio Sindulan",
+        "Sitio Lahing-Lahing (Uno and Dos)",
+    ];
     const [showStatusDropdown, setShowStatusDropdown] = useState(false);
     const [togglingId, setTogglingId] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -293,8 +306,8 @@ useEffect(() => {
     try {
         fetchSensors();
         fetchHealthData(); // Initial load with default Disconnected state
-        // Set up periodic fetching with preserveLiveState=true to maintain status
-        healthIntervalRef.current = setInterval(() => fetchHealthData(true), 30000);
+        // Set up periodic fetching (every 5 seconds) to keep metadata fresh
+        healthIntervalRef.current = setInterval(() => fetchHealthData(true), 5000);
     } catch (error) {
         console.warn("Error in initial data loading:", error);
     }
@@ -314,7 +327,7 @@ useEffect(() => {
         setLiveSensors(prev => {
             if (!Array.isArray(prev)) return [];
             const now = new Date();
-            const timeoutMs = 30000; // 30 seconds
+            const timeoutMs = 1500; // 1.5 seconds for instant disconnection detection
             
             let changed = false;
             const updated = prev.map(s => {
@@ -375,6 +388,9 @@ useDataSync({
                         is_offline: false, // Not offline when receiving data
                         battery_level: reading.battery_level ?? s.battery_level,
                         power_supply: reading.power_supply ?? s.power_supply,
+                        voltage: reading.voltage ?? s.voltage,
+                        current: reading.current ?? s.current,
+                        power_consumption: reading.power_consumption ?? s.power_consumption,
                         last_seen: new Date().toISOString(), // Track when data was last received
                     };
                 });
@@ -395,6 +411,9 @@ useDataSync({
                         is_offline: false, // Not offline when receiving data
                         battery_level: reading.battery_level ?? prev.live?.battery_level,
                         power_supply: reading.power_supply ?? prev.live?.power_supply,
+                        voltage: reading.voltage ?? prev.live?.voltage,
+                        current: reading.current ?? prev.live?.current,
+                        power_consumption: reading.power_consumption ?? prev.live?.power_consumption,
                         last_seen: new Date().toISOString(), // Track when data was last received
                     }
                 };
@@ -912,10 +931,57 @@ const criticalSensors = liveSensors.filter(s => s.is_live && s.enabled && (s.rea
                                 </View>
                             </View>
 
-                            <View style={pg.formGroup}>
-                                <Text style={pg.formLabel}>Barangay <Text style={{ color: "#dc2626" }}>*</Text></Text>
-                                <TextInput style={pg.formInput} placeholder="e.g., San Jose, Mabolo" placeholderTextColor="#94a3b8"
-                                    value={formData.barangay} onChangeText={v => handleInputChange("barangay", v)} />
+                            <View style={[pg.formGroup, { zIndex: 1000 }]}>
+                                <Text style={pg.formLabel}>Barangay/Sitio <Text style={{ color: "#dc2626" }}>*</Text></Text>
+                                <TouchableOpacity
+                                    style={[pg.formInput, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
+                                    onPress={() => setShowSitioDropdown(!showSitioDropdown)}
+                                >
+                                    <Text style={{ color: formData.barangay ? "#0f172a" : "#94a3b8", fontFamily: "Poppins_400Regular" }}>
+                                        {formData.barangay || "Select Sitio"}
+                                    </Text>
+                                    <Feather name={showSitioDropdown ? "chevron-up" : "chevron-down"} size={18} color="#94a3b8" />
+                                </TouchableOpacity>
+
+                                {showSitioDropdown && (
+                                    <View style={{
+                                        position: "absolute",
+                                        top: 75,
+                                        left: 0,
+                                        right: 0,
+                                        backgroundColor: "#fff",
+                                        borderRadius: 12,
+                                        borderWidth: 1,
+                                        borderColor: "#e2e8f0",
+                                        overflow: 'hidden',
+                                        maxHeight: 180,
+                                        zIndex: 1001,
+                                        shadowColor: "#000",
+                                        shadowOpacity: 0.1,
+                                        shadowRadius: 4,
+                                        elevation: 5
+                                    }}>
+                                        <ScrollView nestedScrollEnabled={true}>
+                                            {SITIOS_MABOLO.map((sitio, index) => (
+                                                <TouchableOpacity
+                                                    key={index}
+                                                    style={{
+                                                        paddingVertical: 12,
+                                                        paddingHorizontal: 16,
+                                                        borderBottomWidth: index === SITIOS_MABOLO.length - 1 ? 0 : 1,
+                                                        borderBottomColor: "#f1f5f9"
+                                                    }}
+                                                    onPress={() => {
+                                                        handleInputChange("barangay", sitio);
+                                                        setShowSitioDropdown(false);
+                                                    }}
+                                                >
+                                                    <Text style={{ fontSize: 14, color: "#0f172a", fontFamily: "Poppins_400Regular" }}>{sitio}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
                             </View>
 
                             <View style={pg.formGroup}>
@@ -1008,64 +1074,104 @@ const criticalSensors = liveSensors.filter(s => s.is_live && s.enabled && (s.rea
 
                                         {/* Dynamic Battery Indicator - Only shown when sensor is actively sending data */}
                                         {isLive && isEnabled && (
-                                            <View style={{ 
-                                                backgroundColor: "#fff", 
-                                                borderRadius: 16, 
-                                                padding: 16, 
-                                                marginBottom: 16,
-                                                borderWidth: 1,
-                                                borderColor: "#f1f5f9",
-                                                flexDirection: "row",
-                                                alignSelf: "center",
-                                                width: "100%",
-                                                alignItems: "center",
-                                                gap: 16
-                                            }}>
+                                            <View style={{ width: "100%" }}>
                                                 {(() => {
                                                     const bat = parseInt(sh.live?.battery_level ?? sh.battery_level ?? 100);
-                                                    const pSource = (sh.live?.power_supply ?? sh.power_supply ?? "battery").toLowerCase();
-                                                    const isSMPS = pSource === "smps" || pSource === "spms";
+                                                    const pSourceRaw = (sh.live?.power_supply ?? sh.power_supply ?? "battery").toLowerCase();
+                                                    const volt = parseFloat(sh.live?.voltage ?? 0);
+                                                    const curr = parseFloat(sh.live?.current ?? 0);
+                                                    const pCons = parseFloat(sh.live?.power_consumption ?? 0);
+                                                    
+                                                    const isSMPS = pSourceRaw === "smps" || pSourceRaw === "spms";
+                                                    const hasBattery = bat > 0;
+                                                    
+                                                    let powerSourceLabel = "Powered by Battery";
+                                                    if (isSMPS && hasBattery) powerSourceLabel = "Powered by SMPS + Battery";
+                                                    else if (isSMPS) powerSourceLabel = "Powered by SMPS";
+                                                    
+                                                    let powerStatus = "Normal Operation";
+                                                    if (isSMPS) {
+                                                        if (volt > 13) powerStatus = "SMPS: Excess Power (Charging)";
+                                                        else if (volt >= 11) powerStatus = "SMPS: Sufficient Power";
+                                                        else if (volt > 0) powerStatus = "SMPS: Low Voltage";
+                                                    } else {
+                                                        if (bat < 20) powerStatus = "Battery: Insufficient Power";
+                                                        else powerStatus = "Battery: Normal Capacity";
+                                                    }
+
                                                     const color = isSMPS ? "#16a34a" : getBatteryColor(bat);
                                                     
                                                     return (
                                                         <>
                                                             <View style={{ 
-                                                                width: 40, 
-                                                                height: 40, 
-                                                                borderRadius: 20, 
-                                                                backgroundColor: isSMPS ? "#dcfce7" : (bat < 20 ? "#fee2e2" : "#f1f5f9"),
-                                                                alignItems: 'center', 
-                                                                justifyContent: 'center'
+                                                                backgroundColor: "#fff", 
+                                                                borderRadius: 16, 
+                                                                padding: 16, 
+                                                                marginBottom: 12,
+                                                                borderWidth: 1,
+                                                                borderColor: "#f1f5f9",
+                                                                flexDirection: "row",
+                                                                alignItems: "center",
+                                                                gap: 16
                                                             }}>
-                                                                <Feather 
-                                                                    name={isSMPS ? "zap" : (bat > 20 ? "battery" : "battery-charging")} 
-                                                                    size={20} 
-                                                                    color={color} 
-                                                                />
-                                                            </View>
-                                                            <View style={{ flex: 1 }}>
-                                                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                                                                    <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: "#0f172a" }}>
-                                                                        {isSMPS ? "Fixed Power Supply" : "Battery Powered"}
+                                                                <View style={{ 
+                                                                    width: 40, 
+                                                                    height: 40, 
+                                                                    borderRadius: 20, 
+                                                                    backgroundColor: isSMPS ? "#dcfce7" : (bat < 20 ? "#fee2e2" : "#f1f5f9"),
+                                                                    alignItems: 'center', 
+                                                                    justifyContent: 'center'
+                                                                }}>
+                                                                    <Feather 
+                                                                        name={isSMPS ? "zap" : (bat > 20 ? "battery" : "battery-charging")} 
+                                                                        size={20} 
+                                                                        color={color} 
+                                                                    />
+                                                                </View>
+                                                                <View style={{ flex: 1 }}>
+                                                                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                                                                        <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: "#0f172a" }}>
+                                                                            {powerSourceLabel}
+                                                                        </Text>
+                                                                        {hasBattery && (
+                                                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
+                                                                                <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: color }}>
+                                                                                    {bat}%
+                                                                                </Text>
+                                                                            </View>
+                                                                        )}
+                                                                    </View>
+                                                                    <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: color, marginBottom: 2 }}>
+                                                                        {powerStatus}
                                                                     </Text>
-                                                                    {!isSMPS && (
-                                                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
-                                                                            <Text style={{ fontSize: 13, fontFamily: "Poppins_700Bold", color: color }}>
-                                                                                {bat}%
-                                                                            </Text>
+                                                                    
+                                                                    {hasBattery && (
+                                                                        <View style={{ height: 6, backgroundColor: "#f1f5f9", borderRadius: 3, marginTop: 4, overflow: 'hidden' }}>
+                                                                            <View style={{ width: `${bat}%`, height: '100%', backgroundColor: color }} />
                                                                         </View>
                                                                     )}
                                                                 </View>
-                                                                <Text style={{ fontSize: 12, fontFamily: "Poppins_500Medium", color: isSMPS ? "#16a34a" : "#64748b" }}>
-                                                                    {isSMPS ? "System is running via SPMS Power Supply" : (bat < 20 ? "Critical: Battery low, please check" : "Running on dual 18650 lithium batteries")}
-                                                                </Text>
-                                                                
-                                                                {!isSMPS && (
-                                                                    <View style={{ height: 6, backgroundColor: "#f1f5f9", borderRadius: 3, marginTop: 8, overflow: 'hidden' }}>
-                                                                        <View style={{ width: `${bat}%`, height: '100%', backgroundColor: color }} />
-                                                                    </View>
-                                                                )}
+                                                            </View>
+
+                                                            {/* Actual Power Metrics */}
+                                                            <View style={{ 
+                                                                flexDirection: 'row', 
+                                                                gap: 8, 
+                                                                marginBottom: 16 
+                                                            }}>
+                                                                <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9' }}>
+                                                                    <Text style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'Poppins_700Bold', textTransform: 'uppercase' }}>Voltage</Text>
+                                                                    <Text style={{ fontSize: 14, color: '#334155', fontFamily: 'Poppins_700Bold' }}>{volt > 0 ? volt.toFixed(1) : "—"} V</Text>
+                                                                </View>
+                                                                <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9' }}>
+                                                                    <Text style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'Poppins_700Bold', textTransform: 'uppercase' }}>Current</Text>
+                                                                    <Text style={{ fontSize: 14, color: '#334155', fontFamily: 'Poppins_700Bold' }}>{curr > 0 ? curr.toFixed(2) : "—"} A</Text>
+                                                                </View>
+                                                                <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9' }}>
+                                                                    <Text style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'Poppins_700Bold', textTransform: 'uppercase' }}>Power</Text>
+                                                                    <Text style={{ fontSize: 14, color: '#334155', fontFamily: 'Poppins_700Bold' }}>{pCons > 0 ? pCons.toFixed(1) : "—"} W</Text>
+                                                                </View>
                                                             </View>
                                                         </>
                                                     );

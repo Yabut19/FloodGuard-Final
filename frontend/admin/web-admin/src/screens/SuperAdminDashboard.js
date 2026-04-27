@@ -23,7 +23,7 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                 const now = new Date();
                 // Validate cache immediately to prevent reload glitch
                 return parsed.map(s => {
-                    const isTimedOut = s.is_live && s.lastSeen && (now - new Date(s.lastSeen) > 30000);
+                    const isTimedOut = s.is_live && s.lastSeen && (now - new Date(s.lastSeen) > 1500);
                     if (isTimedOut) {
                         return { ...s, is_live: false, status: s.enabled === false ? "OFF" : "DISCONNECTED", waterLevel: 0, rawDistance: 0 };
                     }
@@ -107,7 +107,7 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
                     // Priority logic: Software OFF wins for display if signal is lost
                     if (s.is_live && s.enabled !== false && s.lastSeen) {
                         const lastSeenTime = new Date(s.lastSeen);
-                        if (now - lastSeenTime > 30000) {
+                        if (now - lastSeenTime > 1500) {
                             changed = true;
                             // Priority: manually off stays 'OFF', otherwise 'DISCONNECTED'
                             const nextStatus = s.enabled === false ? "OFF" : "DISCONNECTED";
@@ -175,7 +175,7 @@ const SuperAdminDashboard = ({ onNavigate, onLogout, activePage = "overview" }) 
             const now = new Date();
             const transformed = data.map(s => {
                 const serverLastSeen = s.last_update ? new Date(s.last_update) : null;
-                const isTrulyLive = s.is_live && serverLastSeen && (now - serverLastSeen < 30000);
+                const isTrulyLive = s.is_live && serverLastSeen && (now - serverLastSeen < 1500);
                 return {
                     id: s.id, name: s.name, location: s.barangay,
                     waterLevel: s.flood_level,

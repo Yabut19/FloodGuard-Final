@@ -46,6 +46,24 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
 
+    // Helper: Get latest sensor reading for a location
+    const getLatestSensorReading = (location) => {
+        if (!location) return "N/A";
+        const cleanLoc = location.replace(/^(Brgy\.?|Barangay)\s+/i, '').trim().toLowerCase();
+
+        const sensor = sensorsList.find(s => {
+            if (s.id === "All Sensors") return false;
+            const sBarangay = (s.barangay || "").replace(/^(Brgy\.?|Barangay)\s+/i, '').trim().toLowerCase();
+            const sName = (s.name || "").replace(/^(Brgy\.?|Barangay)\s+/i, '').trim().toLowerCase();
+            return sBarangay === cleanLoc || sName === cleanLoc;
+        });
+
+        if (sensor && sensor.is_live && sensor.enabled !== false) {
+            return `${sensor.flood_level ?? 0} cm`;
+        }
+        return "N/A";
+    };
+
     // ── Thresholds & Classification ──────────────────────────
     const [thresholds, setThresholds] = useState({ advisory: 15, warning: 30, critical: 50 });
     const thresholdsRef = useRef(thresholds);
@@ -119,6 +137,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                     name: s.name || s.id,
                     barangay: s.barangay || s.location || "",
                     status: s.status,
+                    flood_level: s.flood_level,
                     is_live: s.is_live,
                     is_offline: !s.is_live,
                     last_seen: s.last_seen || null
@@ -158,7 +177,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 let changed = false;
                 const updated = prev.map(s => {
                     if (s.id !== "All Sensors" && s.is_live && s.last_seen) {
-                        if (now - new Date(s.last_seen) > 30000) {
+                        if (now - new Date(s.last_seen) > 1500) {
                             changed = true;
                             return { ...s, is_live: false, is_offline: true };
                         }
@@ -219,6 +238,7 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                             is_live: isLive,
                             is_offline: !isLive,
                             enabled: isEnabled,
+                            flood_level: reading.flood_level,
                             last_seen: isLive ? new Date().toISOString() : s.last_seen
                         };
                     }
@@ -333,10 +353,6 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                         </div>
                     </div>
 
-                    <div style="margin-top: 20px;">
-                        <p class="label">Sensor Reading (Community)</p>
-                        <p class="value">${report.flood_level_reported || "N/A"} cm</p>
-                    </div>
                 </div>
 
                 <div class="response-box">
@@ -346,15 +362,9 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
 
                 ${isVerified ? `
                 <div class="section" style="border-top: 2px solid #dcfce7; padding-top: 24px; margin-top: 40px; background: #f0fdf4; padding: 20px; border-radius: 12px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
-                        <div>
-                            <p class="label" style="color: #166534;">Verified Status</p>
-                            <p class="value" style="color: #166534;">${report.incident_status || "Active"}</p>
-                        </div>
-                        <div>
-                            <p class="label" style="color: #166534;">Official Verified Depth</p>
-                            <p class="value" style="color: #166534;">${report.flood_level || "—"} cm</p>
-                        </div>
+                    <div>
+                        <p class="label" style="color: #166534;">Verified Status</p>
+                        <p class="value" style="color: #166534;">${report.incident_status || "Active"}</p>
                     </div>
                 </div>` : ''}
 
@@ -702,10 +712,6 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                 <Text style={pg.detailLabel}>Reported Location:</Text>
                                                 <Text style={pg.detailValue}>{report.location}</Text>
                                             </View>
-                                            <View style={pg.detailRow}>
-                                                <Text style={pg.detailLabel}>Sensor Reading:</Text>
-                                                <Text style={pg.detailValue}>{report.flood_level_reported || "N/A"} cm</Text>
-                                            </View>
 
                                             <View style={pg.adminResponseBox}>
                                                 <Text style={pg.responseLabel}>Response Details:</Text>
@@ -717,10 +723,6 @@ const DataReportsPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                                                     <View style={pg.detailRow}>
                                                         <Text style={pg.detailLabel}>Verified Status:</Text>
                                                         <Text style={[pg.detailValue, { color: "#dc2626" }]}>{report.incident_status || "Verified Active"}</Text>
-                                                    </View>
-                                                    <View style={pg.detailRow}>
-                                                        <Text style={pg.detailLabel}>Official Depth:</Text>
-                                                        <Text style={pg.detailValue}>{report.flood_level || "—"} cm</Text>
                                                     </View>
                                                 </View>
                                             )}

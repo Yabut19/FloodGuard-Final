@@ -26,6 +26,14 @@ def _emit_sensor_list_update():
     except Exception:
         pass
 
+def _emit_alert_update():
+    """Broadcast alert changes to all WebSocket clients."""
+    try:
+        from socket_instance import socketio
+        socketio.emit("alert_update", {"message": "refresh"}, namespace="/")
+    except Exception:
+        pass
+
 # ── AUTOMATED ALERT STABILITY TRACKER ──────────────────────────────────────────
 # Keeps track of sensors currently in Warning/Critical state to enforce 5s stability
 _pending_alerts = {} # { sensor_id: { "level": str, "start_time": datetime, "triggered": bool } }
@@ -123,7 +131,22 @@ def sensor_reading():
         battery_level = data.get("battery_level")
         signal_strength = data.get("signal_strength")
         power_supply = data.get("power_supply")
+        voltage = data.get("voltage")
+        current = data.get("current")
+        power_consumption = data.get("power_consumption")
         
+        # ── DYNAMIC POWER SOURCE DETECTION ──
+        # If the sensor sends voltage but not power_supply, we detect it automatically
+        if voltage is not None and power_supply is None:
+            try:
+                v_val = float(voltage)
+                if v_val > 9.0:
+                    power_supply = "smps"
+                elif v_val > 0:
+                    power_supply = "battery"
+            except:
+                pass
+
         update_query = "UPDATE sensors SET last_update = NOW()"
         update_params = []
         if battery_level is not None:
@@ -135,6 +158,16 @@ def sensor_reading():
         if power_supply is not None:
             update_query += ", power_supply = %s"
             update_params.append(power_supply)
+        if voltage is not None:
+            update_query += ", voltage = %s"
+            update_params.append(voltage)
+        if current is not None:
+            update_query += ", current = %s"
+            update_params.append(current)
+        if power_consumption is not None:
+            update_query += ", power_consumption = %s"
+            update_params.append(power_consumption)
+            
         update_query += " WHERE id = %s"
         update_params.append(sensor_id)
         
@@ -166,6 +199,7 @@ def sensor_reading():
                 "status": "OFF",
                 "is_live": True,
                 "enabled": False,
+                "barangay": sensor_barangay,
                 "timestamp": timestamp
             })
             return jsonify({
@@ -188,9 +222,9 @@ def sensor_reading():
                 # Start or reset stability timer for this level
                 _pending_alerts[sensor_id] = {"level": status, "start_time": now, "triggered": False}
             else:
-                # Level matches, check if 5 seconds have passed
+                # Level matches, check if 2 seconds have passed
                 elapsed = (now - pending["start_time"]).total_seconds()
-                if elapsed >= 5 and not pending["triggered"]:
+                if elapsed >= 2 and not pending["triggered"]:
                     trigger_automated = True
                     pending["triggered"] = True
         else:
@@ -198,16 +232,9 @@ def sensor_reading():
             _pending_alerts.pop(sensor_id, None)
 
         if trigger_automated:
-            # Verify sensor metadata again for alert context
-            # Prevent alert spam: check if an active alert for this level/location exists from the last 15 minutes
-            cur.execute("""
-                SELECT id FROM alerts 
-                WHERE barangay = %s AND level = %s AND status = 'active'
-                AND timestamp > DATE_SUB(NOW(), INTERVAL 15 MINUTE)
-                LIMIT 1
-            """, (sensor_barangay, status.lower()))
-            
-            if not cur.fetchone():
+            # Re-triggering is now governed by risk level transitions in _pending_alerts.
+            # If the level changes (e.g. Warning -> Critical -> Warning), a new alert is generated.
+            if True: # Removed 15-minute spam filter to allow immediate re-triggering on level changes
                 # Recommended Actions (STRICT)
                 action = "Be ready for Evacuation" if status == "WARNING" else "Evacuate now"
                 
@@ -247,6 +274,9 @@ def sensor_reading():
                     }, namespace="/")
                 except: pass
 
+                # ── REFRESH LISTS: Ensure mobile app updates its Alert List instantly ──
+                _emit_alert_update()
+
         db.commit()
         cur.close()
 
@@ -256,6 +286,7 @@ def sensor_reading():
             "flood_level":  float(flood_level),
             "raw_distance": float(raw_distance) if raw_distance is not None else 0.0,
             "status":       status,
+            "barangay":     sensor_barangay,
             "latitude":     float(latitude) if latitude else None,
             "longitude":    float(longitude) if longitude else None,
             "maps_url":     maps_url,
@@ -264,7 +295,10 @@ def sensor_reading():
             "is_offline":   False,
             "timestamp":    timestamp,
             "battery_level": int(battery_level) if battery_level is not None else 100,
-            "power_supply":  power_supply if power_supply else "battery"
+            "power_supply":  power_supply if power_supply else "battery",
+            "voltage":       float(voltage) if voltage is not None else 0.0,
+            "current":       float(current) if current is not None else 0.0,
+            "power_consumption": float(power_consumption) if power_consumption is not None else 0.0
         }
         _emit_sensor_update(ws_payload)
 
@@ -282,7 +316,7 @@ def latest_sensor():
     cur.execute("""
         SELECT r.sensor_id, r.raw_distance, r.flood_level, r.status,
                r.latitude, r.longitude, r.maps_url, r.created_at, 
-               s.status as sensor_status, s.last_update
+               s.status as sensor_status, s.last_update, s.barangay
         FROM iot_readings r
         LEFT JOIN sensors s ON r.sensor_id = s.id
         ORDER BY r.created_at DESC LIMIT 1
@@ -296,12 +330,12 @@ def latest_sensor():
     # Use last_update for physical connectivity check
     last_update = row.get("last_update")
     if isinstance(last_update, datetime):
-        last_update_dt = last_update
+        last_update_dt = to_pst(last_update)
     else:
         last_update_dt = get_pst_now()
 
     age_seconds = (get_pst_now() - last_update_dt).total_seconds()
-    is_live = age_seconds <= 30.0
+    is_live = age_seconds <= 5.0
     enabled = row.get("sensor_status") != "inactive"
     
     row["is_live"] = is_live
@@ -368,7 +402,7 @@ def sensor_status():
         last_update_dt = get_pst_now()
 
     age_seconds = (get_pst_now() - last_update_dt).total_seconds()
-    is_live = age_seconds <= 30.0
+    is_live = age_seconds <= 5.0
     enabled = row.get("sensor_status") != "inactive"
 
     flood_level = float(row.get("flood_level") or 0) if (is_live and enabled) else 0.0
@@ -421,17 +455,19 @@ def sensor_by_location():
         created_at = row.get("created_at")
         if isinstance(created_at, str):
             try:
-                created_at_dt = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+                # Assuming the string is in local time, convert to aware PST
+                dt_obj = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+                created_at_dt = to_pst(dt_obj)
             except Exception:
                 created_at_dt = get_pst_now()
         elif isinstance(created_at, datetime):
-            created_at_dt = created_at
+            created_at_dt = to_pst(created_at)
         else:
             created_at_dt = get_pst_now()
 
         # Consistent 30s threshold for offline status
         age_seconds = (get_pst_now() - created_at_dt).total_seconds()
-        is_offline = age_seconds > 30.0
+        is_offline = age_seconds > 5.0
 
         row["is_offline"] = is_offline
         row["status"] = calculate_status(row.get("flood_level") or 0, is_offline)
@@ -462,7 +498,7 @@ def get_all_sensors(current_user):
     try:
         cur.execute("""
             SELECT id, name, barangay, description, lat, lng, status, battery_level, 
-                   signal_strength, power_supply, last_update
+                   signal_strength, power_supply, voltage, current, power_consumption, last_update
             FROM sensors
             ORDER BY last_update DESC
         """)
@@ -489,7 +525,7 @@ def get_all_sensors_status(current_user):
     cur = db.cursor(dictionary=True)
     try:
         # Get all registered sensors
-        cur.execute("SELECT id, name, barangay, lat, lng, status, battery_level, signal_strength, power_supply, last_update FROM sensors")
+        cur.execute("SELECT id, name, barangay, lat, lng, status, battery_level, signal_strength, power_supply, voltage, current, power_consumption, last_update FROM sensors")
         sensors = cur.fetchall()
         
         # DEBUG: Print number of sensors found
@@ -535,7 +571,7 @@ def get_all_sensors_status(current_user):
                 liveness_dt = get_pst_now()
             
             age_seconds = (get_pst_now() - liveness_dt).total_seconds()
-            s['is_live'] = age_seconds <= 30.0
+            s['is_live'] = age_seconds <= 5.0
             s['enabled'] = s.get('status') != 'inactive'
             s['is_offline'] = not s['is_live'] # strictly hardware status for blinking dot
 
@@ -572,6 +608,10 @@ def get_all_sensors_status(current_user):
             s['lng'] = float(s['lng']) if s['lng'] else 0.0
             s['battery_level'] = int(s['battery_level']) if s['battery_level'] is not None else 100
             s['power_supply'] = s.get('power_supply') or 'battery'
+            
+            s['voltage'] = float(s.get('voltage') or 0.0)
+            s['current'] = float(s.get('current') or 0.0)
+            s['power_consumption'] = float(s.get('power_consumption') or 0.0)
             
             # Fix datetime serialization for jsonify
             if 'last_update' in s and hasattr(s['last_update'], 'isoformat'):
@@ -929,6 +969,7 @@ def live_stream():
                 cur.execute("""
                     SELECT s.id, s.name, s.barangay, s.lat, s.lng,
                            s.status as sensor_status, s.battery_level, s.signal_strength,
+                           s.power_supply, s.voltage, s.current, s.power_consumption,
                            r.flood_level, r.raw_distance, r.status as reading_status,
                            r.latitude, r.longitude, r.maps_url, r.created_at
                     FROM sensors s
@@ -964,6 +1005,10 @@ def live_stream():
                         "is_offline":   not is_live,
                         "battery_level":   s.get("battery_level"),
                         "signal_strength": s.get("signal_strength"),
+                        "power_supply":    s.get("power_supply"),
+                        "voltage":         float(s.get("voltage") or 0),
+                        "current":         float(s.get("current") or 0),
+                        "power_consumption": float(s.get("power_consumption") or 0),
                         "latitude":     float(s["latitude"]) if s.get("latitude") else None,
                         "longitude":    float(s["longitude"]) if s.get("longitude") else None,
                         "maps_url":     s.get("maps_url"),

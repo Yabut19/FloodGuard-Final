@@ -74,7 +74,7 @@ const VerifyAlertsPage = ({ onNavigate, onLogout, userRole = "lgu", currentUser 
         const timer = setInterval(() => {
             setSensorData(prev => {
                 if (prev && prev.is_live && prev.last_seen) {
-                    if (new Date() - new Date(prev.last_seen) > 30000) {
+                    if (new Date() - new Date(prev.last_seen) > 1500) {
                         return { ...prev, is_live: false, flood_level: 0, raw_distance: 0 };
                     }
                 }

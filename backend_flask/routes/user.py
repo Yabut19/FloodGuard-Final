@@ -112,6 +112,24 @@ def upload_avatar(user_id):
             cursor.close()
             
     return jsonify({"error": "Invalid file type"}), 400
+    
+@user_bp.route('/<int:user_id>/avatar', methods=['DELETE'])
+def delete_avatar(user_id):
+    user_type = request.args.get('type', 'user')
+    db = get_db()
+    cursor = db.cursor()
+    try:
+        if user_type == 'admin':
+            cursor.execute("UPDATE admins SET avatar_url = NULL WHERE id = %s", (user_id,))
+        else:
+            cursor.execute("UPDATE users SET avatar_url = NULL WHERE id = %s", (user_id,))
+        db.commit()
+        _emit_user_update()
+        return jsonify({"message": "Avatar removed successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
 
 @user_bp.route('/<int:user_id>', methods=['PUT'])
 def update_user_profile(user_id):

@@ -62,7 +62,7 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
     // Fetch data on mount + periodic full refresh every 30 s
     useEffect(() => {
         fetchSensorData();
-        const interval = setInterval(fetchSensorData, 30000);
+        const interval = setInterval(fetchSensorData, 5000);
         return () => { clearInterval(interval); };
     }, []);
 
@@ -120,7 +120,7 @@ const SensorMapPage = ({ onNavigate, onLogout, userRole = "lgu" }) => {
                 const updated = prev.map(s => {
                     // Only check if it's currently live and not explicitly off
                     if (s.is_live && s.enabled !== false && s.last_seen_raw) {
-                        if (now - new Date(s.last_seen_raw) > 30000) {
+                        if (now - new Date(s.last_seen_raw) > 1500) {
                             changed = true;
                             // Priority check: if manually off, keep as 'off', otherwise 'disconnected'
                             const nextStatus = s.enabled === false ? "off" : "disconnected";
